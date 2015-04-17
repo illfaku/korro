@@ -8,6 +8,20 @@ lazy val root = (project in file(".")).
 
     scalaVersion := "2.11.6",
     libraryDependencies ++= Seq(
+      "io.cafebabe" %% "util" % "0.0.1" % "provided",
+
+      "com.typesafe.akka" %% "akka-actor" % "2.3.9" % "provided",
+      "com.typesafe.akka" %% "akka-slf4j" % "2.3.9" % "provided",
+      "org.slf4j" % "slf4j-api" % "1.7.10" % "provided",
+      "com.google.code.gson" % "gson" % "2.3" % "provided",
+
+      "io.netty" % "netty-common" % "4.0.26.Final" % "provided",
+      "io.netty" % "netty-buffer" % "4.0.26.Final" % "provided",
+      "io.netty" % "netty-transport" % "4.0.26.Final" % "provided",
+      "io.netty" % "netty-handler" % "4.0.26.Final" % "provided",
+      "io.netty" % "netty-codec" % "4.0.26.Final" % "provided",
+      "io.netty" % "netty-codec-http" % "4.0.26.Final" % "provided",
+
       "org.scalatest" %% "scalatest" % "2.2.4" % "test"
     )
   )
