@@ -26,7 +26,7 @@ object RequestCodec {
       field.setAccessible(true)
       if (field.getType == classOf[Locale]) {
         val header = headers.get("Accept-Language")
-        field.set(result, Locales(header))
+        field.set(result, Locales.parse(header))
       } else if (field.isAnnotationPresent(classOf[HttpHeader])) {
         val headerInfo = field.getAnnotation(classOf[HttpHeader])
         val header = if (headerInfo.value.isEmpty) {
