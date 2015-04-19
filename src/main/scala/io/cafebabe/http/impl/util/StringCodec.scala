@@ -2,6 +2,8 @@ package io.cafebabe.http.impl.util
 
 import com.google.gson.Gson
 
+import scala.reflect._
+
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (4/12/2015)
@@ -32,6 +34,11 @@ object StringCodec {
 
   def fromString(value: String, target: Class[_]): AnyRef = {
     converters.getOrElse(target, { v: String => gson.fromJson(v, target).asInstanceOf[AnyRef] })(value)
+  }
+
+  def fromString[T: ClassTag](value: String): T = {
+    val target = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    converters.getOrElse(target, { v: String => gson.fromJson(v, target) })(value).asInstanceOf[T]
   }
 
   def toString(value: Any): String = {
