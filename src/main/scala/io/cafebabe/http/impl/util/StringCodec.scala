@@ -1,7 +1,5 @@
 package io.cafebabe.http.impl.util
 
-import com.google.gson.Gson
-
 import scala.reflect._
 
 /**
@@ -10,7 +8,7 @@ import scala.reflect._
  */
 object StringCodec {
 
-  private val gson = new Gson
+  class IsNotPrimitiveException(value: String) extends Exception(value)
 
   private val converters = Map[Class[_], (String) => AnyRef](
     classOf[String] -> { value: String => value },
@@ -32,16 +30,14 @@ object StringCodec {
     classOf[java.lang.Boolean] -> java.lang.Boolean.valueOf
   )
 
-  def fromString(value: String, target: Class[_]): AnyRef = {
-    converters.getOrElse(target, { v: String => gson.fromJson(v, target).asInstanceOf[AnyRef] })(value)
-  }
-
   def fromString[T: ClassTag](value: String): T = {
-    val target = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    converters.getOrElse(target, { v: String => gson.fromJson(v, target) })(value).asInstanceOf[T]
+    val target = classTag[T].runtimeClass
+    try converters(target)(value).asInstanceOf[T] catch {
+      case e: NoSuchElementException => throw new IsNotPrimitiveException(target.getName)
+    }
   }
 
-  def toString(value: Any): String = {
-    if (converters.contains(value.getClass)) value.toString else gson.toJson(value)
-  }
+  def toString(value: Any): String =
+    if (converters.contains(value.getClass)) value.toString
+    else throw new IsNotPrimitiveException(value.toString)
 }
