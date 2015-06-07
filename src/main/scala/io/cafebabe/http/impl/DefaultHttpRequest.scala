@@ -1,7 +1,7 @@
 package io.cafebabe.http.impl
 
-import io.cafebabe.http.api.RestRequest
-import io.cafebabe.http.impl.util.StringCodec
+import io.cafebabe.http.api.HttpRequest
+import io.cafebabe.http.impl.util.StringUtils._
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 import io.netty.util.CharsetUtil
 
@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-class DefaultRestRequest(request: FullHttpRequest) extends RestRequest {
+class DefaultHttpRequest(request: FullHttpRequest) extends HttpRequest {
 
   private val uri = new QueryStringDecoder(request.getUri)
 
@@ -24,5 +24,5 @@ class DefaultRestRequest(request: FullHttpRequest) extends RestRequest {
 
   override val headers = request.headers.entries.map(entry => entry.getKey -> entry.getValue).toMap
 
-  override def content[T: ClassTag]: T = StringCodec.fromString(request.content.toString(CharsetUtil.UTF_8))
+  override def content[T: ClassTag]: T = toPrimitive(request.content.toString(CharsetUtil.UTF_8))
 }

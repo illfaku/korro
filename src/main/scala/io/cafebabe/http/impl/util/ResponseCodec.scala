@@ -18,7 +18,7 @@ object ResponseCodec {
   private val log = LoggerFactory.getLogger(getClass)
 
   def toHttpResponse(response: Any): FullHttpResponse = {
-    newHttpResponse(HttpResponseStatus.OK, StringCodec.toString(response))
+    newHttpResponse(HttpResponseStatus.OK, response.toString)
   }
 
   val toErrorResponse: PartialFunction[Throwable, FullHttpResponse] = {

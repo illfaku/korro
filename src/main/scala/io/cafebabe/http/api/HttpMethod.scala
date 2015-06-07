@@ -5,7 +5,7 @@ package io.cafebabe.http.api
  * @version 1.0 (4/17/2015)
  */
 class HttpMethod(name: String) {
-  def unapply(req: RestRequest): Option[RestRequest] = if (req.method.equalsIgnoreCase(name)) Some(req) else None
+  def unapply(req: HttpRequest): Option[HttpRequest] = if (req.method.equalsIgnoreCase(name)) Some(req) else None
 }
 
 object GET extends HttpMethod("GET")
