@@ -1,6 +1,7 @@
 package io.cafebabe.http.api
 
 import io.cafebabe.http.impl.util.StringUtils._
+import io.netty.util.CharsetUtil
 
 import scala.reflect._
 
@@ -23,5 +24,6 @@ trait HttpRequest {
     try Some(toPrimitive(value)) catch { case IsNotPrimitiveException(_) => None }
   }
 
-  def content[T: ClassTag]: T
+  def content: String
+  def primitiveContent[T: ClassTag] = toPrimitive(content)
 }
