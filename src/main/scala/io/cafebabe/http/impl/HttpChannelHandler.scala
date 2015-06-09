@@ -1,13 +1,16 @@
 package io.cafebabe.http.impl
 
-import akka.actor.{ActorPath, ActorSystem}
+import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import io.cafebabe.http.api.HttpRequest
+import io.cafebabe.http.api.{BinaryWsMessage, HttpRequest, TextWsMessage}
 import io.cafebabe.http.impl.util.ResponseCodec._
+import io.netty.buffer.ByteBuf
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
-import io.netty.handler.codec.http.websocketx.WebSocketFrame
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
+import io.netty.handler.codec.http.websocketx._
+import org.slf4j.LoggerFactory
 
 import java.util.concurrent.TimeUnit._
 
@@ -15,34 +18,66 @@ import java.util.concurrent.TimeUnit._
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-class HttpChannelHandler(system: ActorSystem, restRoutes: List[HttpRoute], wsRoutes: List[HttpRoute])
+class HttpChannelHandler(system: ActorSystem, restRouters: List[RestRouter], wsRouters: List[WsRouter])
   extends SimpleChannelInboundHandler[Any] {
 
   import system.dispatcher
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   private val config = system.settings.config
 
   private implicit val timeout = Timeout(config.getDuration("http.router.resolveTimeout", SECONDS), SECONDS)
 
+  private var handshaker: Option[WebSocketServerHandshaker] = None
+
+  private var wsRouter: Option[WsRouter] = None
+
   override def channelRead0(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case req: FullHttpRequest =>
-      if (req.getDecoderResult.isSuccess) processHttp(ctx, new DefaultHttpRequest(req))
+      if (req.getDecoderResult.isSuccess) processHttp(ctx, req)
       else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
-    case frame: WebSocketFrame => ???
-    case _ => ()
+    case frame: WebSocketFrame => processFrame(ctx, frame)
+    case obj => log.warn("Something unpredicted was received: {}.", obj)
   }
 
-  private def processHttp(ctx: ChannelHandlerContext, req: HttpRequest): Unit = req match {
-    case RestRoute(path) =>
-      system.actorSelection(path).resolveOne
-        .flatMap(_ ? req)
-        .map(toHttpResponse)
-        .recover(toErrorResponse)
-        .foreach(ctx.write(_).addListener(ChannelFutureListener.CLOSE))
-    case WsRoute(path) =>
-      val location = s"ws://${req.headers(HttpHeaders.Names.HOST)}${req.path}"
-      ???
-    case _ => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+  private def processHttp(ctx: ChannelHandlerContext, request: FullHttpRequest): Unit = {
+    val req = new DefaultHttpRequest(request)
+    req match {
+      case RestRoute(router) =>
+        system.actorSelection(router.actorPath).resolveOne
+          .flatMap(_ ? req) // TODO: separate timeouts
+          .map(toHttpResponse)
+          .recover(toErrorResponse)
+          .foreach(ctx.write(_).addListener(ChannelFutureListener.CLOSE))
+      case WsRoute(router) =>
+        val location = s"ws://${req.headers(HttpHeaders.Names.HOST)}${req.path}" // TODO: SSL
+        val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true, router.maxFramePayloadLength)
+        handshaker = Option(handshakerFactory.newHandshaker(request))
+        handshaker foreach { hs =>
+          hs.handshake(ctx.channel, request)
+          wsRouter = Some(router)
+        }
+        if (handshaker.isEmpty) sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
+      case _ => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+    }
+  }
+
+  private def processFrame(ctx: ChannelHandlerContext, frame: WebSocketFrame): Unit = frame match {
+    case f: CloseWebSocketFrame => handshaker.foreach(_.close(ctx.channel, f.retain()))
+    case f: PingWebSocketFrame => ctx.channel.writeAndFlush(new PongWebSocketFrame(f.content.retain()))
+    case f: BinaryWebSocketFrame => wsRouter foreach { router =>
+      system.actorSelection(router.actorPath) ! new BinaryWsMessage(readBytes(f.content))
+    }
+    case f: TextWebSocketFrame => wsRouter foreach { router =>
+      system.actorSelection(router.actorPath) ! new TextWsMessage(f.text)
+    }
+  }
+
+  private def readBytes(buf: ByteBuf): Array[Byte] = {
+    val bytes = new Array[Byte](buf.readableBytes)
+    buf.readBytes(bytes)
+    bytes
   }
 
   private def sendHttpResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
@@ -51,13 +86,16 @@ class HttpChannelHandler(system: ActorSystem, restRoutes: List[HttpRoute], wsRou
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
 
+  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
+    log.error("Something unthinkable happened while processing http request.", cause)
+    ctx.close()
+  }
+
   object RestRoute {
-    def unapply(req: HttpRequest): Option[ActorPath] = {
-      restRoutes.find(route => req.path.startsWith(route.uriPath)).map(_.actorPath)
-    }
+    def unapply(req: HttpRequest): Option[RestRouter] = restRouters.find(route => req.path.startsWith(route.uriPath))
   }
 
   object WsRoute {
-    def unapply(req: HttpRequest): Option[ActorPath] = wsRoutes.find(_.uriPath == req.path).map(_.actorPath)
+    def unapply(req: HttpRequest): Option[WsRouter] = wsRouters.find(_.uriPath == req.path)
   }
 }

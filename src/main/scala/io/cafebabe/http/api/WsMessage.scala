@@ -8,5 +8,5 @@ trait WsMessage
 
 case class ConnectWsMessage(host: String) extends WsMessage
 case object DisconnectWsMessage extends WsMessage
-case class TextWsMessage(msg: String) extends WsMessage
+case class TextWsMessage(text: String) extends WsMessage
 case class BinaryWsMessage(bytes: Array[Byte]) extends WsMessage

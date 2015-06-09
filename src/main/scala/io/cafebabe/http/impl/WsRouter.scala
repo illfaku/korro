@@ -6,4 +6,4 @@ import akka.actor.ActorPath
  * @author Vladimir Konstantinov
  * @version 1.0 (6/8/2015)
  */
-case class HttpRoute(uriPath: String, actorPath: ActorPath)
+case class WsRouter(uriPath: String, actorPath: ActorPath, maxFramePayloadLength: Int)

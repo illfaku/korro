@@ -1,7 +1,6 @@
 package io.cafebabe.http.api
 
 import io.cafebabe.http.impl.util.StringUtils._
-import io.netty.util.CharsetUtil
 
 import scala.reflect._
 
