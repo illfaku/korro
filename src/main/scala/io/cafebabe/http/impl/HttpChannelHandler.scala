@@ -72,6 +72,7 @@ class HttpChannelHandler(system: ActorSystem, restRouters: List[RestRouter], wsR
     case f: TextWebSocketFrame => wsRouter foreach { router =>
       system.actorSelection(router.actorPath) ! new TextWsMessage(f.text)
     }
+    case obj => log.warn("Some unpredicted frame was received: {}.", obj)
   }
 
   private def readBytes(buf: ByteBuf): Array[Byte] = {
