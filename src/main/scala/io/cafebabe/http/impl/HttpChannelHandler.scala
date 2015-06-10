@@ -3,7 +3,7 @@ package io.cafebabe.http.impl
 import akka.actor.{ActorPath, ActorSystem}
 import akka.pattern.ask
 import akka.util.Timeout
-import io.cafebabe.http.api.{BinaryWsMessage, HttpRequest, TextWsMessage}
+import io.cafebabe.http.api.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.impl.util.ResponseCodec._
 import io.cafebabe.util.config.WrappedConfig
 import io.netty.buffer.ByteBuf
@@ -19,8 +19,7 @@ import scala.concurrent.duration._
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes)
-  extends SimpleChannelInboundHandler[Any] {
+class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends SimpleChannelInboundHandler[AnyRef] {
 
   import system.dispatcher
 
@@ -36,7 +35,7 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes)
 
   private var wsActorPath: Option[ActorPath] = None
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
+  override def channelRead0(ctx: ChannelHandlerContext, msg: AnyRef): Unit = msg match {
     case req: FullHttpRequest =>
       if (req.getDecoderResult.isSuccess) processHttp(ctx, req)
       else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
