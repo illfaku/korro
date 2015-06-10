@@ -4,11 +4,11 @@ lazy val root = (project in file(".")).
   settings(
     organization := "io.cafebabe",
     name := "http",
-    version := "0.0.1",
+    version := "0.0.1-SNAPSHOT",
 
     scalaVersion := "2.11.6",
     libraryDependencies ++= Seq(
-      "io.cafebabe" %% "util" % "0.0.1" % "provided",
+      "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT" % "provided",
 
       "com.typesafe.akka" %% "akka-actor" % "2.3.9" % "provided",
       "com.typesafe.akka" %% "akka-slf4j" % "2.3.9" % "provided",

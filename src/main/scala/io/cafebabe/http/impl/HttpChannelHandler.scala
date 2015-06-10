@@ -5,6 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import io.cafebabe.http.api.{BinaryWsMessage, HttpRequest, TextWsMessage}
 import io.cafebabe.http.impl.util.ResponseCodec._
+import io.cafebabe.util.config.WrappedConfig
 import io.netty.buffer.ByteBuf
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
@@ -12,7 +13,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.s
 import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.TimeUnit._
+import scala.concurrent.duration._
 
 /**
  * @author Vladimir Konstantinov
@@ -25,9 +26,9 @@ class HttpChannelHandler(system: ActorSystem, restRouters: List[RestRouter], wsR
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  private val config = system.settings.config
+  private val config = new WrappedConfig(system.settings.config)
 
-  private implicit val timeout = Timeout(config.getDuration("http.router.resolveTimeout", SECONDS), SECONDS)
+  private implicit val timeout = Timeout(config.findFiniteDuration("http.router.resolveTimeout").getOrElse(10 seconds))
 
   private var handshaker: Option[WebSocketServerHandshaker] = None
 
