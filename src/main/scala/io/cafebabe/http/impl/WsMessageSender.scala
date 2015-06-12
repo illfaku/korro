@@ -16,24 +16,19 @@
  */
 package io.cafebabe.http.impl
 
-import akka.actor.ActorPath
+import akka.actor.Actor
+import io.cafebabe.http.api.{BinaryWsMessage, TextWsMessage}
+import io.cafebabe.http.impl.util.ByteBufUtils.toByteBuf
+import io.netty.channel.Channel
+import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame}
 
 /**
  * @author Vladimir Konstantinov
- * @version 1.0 (6/10/2015)
+ * @version 1.0 (6/12/2015)
  */
-sealed trait HttpRoute
-
-case class RestRoute(uriPath: String, actorPath: ActorPath) extends HttpRoute
-
-case class WsRoute(uriPath: String, actorPath: ActorPath, maxFramePayloadLength: Int) extends HttpRoute
-
-case object NoRoute extends HttpRoute
-
-class HttpRoutes(restRoutes: List[RestRoute], wsRoutes: List[WsRoute]) {
-  def apply(path: String): HttpRoute = {
-    restRoutes.find(route => path.startsWith(route.uriPath))
-      .orElse(wsRoutes.find(_.uriPath == path))
-      .getOrElse(NoRoute)
+class WsMessageSender(channel: Channel) extends Actor {
+  override def receive = {
+    case TextWsMessage(text) => channel.writeAndFlush(new TextWebSocketFrame(text))
+    case BinaryWsMessage(bytes) => channel.writeAndFlush(new BinaryWebSocketFrame(toByteBuf(bytes)))
   }
 }

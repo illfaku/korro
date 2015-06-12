@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl
+package io.cafebabe.http.impl.util
 
-import akka.actor.Actor
-import io.cafebabe.http.api.{BinaryWsMessage, TextWsMessage}
-import io.netty.buffer.Unpooled
-import io.netty.channel.Channel
-import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame}
+import io.netty.buffer.{Unpooled, ByteBuf}
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (6/12/2015)
  */
-class WsActor(channel: Channel) extends Actor {
-  override def receive = {
-    case TextWsMessage(text) => channel.writeAndFlush(new TextWebSocketFrame(text))
-    case BinaryWsMessage(bytes) => channel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(bytes)))
+object ByteBufUtils {
+
+  def toBytes(buf: ByteBuf): Array[Byte] = {
+    val bytes = new Array[Byte](buf.readableBytes)
+    buf.readBytes(bytes)
+    bytes
   }
+
+  def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
 }
