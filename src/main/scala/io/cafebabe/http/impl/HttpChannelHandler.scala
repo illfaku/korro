@@ -20,7 +20,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import io.cafebabe.http.api.ConnectWsMessage
 import io.cafebabe.http.impl.util.ResponseCodec._
-import io.cafebabe.util.config.WrappedConfig
+import io.cafebabe.util.config.wrapped
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
@@ -42,11 +42,11 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  private val config = new WrappedConfig(system.settings.config)
+  private val config = wrapped(system.settings.config.getConfig("cafebabe.http.server"))
 
-  private val resolveTimeout = config.findFiniteDuration("http.timeout.resolve").getOrElse(10 seconds)
+  private val resolveTimeout = config.findFiniteDuration("timeout.resolve").getOrElse(10 seconds)
 
-  private val askTimeout = config.findFiniteDuration("http.timeout.ask").getOrElse(60 seconds)
+  private val askTimeout = config.findFiniteDuration("timeout.ask").getOrElse(60 seconds)
 
   override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
       if (req.getDecoderResult.isSuccess) {
