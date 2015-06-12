@@ -48,19 +48,14 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private val askTimeout = config.findFiniteDuration("http.timeout.ask").getOrElse(60 seconds)
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = msg match {
-    case req: FullHttpRequest =>
-      if (req.getDecoderResult.isSuccess) processHttp(ctx, req)
-      else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
-    case obj => log.warn("Something unpredicted was received: {}.", obj)
-  }
-
-  private def processHttp(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
-    routes(new URI(req.getUri).getPath) match {
-      case route: RestRoute => request(ctx, req, route)
-      case route: WsRoute => handshake(ctx, req, route)
-      case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
-    }
+  override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
+      if (req.getDecoderResult.isSuccess) {
+        routes(new URI(req.getUri).getPath) match {
+          case route: RestRoute => request(ctx, req, route)
+          case route: WsRoute => handshake(ctx, req, route)
+          case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+        }
+      } else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
   }
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
