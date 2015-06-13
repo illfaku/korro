@@ -18,13 +18,13 @@ package io.cafebabe.http.impl
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import io.cafebabe.http.api.ConnectWsMessage
-import io.cafebabe.http.impl.util.ResponseCodec._
+import io.cafebabe.http.api.{ConnectWsMessage, HttpResponse}
+import io.cafebabe.http.impl.util.ResponseUtils._
 import io.cafebabe.util.config.wrapped
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
-import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
 import io.netty.handler.codec.http.websocketx._
+import io.netty.handler.codec.http.{HttpResponse => _, _}
 import org.slf4j.LoggerFactory
 
 import java.net.{InetSocketAddress, URI}
@@ -61,7 +61,8 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
     system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
       .flatMap(_.ask(new NettyHttpRequest(req))(askTimeout))
-      .map(toHttpResponse)
+      .mapTo[HttpResponse]
+      .map(toNettyResponse)
       .recover(toErrorResponse)
       .foreach(sendHttpResponse(ctx, _))
   }
