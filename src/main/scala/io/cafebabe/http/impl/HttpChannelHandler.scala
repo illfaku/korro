@@ -89,10 +89,10 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
   }
 
   private def sendHttpResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
-    sendHttpResponse(ctx, new DefaultHttpResponse(HttpVersion.HTTP_1_1, status))
+    sendHttpResponse(ctx, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status))
   }
 
-  private def sendHttpResponse(ctx: ChannelHandlerContext, res: HttpResponse): Unit = {
+  private def sendHttpResponse(ctx: ChannelHandlerContext, res: FullHttpResponse): Unit = {
     ctx.write(res).addListener(ChannelFutureListener.CLOSE)
   }
 
