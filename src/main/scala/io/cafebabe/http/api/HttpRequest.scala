@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015  Vladimir Konstantinov, Yuriy Gintsyak
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package io.cafebabe.http.api
 
 import io.cafebabe.http.impl.util.StringUtils._
@@ -14,15 +30,11 @@ trait HttpRequest {
   def path: String
 
   def parameters: Map[String, String]
-  def primitiveParameter[T: ClassTag](name: String): Option[T] = parameters.get(name) flatMap { value =>
-    try Some(toPrimitive(value)) catch { case IsNotPrimitiveException(_) => None }
-  }
+  def parameter[T: ClassTag](name: String): Option[T] = parameters.get(name).map(fromString)
 
   def headers: Map[String, String]
-  def primitiveHeader[T: ClassTag](name: String): Option[T] = headers.get(name) flatMap { value =>
-    try Some(toPrimitive(value)) catch { case IsNotPrimitiveException(_) => None }
-  }
+  def header[T: ClassTag](name: String): Option[T] = headers.get(name).map(fromString)
 
   def content: String
-  def primitiveContent[T: ClassTag] = toPrimitive(content)
+  def contentAs[T: ClassTag] = fromString(content)
 }
