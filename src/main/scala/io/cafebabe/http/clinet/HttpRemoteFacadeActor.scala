@@ -7,5 +7,6 @@ import akka.actor.Actor
  */
 class HttpRemoteFacadeActor extends Actor {
 
+  // TODO: :D
   override def receive: Receive = ???
 }

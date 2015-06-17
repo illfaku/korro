@@ -2,7 +2,7 @@ package io.cafebabe.http.clinet
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.{ChannelFuture, ChannelFutureListener}
-import io.netty.handler.codec.http.FullHttpRequest
+import io.netty.handler.codec.http.{FullHttpResponse, FullHttpRequest}
 
 import scala.concurrent.{Promise, Future}
 
@@ -16,27 +16,27 @@ private [clinet] class NettyHttpClient(bootstrap:Bootstrap, host:String, port:In
    * @param httpQuery query
    * @return Future
    */
-  def fireAsync(httpQuery:FullHttpRequest):Future[Any] = {
+  def fireAsync(httpQuery:FullHttpRequest):Future[FullHttpResponse] = {
 
-    val promise = Promise[Any]()
+    val promise = Promise[FullHttpResponse]()
+    println("Firing event stuff")
 
-    def writeOpListener = new ChannelFutureListener {
+    lazy val writeOpListener = new ChannelFutureListener {
 
-      override def operationComplete(future: ChannelFuture): Unit =
+      override def operationComplete(future: ChannelFuture): Unit = {
         if (!future.isSuccess) promise.failure(future.cause())
+      }
     }
 
-    def connOpListener = new ChannelFutureListener {
+    lazy val connOpListener = new ChannelFutureListener {
 
       override def operationComplete(future: ChannelFuture): Unit = {
 
         if (future.isSuccess) {
-
           val channel = future.channel()
           channel.pipeline().addLast("client-handler", new NettyHttpClientChannelHandler(promise))
-          channel.write(httpQuery).addListener(writeOpListener)
+          channel.writeAndFlush(httpQuery).addListener(writeOpListener)
         } else {
-
           promise.failure(future.cause())
         }
       }
