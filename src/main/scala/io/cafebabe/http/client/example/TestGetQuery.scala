@@ -1,9 +1,9 @@
-package io.cafebabe.http.clinet.example
+package io.cafebabe.http.client.example
 
 import java.nio.charset.Charset
 import java.util.concurrent.Executors
 
-import io.cafebabe.http.clinet.{NettyHttpClientChannelInitializer, NettyHttpClientChannelHandler, NettyHttpClient}
+import io.cafebabe.http.client.{NettyHttpClientChannelInitializer, NettyHttpClientChannelHandler, NettyHttpClient}
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel

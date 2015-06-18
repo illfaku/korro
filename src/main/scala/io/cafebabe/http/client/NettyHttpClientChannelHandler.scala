@@ -1,4 +1,4 @@
-package io.cafebabe.http.clinet
+package io.cafebabe.http.client
 
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.{FullHttpResponse, HttpObject}

@@ -1,4 +1,4 @@
-package io.cafebabe.http.clinet
+package io.cafebabe.http.client
 
 import akka.actor.ActorRef
 

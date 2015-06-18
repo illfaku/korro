@@ -1,4 +1,4 @@
-package io.cafebabe.http.clinet
+package io.cafebabe.http.client
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.{ChannelFuture, ChannelFutureListener}
@@ -9,7 +9,7 @@ import scala.concurrent.{Promise, Future}
 /**
  * Created by ygintsyak on 17.06.15.
  */
-private [clinet] class NettyHttpClient(bootstrap:Bootstrap, host:String, port:Int) {
+private [client] class NettyHttpClient(bootstrap:Bootstrap, host:String, port:Int) {
 
   /**
    * Performs HTTP query against remote host in asynchronous way
