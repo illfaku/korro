@@ -1,17 +1,16 @@
 package io.cafebabe.http.client.example
 
-import java.nio.charset.Charset
 import java.util.concurrent.Executors
 
-import io.cafebabe.http.client.{NettyHttpClientChannelInitializer, NettyHttpClientChannelHandler, NettyHttpClient}
+import io.cafebabe.http.client.{NettyHttpClient, NettyHttpClientChannelInitializer}
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
-import io.netty.handler.codec.http.{HttpHeaders, HttpMethod, HttpVersion, DefaultFullHttpRequest}
+import io.netty.handler.codec.http.HttpHeaders
 import io.netty.util.CharsetUtil
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Try, Success}
+import scala.util.Success
 
 /**
  * Created by ygintsyak on 17.06.15.
@@ -30,8 +29,9 @@ object TestGetQuery {
 
     val c = new NettyHttpClient(bootstrap, "example.org", 80)
 
+
     println("Firing new request")
-    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
+    val request = new TestEntity("value1", "value2").nettyHttpRequest()
     request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE)
     request.headers().set(HttpHeaders.Names.HOST, "example.org")
 
