@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl
+package io.cafebabe.http.server.impl
 
 import akka.actor.{ActorRef, PoisonPill}
-import io.cafebabe.http.api.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
-import io.cafebabe.http.impl.util.ByteBufUtils._
+import io.cafebabe.http.server.api.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
+import io.cafebabe.http.server.impl.util.ByteBufUtils._
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory

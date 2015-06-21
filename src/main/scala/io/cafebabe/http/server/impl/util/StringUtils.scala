@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl.util
+package io.cafebabe.http.server.impl.util
 
 import org.json4s._
 import org.json4s.native.JsonMethods._

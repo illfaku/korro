@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl
+package io.cafebabe.http.server.impl
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import io.cafebabe.http.api.{ConnectWsMessage, HttpResponse}
-import io.cafebabe.http.impl.util.ResponseUtils._
+import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
+import io.cafebabe.http.server.impl.util.ResponseUtils._
 import io.cafebabe.util.config.wrapped
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse

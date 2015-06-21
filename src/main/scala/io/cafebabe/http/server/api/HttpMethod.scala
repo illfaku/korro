@@ -1,4 +1,4 @@
-package io.cafebabe.http.api
+package io.cafebabe.http.server.api
 
 /**
  * @author Vladimir Konstantinov

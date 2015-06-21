@@ -14,27 +14,29 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.api
+package io.cafebabe.http.server.impl
 
-import io.cafebabe.http.impl.util.StringUtils._
+import io.cafebabe.http.server.api.HttpRequest
+import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
+import io.netty.util.CharsetUtil
 
-import scala.reflect._
+import scala.collection.JavaConversions._
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-trait HttpRequest {
+class NettyHttpRequest(request: FullHttpRequest) extends HttpRequest {
 
-  def method: String
-  def path: String
+  private val uri = new QueryStringDecoder(request.getUri)
 
-  def parameters: Map[String, String]
-  def parameter[T: ClassTag](name: String): Option[T] = parameters.get(name).map(fromString)
+  override val method = request.getMethod.name
 
-  def headers: Map[String, String]
-  def header[T: ClassTag](name: String): Option[T] = headers.get(name).map(fromString)
+  override val path = uri.path
 
-  def content: String
-  def contentAs[T: ClassTag] = fromString(content)
+  override lazy val parameters = uri.parameters.toMap map { case (key, value) => key -> value(0) }
+
+  override lazy val headers = request.headers.entries.map(entry => entry.getKey -> entry.getValue).toMap
+
+  override lazy val content: String = request.content.toString(CharsetUtil.UTF_8)
 }

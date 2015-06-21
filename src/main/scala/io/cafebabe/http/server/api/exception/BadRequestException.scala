@@ -1,4 +1,4 @@
-package io.cafebabe.http.api.exception
+package io.cafebabe.http.server.api.exception
 
 /**
  * @author Vladimir Konstantinov

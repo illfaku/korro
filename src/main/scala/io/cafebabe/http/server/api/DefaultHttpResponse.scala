@@ -14,21 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl.util
-
-import io.netty.buffer.{Unpooled, ByteBuf}
+package io.cafebabe.http.server.api
 
 /**
  * @author Vladimir Konstantinov
- * @version 1.0 (6/12/2015)
+ * @version 1.0 (6/13/2015)
  */
-object ByteBufUtils {
-
-  def toBytes(buf: ByteBuf): Array[Byte] = {
-    val bytes = new Array[Byte](buf.readableBytes)
-    buf.readBytes(bytes)
-    bytes
-  }
-
-  def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+class DefaultHttpResponse(
+  override val status: Int,
+  override val content: String,
+  override val headers: Map[String, String]
+) extends HttpResponse {
+  def this(status: Int) = this(status, "", Map.empty)
+  def this(status: Int, content: String) = this(status, content, Map.empty)
+  def this(status: Int, headers: Map[String, String]) = this(status, "", headers)
 }

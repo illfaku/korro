@@ -14,26 +14,27 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl
+package io.cafebabe.http.server.api
 
-import akka.actor.ActorPath
+import io.cafebabe.http.server.impl.util.StringUtils._
+
+import scala.reflect._
 
 /**
  * @author Vladimir Konstantinov
- * @version 1.0 (6/10/2015)
+ * @version 1.0 (4/14/2015)
  */
-sealed trait HttpRoute
+trait HttpRequest {
 
-case class RestRoute(uriPath: String, actorPath: ActorPath) extends HttpRoute
+  def method: String
+  def path: String
 
-case class WsRoute(uriPath: String, actorPath: ActorPath, maxFramePayloadLength: Int) extends HttpRoute
+  def parameters: Map[String, String]
+  def parameter[T: ClassTag](name: String): Option[T] = parameters.get(name).map(fromString)
 
-case object NoRoute extends HttpRoute
+  def headers: Map[String, String]
+  def header[T: ClassTag](name: String): Option[T] = headers.get(name).map(fromString)
 
-class HttpRoutes(restRoutes: List[RestRoute], wsRoutes: List[WsRoute]) {
-  def apply(path: String): HttpRoute = {
-    restRoutes.find(route => path.startsWith(route.uriPath))
-      .orElse(wsRoutes.find(_.uriPath == path))
-      .getOrElse(NoRoute)
-  }
+  def content: String
+  def contentAs[T: ClassTag] = fromString(content)
 }

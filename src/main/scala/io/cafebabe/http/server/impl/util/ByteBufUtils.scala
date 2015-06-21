@@ -14,29 +14,21 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.impl
+package io.cafebabe.http.server.impl.util
 
-import io.cafebabe.http.api.HttpRequest
-import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
-import io.netty.util.CharsetUtil
-
-import scala.collection.JavaConversions._
+import io.netty.buffer.{Unpooled, ByteBuf}
 
 /**
  * @author Vladimir Konstantinov
- * @version 1.0 (4/14/2015)
+ * @version 1.0 (6/12/2015)
  */
-class NettyHttpRequest(request: FullHttpRequest) extends HttpRequest {
+object ByteBufUtils {
 
-  private val uri = new QueryStringDecoder(request.getUri)
+  def toBytes(buf: ByteBuf): Array[Byte] = {
+    val bytes = new Array[Byte](buf.readableBytes)
+    buf.readBytes(bytes)
+    bytes
+  }
 
-  override val method = request.getMethod.name
-
-  override val path = uri.path
-
-  override lazy val parameters = uri.parameters.toMap map { case (key, value) => key -> value(0) }
-
-  override lazy val headers = request.headers.entries.map(entry => entry.getKey -> entry.getValue).toMap
-
-  override lazy val content: String = request.content.toString(CharsetUtil.UTF_8)
+  def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
 }
