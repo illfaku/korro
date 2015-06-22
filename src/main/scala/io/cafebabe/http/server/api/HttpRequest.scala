@@ -17,7 +17,6 @@
 package io.cafebabe.http.server.api
 
 import io.cafebabe.http.server.impl.util.StringUtils._
-import io.netty.buffer.ByteBuf
 
 import java.nio.charset.Charset
 
