@@ -20,10 +20,9 @@ import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, Query
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toBytes
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
-import java.util.{Iterator => JIterator, List => JList, Map => JMap}
+import java.util.{List => JList, Map => JMap}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable
 
 /**
  * @author Vladimir Konstantinov
@@ -37,23 +36,12 @@ object NettyHttpRequest {
       request.getMethod.name,
       uri.path,
       parameters(uri.parameters),
-      headers(request.headers.iterator),
+      HttpHeaders(request.headers.iterator),
       new HttpContent(toBytes(request.content))
     )
   }
 
   private def parameters(params: JMap[String, JList[String]]): QueryParameters = {
     new QueryParameters(params.toMap.mapValues(_.toList))
-  }
-
-  private def headers(it: JIterator[JMap.Entry[String, String]]): HttpHeaders = {
-    val result = mutable.Map.empty[String, List[String]]
-    while (it.hasNext) {
-      val entry = it.next
-      val key = entry.getKey
-      val list = result.getOrElse(key, List.empty)
-      result += key -> (entry.getValue :: list)
-    }
-    new HttpHeaders(Map.empty ++ result)
   }
 }

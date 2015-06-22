@@ -47,15 +47,6 @@ class QueryParameters(parameters: Map[String, List[String]]) {
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */
-class HttpHeaders(headers: Map[String, List[String]]) {
-  def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(fromString)
-  def all[T: ClassTag](name: String): List[T] = headers.get(name).map(_.map(fromString)).getOrElse(Nil)
-}
-
-/**
- * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
- */
 class HttpContent(bytes: Array[Byte]) {
   override lazy val toString: String = toString(Charset.forName("UTF-8"))
   def toString(charset: Charset) = new String(bytes, charset)
