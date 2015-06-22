@@ -17,24 +17,47 @@
 package io.cafebabe.http.server.api
 
 import io.cafebabe.http.server.impl.util.StringUtils._
+import io.netty.buffer.ByteBuf
 
-import scala.reflect._
+import java.nio.charset.Charset
+
+import scala.reflect.ClassTag
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-trait HttpRequest {
+case class HttpRequest(
+  method: String,
+  path: String,
+  parameters: QueryParameters,
+  headers: HttpHeaders,
+  content: HttpContent
+)
 
-  def method: String
-  def path: String
+/**
+ * @author Vladimir Konstantinov
+ * @version 1.0 (6/22/2015)
+ */
+class QueryParameters(parameters: Map[String, List[String]]) {
+  def one[T: ClassTag](name: String): Option[T] = parameters.get(name).map(_.head).map(fromString)
+  def all[T: ClassTag](name: String): List[T] = parameters.get(name).map(_.map(fromString)).getOrElse(Nil)
+}
 
-  def parameters: Map[String, String]
-  def parameter[T: ClassTag](name: String): Option[T] = parameters.get(name).map(fromString)
+/**
+ * @author Vladimir Konstantinov
+ * @version 1.0 (6/22/2015)
+ */
+class HttpHeaders(headers: Map[String, List[String]]) {
+  def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(fromString)
+  def all[T: ClassTag](name: String): List[T] = headers.get(name).map(_.map(fromString)).getOrElse(Nil)
+}
 
-  def headers: Map[String, String]
-  def header[T: ClassTag](name: String): Option[T] = headers.get(name).map(fromString)
-
-  def content: String
-  def contentAs[T: ClassTag] = fromString(content)
+/**
+ * @author Vladimir Konstantinov
+ * @version 1.0 (6/22/2015)
+ */
+class HttpContent(buf: ByteBuf) {
+  override lazy val toString: String = toString(Charset.forName("UTF-8"))
+  def toString(charset: Charset) = buf.toString(charset)
 }

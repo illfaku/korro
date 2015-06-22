@@ -16,27 +16,43 @@
  */
 package io.cafebabe.http.server.impl
 
-import io.cafebabe.http.server.api.HttpRequest
+import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, QueryParameters}
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
-import io.netty.util.CharsetUtil
+
+import java.util.{Iterator => JIterator, List => JList, Map => JMap}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-class NettyHttpRequest(request: FullHttpRequest) extends HttpRequest {
+object NettyHttpRequest {
 
-  private val uri = new QueryStringDecoder(request.getUri)
+  def apply(request: FullHttpRequest): HttpRequest = {
+    val uri = new QueryStringDecoder(request.getUri)
+    HttpRequest(
+      request.getMethod.name,
+      uri.path,
+      parameters(uri.parameters),
+      headers(request.headers.iterator),
+      new HttpContent(request.content)
+    )
+  }
 
-  override val method = request.getMethod.name
+  private def parameters(params: JMap[String, JList[String]]): QueryParameters = {
+    new QueryParameters(params.toMap.mapValues(_.toList))
+  }
 
-  override val path = uri.path
-
-  override lazy val parameters = uri.parameters.toMap map { case (key, value) => key -> value(0) }
-
-  override lazy val headers = request.headers.entries.map(entry => entry.getKey -> entry.getValue).toMap
-
-  override lazy val content: String = request.content.toString(CharsetUtil.UTF_8)
+  private def headers(it: JIterator[JMap.Entry[String, String]]): HttpHeaders = {
+    val result = mutable.Map.empty[String, List[String]]
+    while (it.hasNext) {
+      val entry = it.next
+      val key = entry.getKey
+      val list = result.getOrElse(key, List.empty)
+      result += key -> (entry.getValue :: list)
+    }
+    new HttpHeaders(Map.empty ++ result)
+  }
 }

@@ -60,7 +60,7 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
     system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
-      .flatMap(_.ask(new NettyHttpRequest(req))(askTimeout))
+      .flatMap(_.ask(NettyHttpRequest(req))(askTimeout))
       .mapTo[HttpResponse]
       .map(toNettyResponse)
       .recover(toErrorResponse)
