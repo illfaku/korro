@@ -16,25 +16,28 @@
  */
 package io.cafebabe.http.server.api
 
-import java.nio.charset.Charset
+import io.cafebabe.http.server.impl.util.StringUtils._
 
-/**
- * @author Vladimir Konstantinov
- * @version 1.0 (4/14/2015)
- */
-case class HttpRequest(
-  method: String,
-  path: String,
-  parameters: QueryParams,
-  headers: HttpHeaders,
-  content: HttpContent
-)
+import java.util
+
+import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */
-class HttpContent(bytes: Array[Byte]) {
-  override lazy val toString: String = toString(Charset.forName("UTF-8"))
-  def toString(charset: Charset) = new String(bytes, charset)
+object QueryParams {
+  def apply(params: util.Map[String, util.List[String]]): QueryParams = {
+    new QueryParams(params.toMap.mapValues(_.toList))
+  }
+}
+
+/**
+ * @author Vladimir Konstantinov
+ * @version 1.0 (6/22/2015)
+ */
+class QueryParams(parameters: Map[String, List[String]]) {
+  def one[T: ClassTag](name: String): Option[T] = parameters.get(name).map(_.head).map(fromString)
+  def all[T: ClassTag](name: String): List[T] = parameters.get(name).map(_.map(fromString)).getOrElse(Nil)
 }

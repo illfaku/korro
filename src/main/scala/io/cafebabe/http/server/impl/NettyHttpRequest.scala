@@ -16,32 +16,23 @@
  */
 package io.cafebabe.http.server.impl
 
-import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, QueryParameters}
+import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, QueryParams}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toBytes
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
-
-import java.util.{List => JList, Map => JMap}
-
-import scala.collection.JavaConversions._
 
 /**
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
 object NettyHttpRequest {
-
   def apply(request: FullHttpRequest): HttpRequest = {
     val uri = new QueryStringDecoder(request.getUri)
     HttpRequest(
       request.getMethod.name,
       uri.path,
-      parameters(uri.parameters),
+      QueryParams(uri.parameters),
       HttpHeaders(request.headers.iterator),
       new HttpContent(toBytes(request.content))
     )
-  }
-
-  private def parameters(params: JMap[String, JList[String]]): QueryParameters = {
-    new QueryParameters(params.toMap.mapValues(_.toList))
   }
 }
