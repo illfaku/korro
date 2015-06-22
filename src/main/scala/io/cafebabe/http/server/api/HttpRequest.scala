@@ -57,7 +57,7 @@ class HttpHeaders(headers: Map[String, List[String]]) {
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */
-class HttpContent(buf: ByteBuf) {
+class HttpContent(bytes: Array[Byte]) {
   override lazy val toString: String = toString(Charset.forName("UTF-8"))
-  def toString(charset: Charset) = buf.toString(charset)
+  def toString(charset: Charset) = new String(bytes, charset)
 }

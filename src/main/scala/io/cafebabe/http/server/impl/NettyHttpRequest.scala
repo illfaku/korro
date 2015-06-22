@@ -17,6 +17,8 @@
 package io.cafebabe.http.server.impl
 
 import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, QueryParameters}
+import io.cafebabe.http.server.impl.util.ByteBufUtils
+import io.cafebabe.http.server.impl.util.ByteBufUtils.toBytes
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
 import java.util.{Iterator => JIterator, List => JList, Map => JMap}
@@ -37,7 +39,7 @@ object NettyHttpRequest {
       uri.path,
       parameters(uri.parameters),
       headers(request.headers.iterator),
-      new HttpContent(request.content)
+      new HttpContent(toBytes(request.content))
     )
   }
 
