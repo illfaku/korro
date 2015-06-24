@@ -26,11 +26,11 @@ import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
  * @version 1.0 (4/14/2015)
  */
 object NettyHttpRequest {
-  def apply(request: FullHttpRequest): HttpRequest = {
+  def apply(request: FullHttpRequest, path: String): HttpRequest = {
     val uri = new QueryStringDecoder(request.getUri)
     HttpRequest(
       request.getMethod.name,
-      uri.path,
+      uri.path.substring(path.length),
       QueryParams(uri.parameters),
       HttpHeaders(request.headers.iterator),
       HttpContent(request)

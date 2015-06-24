@@ -33,6 +33,8 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
@@ -60,7 +62,7 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
     system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
-      .flatMap(_.ask(NettyHttpRequest(req))(askTimeout))
+      .flatMap(_.ask(NettyHttpRequest(req, route.uriPath))(askTimeout))
       .mapTo[HttpResponse]
       .map(toNettyResponse)
       .recover(toErrorResponse)
