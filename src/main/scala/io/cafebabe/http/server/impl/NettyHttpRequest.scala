@@ -17,10 +17,11 @@
 package io.cafebabe.http.server.impl
 
 import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, QueryParams}
-import io.cafebabe.http.server.impl.util.ByteBufUtils.toBytes
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
@@ -32,7 +33,7 @@ object NettyHttpRequest {
       uri.path,
       QueryParams(uri.parameters),
       HttpHeaders(request.headers.iterator),
-      new HttpContent(toBytes(request.content))
+      HttpContent(request)
     )
   }
 }

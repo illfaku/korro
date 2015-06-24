@@ -16,9 +16,9 @@
  */
 package io.cafebabe.http.server.api
 
-import java.nio.charset.Charset
-
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
@@ -29,12 +29,3 @@ case class HttpRequest(
   headers: HttpHeaders,
   content: HttpContent
 )
-
-/**
- * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
- */
-class HttpContent(bytes: Array[Byte]) {
-  override lazy val toString: String = toString(Charset.forName("UTF-8"))
-  def toString(charset: Charset) = new String(bytes, charset)
-}
