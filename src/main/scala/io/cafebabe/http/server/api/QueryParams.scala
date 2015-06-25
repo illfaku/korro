@@ -18,26 +18,16 @@ package io.cafebabe.http.server.api
 
 import io.cafebabe.http.server.impl.util.StringUtils._
 
-import java.util
-
-import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 
 /**
- * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
- */
-object QueryParams {
-  def apply(params: util.Map[String, util.List[String]]): QueryParams = {
-    new QueryParams(params.toMap.mapValues(_.toList))
-  }
-}
-
-/**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */
 class QueryParams(parameters: Map[String, List[String]]) {
   def one[T: ClassTag](name: String): Option[T] = parameters.get(name).map(_.head).map(fromString)
   def all[T: ClassTag](name: String): List[T] = parameters.get(name).map(_.map(fromString)).getOrElse(Nil)
+  def map: Map[String, List[String]] = parameters
 }
