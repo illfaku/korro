@@ -78,9 +78,10 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
       system.actorSelection(route.actorPath).resolveOne(resolveTimeout) onComplete {
         case Success(receiver) =>
           val sender = system.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
-          ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(receiver, sender))
+          val host = extractHost(ctx.channel, req)
+          ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(host, receiver, sender))
           handshaker.handshake(ctx.channel, req).sync()
-          receiver.tell(new ConnectWsMessage(extractHost(ctx.channel, req)), sender)
+          receiver.tell(new ConnectWsMessage(host), sender)
         case Failure(error) => sendHttpResponse(ctx, toErrorResponse(error))
       }
     } else sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
@@ -88,8 +89,11 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private def extractHost(ch: Channel, req: FullHttpRequest): String = {
     val host = req.headers().get("X-Real-IP")
-    if (host != null && host.nonEmpty) host
-    else ch.remoteAddress.asInstanceOf[InetSocketAddress].getHostString
+    if (host != null && host.trim.nonEmpty) host
+    else ch.remoteAddress match {
+      case address: InetSocketAddress => address.getHostString
+      case _ => "UNKNOWN"
+    }
   }
 
   private def sendHttpResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {

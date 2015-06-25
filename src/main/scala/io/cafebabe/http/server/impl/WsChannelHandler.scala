@@ -19,30 +19,41 @@ package io.cafebabe.http.server.impl
 import akka.actor.{ActorRef, PoisonPill}
 import io.cafebabe.http.server.api.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
+import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (6/12/2015)
  */
-class WsChannelHandler(receiver: ActorRef, sender: ActorRef) extends SimpleChannelInboundHandler[WebSocketFrame] {
+class WsChannelHandler(host: String, receiver: ActorRef, sender: ActorRef)
+  extends SimpleChannelInboundHandler[WebSocketFrame] {
 
   private val log = LoggerFactory.getLogger(getClass)
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: WebSocketFrame): Unit = msg match {
     case frame: CloseWebSocketFrame =>
-      ctx.channel.writeAndFlush(frame.retain()).addListener(ChannelFutureListener.CLOSE)
-      receiver.tell(DisconnectWsMessage, sender)
-      sender ! PoisonPill
+      log.trace("Close frame from host {}.", host)
+      ctx.channel.writeAndFlush(frame.retain()).addListener(new ChannelFutureListener {
+        override def operationComplete(future: ChannelFuture): Unit = {
+          future.channel.close()
+          receiver.tell(DisconnectWsMessage, sender)
+          sender ! PoisonPill
+        }
+      })
     case frame: PingWebSocketFrame =>
+      log.trace("Ping frame from host {}.", host)
       ctx.channel.writeAndFlush(new PongWebSocketFrame(frame.content.retain()))
+    case frame: PongWebSocketFrame =>
+      log.trace("Pong frame from host {}.", host)
     case frame: BinaryWebSocketFrame =>
       receiver.tell(new BinaryWsMessage(toBytes(frame.content)), sender)
     case frame: TextWebSocketFrame =>
       receiver.tell(new TextWsMessage(frame.text), sender)
-    case frame => log.warn("Some unpredicted frame was received: {}.", frame)
+    case frame => log.debug("Some unpredicted frame was received: {}.", frame)
   }
 
   override def channelInactive(ctx: ChannelHandlerContext): Unit = {

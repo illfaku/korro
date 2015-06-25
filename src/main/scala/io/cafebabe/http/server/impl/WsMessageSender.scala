@@ -25,6 +25,8 @@ import io.netty.handler.codec.http.websocketx.{WebSocketFrame, BinaryWebSocketFr
 import java.util.concurrent.atomic.AtomicLong
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (6/12/2015)
  */
@@ -40,9 +42,7 @@ class WsMessageSender(channel: Channel) extends Actor {
     case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
   }
 
-  override def postStop(): Unit = if (channel.isOpen) {
-    send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
-  }
+  override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
 
   private def send(frame: WebSocketFrame): ChannelFuture = channel.writeAndFlush(frame)
 }
