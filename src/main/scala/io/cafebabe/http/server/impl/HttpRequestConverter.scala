@@ -34,15 +34,15 @@ import scala.collection.mutable
  * @author Vladimir Konstantinov
  * @version 1.0 (4/14/2015)
  */
-object NettyHttpRequest {
-  def apply(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
+object HttpRequestConverter {
+  def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
     val path = new QueryStringDecoder(request.getUri).path
     HttpRequest(
       request.getMethod.name,
       path.substring(pathPrefix.length),
-      NettyQueryParams(request),
-      NettyHttpHeaders(request),
-      NettyHttpContent(request)
+      QueryParamsConverter.fromNetty(request),
+      HttpHeadersConverter.fromNetty(request),
+      HttpContentConverter.fromNetty(request)
     )
   }
 }
@@ -53,8 +53,8 @@ object NettyHttpRequest {
  * @author Vladimir Konstantinov
  * @version 1.0 (6/25/2015)
  */
-object NettyQueryParams {
-  def apply(request: FullHttpRequest): QueryParams = {
+object QueryParamsConverter {
+  def fromNetty(request: FullHttpRequest): QueryParams = {
     val uri = new QueryStringDecoder(request.getUri)
     val uriParams = uri.parameters.toMap.mapValues(_.toList)
     // TODO: application/x-www-form-urlencoded
@@ -68,8 +68,8 @@ object NettyQueryParams {
  * @author Vladimir Konstantinov
  * @version 1.0 (6/25/2015)
  */
-object NettyHttpHeaders {
-  def apply(request: FullHttpRequest): HttpHeaders = {
+object HttpHeadersConverter {
+  def fromNetty(request: FullHttpRequest): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
     for (header <- request.headers) {
       val key = header.getKey
@@ -86,13 +86,13 @@ object NettyHttpHeaders {
  * @author Vladimir Konstantinov
  * @version 1.0 (6/23/2015)
  */
-object NettyHttpContent {
+object HttpContentConverter {
 
   private val DefaultCharset = Charset.forName("UTF-8")
 
   private val ContentType = """([^;]+)(?:; charset=([\w-]+))""".r
 
-  def apply(request: FullHttpRequest): HttpContent = {
+  def fromNetty(request: FullHttpRequest): HttpContent = {
     if (contentLength(request) > 0) {
       contentType(request) match {
         case ("text/plain", charset) => TextHttpContent(request.content.toString(charset))

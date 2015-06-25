@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 import java.net.{InetSocketAddress, URI}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 /**
@@ -62,7 +63,7 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
     system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
-      .flatMap(_.ask(NettyHttpRequest(req, route.uriPath))(askTimeout))
+      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.uriPath))(askTimeout))
       .mapTo[HttpResponse]
       .map(toNettyResponse)
       .recover(toErrorResponse)
