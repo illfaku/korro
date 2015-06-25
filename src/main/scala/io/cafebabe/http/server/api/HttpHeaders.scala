@@ -17,40 +17,30 @@
 package io.cafebabe.http.server.api
 
 import io.cafebabe.http.server.impl.util.StringUtils._
-import java.util
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */
 object HttpHeaders {
-
   def apply(headers: (String, String)*): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
-    headers foreach {
-      case (key, value) =>
-        val list = result.getOrElse(key, List.empty)
-        result += key -> (value :: list)
-    }
-    new HttpHeaders(Map.empty ++ result)
-  }
-
-  def apply(it: util.Iterator[util.Map.Entry[String, String]]): HttpHeaders = {
-    val result = mutable.Map.empty[String, List[String]]
-    while (it.hasNext) {
-      val entry = it.next
-      val key = entry.getKey
+    headers foreach { case (key, value) =>
       val list = result.getOrElse(key, List.empty)
-      result += key -> (entry.getValue :: list)
+      result += key -> (value :: list)
     }
     new HttpHeaders(Map.empty ++ result)
   }
 }
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @version 1.0 (6/22/2015)
  */

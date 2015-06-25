@@ -20,6 +20,7 @@ import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpRequest, Query
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
  * TODO: Add description.
@@ -34,7 +35,7 @@ object NettyHttpRequest {
       request.getMethod.name,
       path.substring(pathPrefix.length),
       NettyQueryParams(request),
-      HttpHeaders(request.headers.iterator),
+      NettyHttpHeaders(request),
       HttpContent(request)
     )
   }
@@ -52,5 +53,23 @@ object NettyQueryParams {
     val uriParams = uri.parameters.toMap.mapValues(_.toList)
     // TODO: application/x-www-form-urlencoded
     new QueryParams(uriParams)
+  }
+}
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ * @version 1.0 (6/25/2015)
+ */
+object NettyHttpHeaders {
+  def apply(request: FullHttpRequest): HttpHeaders = {
+    val result = mutable.Map.empty[String, List[String]]
+    for (header <- request.headers) {
+      val key = header.getKey
+      val list = result.getOrElse(key, List.empty)
+      result += key -> (header.getValue :: list)
+    }
+    new HttpHeaders(Map.empty ++ result)
   }
 }
