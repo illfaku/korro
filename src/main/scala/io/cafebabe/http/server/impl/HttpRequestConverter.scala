@@ -19,7 +19,7 @@ package io.cafebabe.http.server.impl
 import io.cafebabe.http.server.api._
 import io.cafebabe.http.server.api.exception.BadRequestException
 import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
+import io.netty.handler.codec.http.{HttpHeaders => NettyHttpHeaders, DefaultHttpHeaders, FullHttpRequest, QueryStringDecoder}
 import org.json4s.ParserUtil.ParseException
 import org.json4s.native.JsonMethods._
 
@@ -32,7 +32,6 @@ import scala.collection.mutable
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (4/14/2015)
  */
 object HttpRequestConverter {
   def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
@@ -51,7 +50,6 @@ object HttpRequestConverter {
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/25/2015)
  */
 object QueryParamsConverter {
   def fromNetty(request: FullHttpRequest): QueryParams = {
@@ -66,9 +64,9 @@ object QueryParamsConverter {
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/25/2015)
  */
 object HttpHeadersConverter {
+
   def fromNetty(request: FullHttpRequest): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
     for (header <- request.headers) {
@@ -78,13 +76,22 @@ object HttpHeadersConverter {
     }
     new HttpHeaders(Map.empty ++ result)
   }
+
+  def toNetty(headers: HttpHeaders): NettyHttpHeaders = {
+    val result = new DefaultHttpHeaders
+    headers.map foreach { case (name, values) =>
+      values foreach { value =>
+        result.add(name, value)
+      }
+    }
+    result
+  }
 }
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/23/2015)
  */
 object HttpContentConverter {
 

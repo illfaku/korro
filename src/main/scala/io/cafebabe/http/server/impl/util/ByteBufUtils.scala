@@ -16,11 +16,12 @@
  */
 package io.cafebabe.http.server.impl.util
 
-import io.netty.buffer.{Unpooled, ByteBuf}
+import io.netty.buffer.{ByteBufUtil, Unpooled, ByteBuf}
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/12/2015)
  */
 object ByteBufUtils {
 
@@ -31,4 +32,12 @@ object ByteBufUtils {
   }
 
   def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+
+  def toByteBuf(text: String): ByteBuf = {
+    val buf = Unpooled.buffer()
+    ByteBufUtil.writeUtf8(buf, text)
+    buf
+  }
+
+  def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }

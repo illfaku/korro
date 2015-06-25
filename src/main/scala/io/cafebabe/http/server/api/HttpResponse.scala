@@ -17,11 +17,17 @@
 package io.cafebabe.http.server.api
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/13/2015)
  */
-trait HttpResponse {
-  def status: Int
-  def headers: Map[String, String]
-  def content: String
+object HttpResponse {
+  def ok(headers: HttpHeaders, content: HttpContent): HttpResponse = new HttpResponse(200, headers, content)
 }
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+case class HttpResponse(status: Int, headers: HttpHeaders, content: HttpContent)

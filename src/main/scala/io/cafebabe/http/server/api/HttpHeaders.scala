@@ -25,9 +25,11 @@ import scala.reflect.ClassTag
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
  */
 object HttpHeaders {
+
+  def empty = new HttpHeaders(Map.empty)
+
   def apply(headers: (String, String)*): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
     headers foreach { case (key, value) =>
@@ -42,7 +44,6 @@ object HttpHeaders {
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
  */
 class HttpHeaders(headers: Map[String, List[String]]) {
   def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(fromString)
