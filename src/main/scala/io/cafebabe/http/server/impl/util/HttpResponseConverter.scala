@@ -18,8 +18,8 @@ package io.cafebabe.http.server.impl.util
 
 import akka.actor.ActorNotFound
 import akka.pattern.AskTimeoutException
-import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
 import io.cafebabe.http.server.api.exception.{BadRequestException, NotFoundException}
+import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
 import io.cafebabe.http.server.impl.HttpHeadersConverter
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
 import io.netty.handler.codec.http.HttpHeaders.{Names => HeaderNames, Values => HeaderValues}
@@ -33,19 +33,19 @@ import java.util.UUID
  *
  * @author Vladimir Konstantinov
  */
-object ResponseUtils {
+object HttpResponseConverter {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def toNettyResponse(res: HttpResponse): FullHttpResponse = {
+  def toNetty(res: HttpResponse): FullHttpResponse = {
     nettyResponse(HttpResponseStatus.valueOf(res.status), res.headers, res.content)
   }
 
-  val toErrorResponse: PartialFunction[Throwable, FullHttpResponse] = {
+  val toError: PartialFunction[Throwable, FullHttpResponse] = {
     case e: ActorNotFound => simpleNettyResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, "Service unavailable.")
     case e: AskTimeoutException => simpleNettyResponse(HttpResponseStatus.REQUEST_TIMEOUT, "Request timeout.")
     case e: NotFoundException => simpleNettyResponse(HttpResponseStatus.NOT_FOUND, "Not found.")
-    case e: BadRequestException => simpleNettyResponse(HttpResponseStatus.BAD_REQUEST, "Bad request.")
+    case e: BadRequestException => simpleNettyResponse(HttpResponseStatus.BAD_REQUEST, e.getMessage)
     case e: Throwable =>
       val message = s"Internal Error #${UUID.randomUUID}."
       log.error(message, e)

@@ -19,7 +19,7 @@ package io.cafebabe.http.server.impl
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
-import io.cafebabe.http.server.impl.util.ResponseUtils._
+import io.cafebabe.http.server.impl.util.HttpResponseConverter
 import io.cafebabe.util.config.wrapped
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
@@ -65,8 +65,8 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
     system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
       .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.uriPath))(askTimeout))
       .mapTo[HttpResponse]
-      .map(toNettyResponse)
-      .recover(toErrorResponse)
+      .map(HttpResponseConverter.toNetty)
+      .recover(HttpResponseConverter.toError)
       .foreach(sendHttpResponse(ctx, _))
   }
 
@@ -82,7 +82,7 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
           ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(host, receiver, sender))
           handshaker.handshake(ctx.channel, req).sync()
           receiver.tell(new ConnectWsMessage(host), sender)
-        case Failure(error) => sendHttpResponse(ctx, toErrorResponse(error))
+        case Failure(error) => sendHttpResponse(ctx, HttpResponseConverter.toError(error))
       }
     } else sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
   }
