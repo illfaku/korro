@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.server.impl.util
+package io.cafebabe.http.server.impl.convert
 
 import akka.actor.ActorNotFound
 import akka.pattern.AskTimeoutException
 import io.cafebabe.http.server.api.exception.{BadRequestException, NotFoundException}
 import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
-import io.cafebabe.http.server.impl.HttpHeadersConverter
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
+import io.cafebabe.http.server.impl.util.StringUtils
 import io.netty.handler.codec.http.HttpHeaders.{Names => HeaderNames, Values => HeaderValues}
 import io.netty.handler.codec.http._
 import org.slf4j.LoggerFactory

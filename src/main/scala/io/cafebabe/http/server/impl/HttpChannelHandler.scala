@@ -19,12 +19,12 @@ package io.cafebabe.http.server.impl
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
-import io.cafebabe.http.server.impl.util.HttpResponseConverter
+import io.cafebabe.http.server.impl.convert.{HttpRequestConverter, HttpResponseConverter}
 import io.cafebabe.util.config.wrapped
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
+import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
 import io.netty.handler.codec.http.websocketx._
-import io.netty.handler.codec.http.{HttpResponse => _, _}
 import org.slf4j.LoggerFactory
 
 import java.net.{InetSocketAddress, URI}

@@ -14,79 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.server.impl
+package io.cafebabe.http.server.impl.convert
 
-import io.cafebabe.http.server.api._
 import io.cafebabe.http.server.api.exception.BadRequestException
+import io.cafebabe.http.server.api.{EmptyHttpContent, JsonHttpContent, TextHttpContent, HttpContent}
+import io.netty.handler.codec.http.FullHttpRequest
 import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.handler.codec.http.{HttpHeaders => NettyHttpHeaders, DefaultHttpHeaders, FullHttpRequest, QueryStringDecoder}
 import org.json4s.ParserUtil.ParseException
-import org.json4s.native.JsonMethods._
+import org.json4s.native.JsonParser._
 
 import java.nio.charset.Charset
-
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-object HttpRequestConverter {
-  def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
-    val path = new QueryStringDecoder(request.getUri).path
-    HttpRequest(
-      request.getMethod.name,
-      path.substring(pathPrefix.length),
-      QueryParamsConverter.fromNetty(request),
-      HttpHeadersConverter.fromNetty(request),
-      HttpContentConverter.fromNetty(request)
-    )
-  }
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-object QueryParamsConverter {
-  def fromNetty(request: FullHttpRequest): QueryParams = {
-    val uri = new QueryStringDecoder(request.getUri)
-    val uriParams = uri.parameters.toMap.mapValues(_.toList)
-    // TODO: application/x-www-form-urlencoded
-    new QueryParams(uriParams)
-  }
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-object HttpHeadersConverter {
-
-  def fromNetty(request: FullHttpRequest): HttpHeaders = {
-    val result = mutable.Map.empty[String, List[String]]
-    for (header <- request.headers) {
-      val key = header.getKey
-      val list = result.getOrElse(key, List.empty)
-      result += key -> (header.getValue :: list)
-    }
-    new HttpHeaders(Map.empty ++ result)
-  }
-
-  def toNetty(headers: HttpHeaders): NettyHttpHeaders = {
-    val result = new DefaultHttpHeaders
-    headers.map foreach { case (name, values) =>
-      values foreach { value =>
-        result.add(name, value)
-      }
-    }
-    result
-  }
-}
 
 /**
  * TODO: Add description.
