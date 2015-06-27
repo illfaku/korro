@@ -16,11 +16,11 @@
  */
 package io.cafebabe.http.server.impl
 
-import akka.actor.ActorSystem
-import akka.pattern.ask
 import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
 import io.cafebabe.http.server.impl.convert.{HttpRequestConverter, HttpResponseConverter}
-import io.cafebabe.util.config.wrapped
+
+import akka.actor.ActorSystem
+import akka.pattern.ask
 import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
@@ -29,41 +29,32 @@ import org.slf4j.LoggerFactory
 
 import java.net.{InetSocketAddress, URI}
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (4/14/2015)
  */
-class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends SimpleChannelInboundHandler[FullHttpRequest] {
+class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChannelInboundHandler[FullHttpRequest] {
 
-  import system.dispatcher
+  import actors.dispatcher
 
   private val log = LoggerFactory.getLogger(getClass)
-
-  private val config = wrapped(system.settings.config.getConfig("cafebabe.http.server"))
-
-  private val resolveTimeout = config.findFiniteDuration("timeout.resolve").getOrElse(10 seconds)
-
-  private val askTimeout = config.findFiniteDuration("timeout.ask").getOrElse(60 seconds)
 
   override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
       if (req.getDecoderResult.isSuccess) {
         routes(new URI(req.getUri).getPath) match {
-          case route: RestRoute => request(ctx, req, route)
+          case route: HttpRoute => request(ctx, req, route)
           case route: WsRoute => handshake(ctx, req, route)
           case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
         }
       } else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
   }
 
-  private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: RestRoute): Unit = {
-    system.actorSelection(route.actorPath).resolveOne(resolveTimeout)
-      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.uriPath))(askTimeout))
+  private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: HttpRoute): Unit = {
+    actors.actorSelection(route.actor).resolveOne(routes.resolveTimeout)
+      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.path))(routes.requestTimeout))
       .mapTo[HttpResponse]
       .map(HttpResponseConverter.toNetty)
       .recover(HttpResponseConverter.toError)
@@ -71,13 +62,13 @@ class HttpChannelHandler(system: ActorSystem, routes: HttpRoutes) extends Simple
   }
 
   private def handshake(ctx: ChannelHandlerContext, req: FullHttpRequest, route: WsRoute): Unit = {
-    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}${route.uriPath}" // TODO: SSL
-    val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true, route.maxFramePayloadLength)
+    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}${route.path}"
+    val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true)
     val handshaker = handshakerFactory.newHandshaker(req)
     if (handshaker != null) {
-      system.actorSelection(route.actorPath).resolveOne(resolveTimeout) onComplete {
+      actors.actorSelection(route.actor).resolveOne(routes.resolveTimeout) onComplete {
         case Success(receiver) =>
-          val sender = system.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
+          val sender = actors.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
           val host = extractHost(ctx.channel, req)
           ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(host, receiver, sender))
           handshaker.handshake(ctx.channel, req).sync()
