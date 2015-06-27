@@ -20,9 +20,7 @@ import akka.actor.ActorNotFound
 import akka.pattern.AskTimeoutException
 import io.cafebabe.http.server.api.exception.{BadRequestException, NotFoundException}
 import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
-import io.cafebabe.http.server.impl.util.ByteBufUtils._
-import io.cafebabe.http.server.impl.util.StringUtils
-import io.netty.handler.codec.http.HttpHeaders.{Names => HeaderNames, Values => HeaderValues}
+import io.netty.handler.codec.http.HttpResponseStatus._
 import io.netty.handler.codec.http._
 import org.slf4j.LoggerFactory
 
@@ -38,41 +36,31 @@ object HttpResponseConverter {
   private val log = LoggerFactory.getLogger(getClass)
 
   def toNetty(res: HttpResponse): FullHttpResponse = {
-    nettyResponse(HttpResponseStatus.valueOf(res.status), res.headers, res.content)
+    nettyResponse(HttpResponseStatus.valueOf(res.status), res.content, res.headers)
   }
 
   val toError: PartialFunction[Throwable, FullHttpResponse] = {
-    case e: ActorNotFound => simpleNettyResponse(HttpResponseStatus.SERVICE_UNAVAILABLE, "Service unavailable.")
-    case e: AskTimeoutException => simpleNettyResponse(HttpResponseStatus.REQUEST_TIMEOUT, "Request timeout.")
-    case e: NotFoundException => simpleNettyResponse(HttpResponseStatus.NOT_FOUND, "Not found.")
-    case e: BadRequestException => simpleNettyResponse(HttpResponseStatus.BAD_REQUEST, e.getMessage)
+    case e: ActorNotFound => nettyResponse(SERVICE_UNAVAILABLE)
+    case e: AskTimeoutException => nettyResponse(REQUEST_TIMEOUT)
+    case e: NotFoundException => nettyResponse(NOT_FOUND)
+    case e: BadRequestException => nettyResponse(BAD_REQUEST, TextHttpContent(e.getMessage))
     case e: Throwable =>
       val message = s"Internal Error #${UUID.randomUUID}."
       log.error(message, e)
-      simpleNettyResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message)
+      nettyResponse(INTERNAL_SERVER_ERROR, TextHttpContent(message))
   }
 
-  private def simpleNettyResponse(status: HttpResponseStatus, content: String): FullHttpResponse = {
-    nettyResponse(status, HttpHeaders.empty, TextHttpContent(content))
+  private def nettyResponse(status: HttpResponseStatus): FullHttpResponse = nettyResponse(status, EmptyHttpContent)
+
+  private def nettyResponse(status: HttpResponseStatus, content: HttpContent): FullHttpResponse = {
+    nettyResponse(status, content, HttpHeaders.empty)
   }
 
-  private def nettyResponse(status: HttpResponseStatus, headers: HttpHeaders, content: HttpContent): FullHttpResponse = {
-
+  private def nettyResponse(status: HttpResponseStatus, content: HttpContent, headers: HttpHeaders): FullHttpResponse = {
     val nettyHeaders = HttpHeadersConverter.toNetty(headers)
-    val buf = content match {
-      case TextHttpContent(text) =>
-        nettyHeaders.add(HeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8")
-        toByteBuf(text)
-      case JsonHttpContent(json) =>
-        nettyHeaders.add(HeaderNames.CONTENT_TYPE, "application/json; charset=utf-8")
-        toByteBuf(StringUtils.toString(json))
-      case EmptyHttpContent => emptyByteBuf
-    }
-    nettyHeaders.add(HeaderNames.CONTENT_LENGTH, buf.readableBytes)
-    nettyHeaders.add(HeaderNames.CONNECTION, HeaderValues.CLOSE)
-
+    val (buf, contentHeaders) = HttpContentConverter.toNetty(content)
     val result = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, buf)
-    result.headers.add(nettyHeaders)
+    result.headers.add(nettyHeaders).add(contentHeaders)
     result
   }
 }

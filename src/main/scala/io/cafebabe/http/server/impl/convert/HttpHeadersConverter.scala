@@ -41,7 +41,7 @@ object HttpHeadersConverter {
 
   def toNetty(headers: HttpHeaders): NettyHttpHeaders = {
     val result = new DefaultHttpHeaders
-    headers.map foreach { case (name, values) =>
+    headers.toMap foreach { case (name, values) =>
       values foreach { value =>
         result.add(name, value)
       }

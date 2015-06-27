@@ -14,20 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.server.api
+package io.cafebabe.http.server.impl.util
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object HttpResponse {
-  def ok(content: HttpContent, headers: HttpHeaders): HttpResponse = new HttpResponse(200, content, headers)
+object MimeTypes {
+  val TextPlain = "text/plain"
+  val ApplicationJson = "application/json"
 }
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class HttpResponse(status: Int, content: HttpContent, headers: HttpHeaders)

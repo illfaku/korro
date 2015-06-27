@@ -17,9 +17,14 @@
 package io.cafebabe.http.server.impl.convert
 
 import io.cafebabe.http.server.api.exception.BadRequestException
-import io.cafebabe.http.server.api.{EmptyHttpContent, JsonHttpContent, TextHttpContent, HttpContent}
-import io.netty.handler.codec.http.FullHttpRequest
+import io.cafebabe.http.server.api.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
+import io.cafebabe.http.server.impl.util.ByteBufUtils._
+import io.cafebabe.http.server.impl.util.{StringUtils, ContentType}
+import io.cafebabe.http.server.impl.util.MimeTypes.{ApplicationJson, TextPlain}
+import io.netty.buffer.ByteBuf
+import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders, FullHttpRequest}
 import io.netty.handler.codec.http.HttpHeaders.Names._
+import io.netty.util.CharsetUtil
 import org.json4s.ParserUtil.ParseException
 import org.json4s.native.JsonParser._
 
@@ -32,21 +37,32 @@ import java.nio.charset.Charset
  */
 object HttpContentConverter {
 
-  private val DefaultCharset = Charset.forName("UTF-8")
-
-  private val ContentType = """([^;]+)(?:; charset=([\w-]+))""".r
-
   def fromNetty(request: FullHttpRequest): HttpContent = {
     if (contentLength(request) > 0) {
       contentType(request) match {
-        case ("text/plain", charset) => TextHttpContent(request.content.toString(charset))
-        case ("application/json", charset) =>
+        case (TextPlain, charset) => TextHttpContent(request.content.toString(charset))
+        case (ApplicationJson, charset) =>
           try JsonHttpContent(parse(request.content.toString(charset))) catch {
             case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
           }
         case (mime, _) => throw new BadRequestException(s"Unsupported Content-Type: $mime.")
       }
     } else EmptyHttpContent
+  }
+
+  def toNetty(content: HttpContent): (ByteBuf, HttpHeaders) = {
+    val headers = new DefaultHttpHeaders
+    val buf = content match {
+      case TextHttpContent(text) =>
+        headers.add(CONTENT_TYPE, ContentType(TextPlain))
+        toByteBuf(text)
+      case JsonHttpContent(json) =>
+        headers.add(CONTENT_TYPE, ContentType(ApplicationJson))
+        toByteBuf(StringUtils.toString(json))
+      case EmptyHttpContent => emptyByteBuf
+    }
+    headers.add(CONTENT_LENGTH, buf.readableBytes)
+    buf -> headers
   }
 
   private def contentLength(request: FullHttpRequest): Int = {
@@ -61,12 +77,10 @@ object HttpContentConverter {
   private def contentType(request: FullHttpRequest): (String, Charset) = {
     request.headers.get(CONTENT_TYPE) match {
       case ContentType(mime, charset) =>
-        if (charset != null) {
-          try mime -> Charset.forName(charset) catch {
-            case e: IllegalArgumentException => throw new BadRequestException(s"Unsupported charset: $charset.")
-          }
-        } else mime -> DefaultCharset
-      case _ => "text/plain" -> DefaultCharset
+        try mime -> charset.map(Charset.forName).getOrElse(CharsetUtil.UTF_8) catch {
+          case e: IllegalArgumentException => throw new BadRequestException(s"Unsupported charset: $charset.")
+        }
+      case _ => TextPlain -> CharsetUtil.UTF_8
     }
   }
 }

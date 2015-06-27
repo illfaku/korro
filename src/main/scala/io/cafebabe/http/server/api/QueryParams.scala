@@ -24,10 +24,9 @@ import scala.reflect.ClassTag
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/22/2015)
  */
 class QueryParams(parameters: Map[String, List[String]]) {
   def one[T: ClassTag](name: String): Option[T] = parameters.get(name).map(_.head).map(fromString)
   def all[T: ClassTag](name: String): List[T] = parameters.get(name).map(_.map(fromString)).getOrElse(Nil)
-  def map: Map[String, List[String]] = parameters
+  def toMap: Map[String, List[String]] = parameters
 }

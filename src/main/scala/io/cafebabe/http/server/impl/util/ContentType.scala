@@ -14,20 +14,22 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.server.api
+package io.cafebabe.http.server.impl.util
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object HttpResponse {
-  def ok(content: HttpContent, headers: HttpHeaders): HttpResponse = new HttpResponse(200, content, headers)
+object ContentType {
+
+  private val regex = """([^;]+)(?:; charset=([\w-]+))""".r
+
+  def apply(mime: String): String = apply(mime, "utf-8")
+
+  def apply(mime: String, charset: String): String = s"$mime; charset=$charset"
+
+  def unapply(contentType: String): Option[(String, Option[String])] = {
+    regex.unapplySeq(contentType).map(l => l.head -> l.drop(1).headOption)
+  }
 }
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class HttpResponse(status: Int, content: HttpContent, headers: HttpHeaders)
