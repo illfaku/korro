@@ -17,6 +17,9 @@
 package io.cafebabe.http.server.impl.convert
 
 import io.cafebabe.http.server.api.QueryParams
+import io.cafebabe.http.server.impl.util.MimeTypes.FormUrlEncoded
+import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
+import io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
 import scala.collection.JavaConversions._
@@ -28,10 +31,18 @@ import scala.collection.JavaConversions._
  */
 object QueryParamsConverter {
 
-  def fromNetty(request: FullHttpRequest): QueryParams = {
-    val uri = new QueryStringDecoder(request.getUri)
-    val uriParams = uri.parameters.toMap.mapValues(_.toList)
-    // TODO: application/x-www-form-urlencoded
-    new QueryParams(uriParams)
+  def fromNetty(request: FullHttpRequest): QueryParams = new QueryParams(fromUri(request) ++ fromBody(request))
+
+  private def fromUri(request: FullHttpRequest): Map[String, List[String]] = {
+    val decoder = new QueryStringDecoder(request.getUri)
+    decoder.parameters.toMap.mapValues(_.toList)
+  }
+
+  private def fromBody(request: FullHttpRequest): Map[String, List[String]] = {
+    if (FormUrlEncoded == request.headers.get(CONTENT_TYPE)) {
+      val params = request.content.toString(DEFAULT_CHARSET)
+      val decoder = new QueryStringDecoder(params, false)
+      decoder.parameters.toMap.mapValues(_.toList)
+    } else Map.empty
   }
 }

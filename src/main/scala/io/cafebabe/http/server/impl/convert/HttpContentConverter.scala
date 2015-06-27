@@ -19,12 +19,12 @@ package io.cafebabe.http.server.impl.convert
 import io.cafebabe.http.server.api.exception.BadRequestException
 import io.cafebabe.http.server.api.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
-import io.cafebabe.http.server.impl.util.{StringUtils, ContentType}
-import io.cafebabe.http.server.impl.util.MimeTypes.{ApplicationJson, TextPlain}
+import io.cafebabe.http.server.impl.util.MimeTypes._
+import io.cafebabe.http.server.impl.util.{ContentType, StringUtils}
 import io.netty.buffer.ByteBuf
-import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders, FullHttpRequest}
+import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.util.CharsetUtil
+import io.netty.handler.codec.http.{DefaultHttpHeaders, FullHttpRequest, HttpHeaders}
 import org.json4s.ParserUtil.ParseException
 import org.json4s.native.JsonParser._
 
@@ -45,6 +45,7 @@ object HttpContentConverter {
           try JsonHttpContent(parse(request.content.toString(charset))) catch {
             case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
           }
+        case (FormUrlEncoded, _) => EmptyHttpContent
         case (mime, _) => throw new BadRequestException(s"Unsupported Content-Type: $mime.")
       }
     } else EmptyHttpContent
@@ -77,10 +78,20 @@ object HttpContentConverter {
   private def contentType(request: FullHttpRequest): (String, Charset) = {
     request.headers.get(CONTENT_TYPE) match {
       case ContentType(mime, charset) =>
-        try mime -> charset.map(Charset.forName).getOrElse(CharsetUtil.UTF_8) catch {
+        try mime -> charset.map(Charset.forName).getOrElse(DEFAULT_CHARSET) catch {
           case e: IllegalArgumentException => throw new BadRequestException(s"Unsupported charset: $charset.")
         }
-      case _ => TextPlain -> CharsetUtil.UTF_8
+      case _ => TextPlain -> DEFAULT_CHARSET
     }
+  }
+
+  private def extractContent(request: FullHttpRequest): HttpContent = contentType(request) match {
+    case (TextPlain, charset) => TextHttpContent(request.content.toString(charset))
+    case (ApplicationJson, charset) =>
+      try JsonHttpContent(parse(request.content.toString(charset))) catch {
+        case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
+      }
+    case (FormUrlEncoded, _) => EmptyHttpContent // processed by QueryParamsConverter
+    case (mime, _) => throw new BadRequestException(s"Unsupported Content-Type: $mime.")
   }
 }

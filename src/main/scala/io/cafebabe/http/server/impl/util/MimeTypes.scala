@@ -24,4 +24,5 @@ package io.cafebabe.http.server.impl.util
 object MimeTypes {
   val TextPlain = "text/plain"
   val ApplicationJson = "application/json"
+  val FormUrlEncoded = "application/x-www-form-urlencoded"
 }
