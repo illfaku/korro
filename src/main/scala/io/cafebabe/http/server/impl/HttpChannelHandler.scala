@@ -44,7 +44,8 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
 
   override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
       if (req.getDecoderResult.isSuccess) {
-        routes(new URI(req.getUri).getPath) match {
+        val path = new URI(req.getUri).getPath
+        routes(path) match {
           case route: HttpRoute => request(ctx, req, route)
           case route: WsRoute => handshake(ctx, req, route)
           case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
@@ -53,8 +54,8 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
   }
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: HttpRoute): Unit = {
-    actors.actorSelection(route.actor).resolveOne(routes.resolveTimeout)
-      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.path))(routes.requestTimeout))
+    actors.actorSelection(route.actor).resolveOne(route.resolveTimeout)
+      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.path))(route.requestTimeout))
       .mapTo[HttpResponse]
       .map(HttpResponseConverter.toNetty)
       .recover(HttpResponseConverter.toError)
@@ -66,7 +67,7 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
     val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true)
     val handshaker = handshakerFactory.newHandshaker(req)
     if (handshaker != null) {
-      actors.actorSelection(route.actor).resolveOne(routes.resolveTimeout) onComplete {
+      actors.actorSelection(route.actor).resolveOne(route.resolveTimeout) onComplete {
         case Success(receiver) =>
           val sender = actors.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
           val host = extractHost(ctx.channel, req)

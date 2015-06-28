@@ -30,23 +30,35 @@ import scala.language.postfixOps
  */
 class Routes(config: Config) {
 
-  def resolveTimeout: FiniteDuration = config.findFiniteDuration("timeout.resolve") getOrElse (10 seconds)
+  private val httpResolveTimeout: FiniteDuration = {
+    config.findFiniteDuration("HTTP.resolveTimeout") getOrElse 10.seconds
+  }
 
-  def requestTimeout: FiniteDuration = config.findFiniteDuration("timeout.request") getOrElse (60 seconds)
+  private val httpRequestTimeout: FiniteDuration = {
+    config.findFiniteDuration("HTTP.requestTimeout") getOrElse 60.seconds
+  }
+
+  private val wsResolveTimeout: FiniteDuration = {
+    config.findFiniteDuration("WebSocket.resolveTimeout") getOrElse 10.seconds
+  }
+
+  private val maxFramePayloadLength: Int = {
+    config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
+  }
+
+  private val httpRoutes: List[HttpRoute] = config.findConfigList("HTTP.routes").toList.map { route =>
+    HttpRoute(route.getString("path"), httpResolveTimeout, httpRequestTimeout, route.getString("actor"))
+  }
+
+  private val wsRoutes: List[WsRoute] = config.findConfigList("WebSocket.routes").toList.map { route =>
+    WsRoute(route.getString("path"), wsResolveTimeout, maxFramePayloadLength, route.getString("actor"))
+  }
 
   def apply(path: String): Route = httpRoute(path) orElse wsRoute(path) getOrElse NoRoute
 
-  private def httpRoute(path: String): Option[HttpRoute] = {
-    config.findConfigList("HTTP")
-      .find(route => path startsWith route.getString("path"))
-      .map(route => HttpRoute(route.getString("path"), route.getString("actor")))
-  }
+  private def httpRoute(path: String): Option[HttpRoute] = httpRoutes.find(path startsWith _.path)
 
-  private def wsRoute(path: String): Option[WsRoute] = {
-    config.findConfigList("WebSocket")
-      .find(route => path == route.getString("path"))
-      .map(route => WsRoute(route.getString("path"), route.getString("actor")))
-  }
+  private def wsRoute(path: String): Option[WsRoute] = wsRoutes.find(path == _.path)
 }
 
 /**
@@ -61,14 +73,24 @@ sealed trait Route
  *
  * @author Vladimir Konstantinov
  */
-case class HttpRoute(path: String, actor: String) extends Route
+case class HttpRoute(
+  path: String,
+  resolveTimeout: FiniteDuration,
+  requestTimeout: FiniteDuration,
+  actor: String
+) extends Route
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-case class WsRoute(path: String, actor: String) extends Route
+case class WsRoute(
+  path: String,
+  resolveTimeout: FiniteDuration,
+  maxFramePayloadLength: Int,
+  actor: String
+) extends Route
 
 /**
  * TODO: Add description.
