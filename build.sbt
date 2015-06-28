@@ -14,7 +14,11 @@ lazy val compileJdkSettings = Seq(
 lazy val osgiSettings = SbtOsgi.osgiSettings ++ Seq(
   OsgiKeys.exportPackage := Seq("io.cafebabe.http.server.api.*"),
   OsgiKeys.privatePackage := Seq("io.cafebabe.http.server.impl.*"),
-  OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Cafebabe HTTP")
+  OsgiKeys.importPackage := Seq("!aQute.bnd.annotation.*", "*"),
+  OsgiKeys.additionalHeaders := Map(
+    "Bundle-Name" -> "Cafebabe HTTP",
+    "Service-Component" -> "*"
+  )
 )
 
 lazy val root = (project in file(".")).
@@ -33,6 +37,9 @@ lazy val root = (project in file(".")).
       "com.typesafe.akka" %% "akka-actor" % "2.3.9" % "provided",
       "org.json4s" %% "json4s-native" % "3.2.11" % "provided",
       "org.slf4j" % "slf4j-api" % "1.7.10" % "provided",
+
+      "org.osgi" % "org.osgi.core" % "5.0.0" % "provided",
+      "biz.aQute.bnd" % "biz.aQute.bnd.annotation" % "2.4.0" % "provided",
 
       "io.netty" % "netty-common" % "4.0.29.Final" % "provided",
       "io.netty" % "netty-buffer" % "4.0.29.Final" % "provided",

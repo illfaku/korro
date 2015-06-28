@@ -49,7 +49,7 @@ object HttpServer {
       .childHandler(new HttpChannelInitializer(config, actors))
       .bind(port).sync()
 
-    new HttpServer(bossGroup, workerGroup)
+    new HttpServer(port, bossGroup, workerGroup)
   }
 }
 
@@ -58,7 +58,7 @@ object HttpServer {
  *
  * @author Vladimir Konstantinov
  */
-class HttpServer(bossGroup: EventLoopGroup, workerGroup: EventLoopGroup) extends AutoCloseable {
+class HttpServer(val port: Int, bossGroup: EventLoopGroup, workerGroup: EventLoopGroup) extends AutoCloseable {
 
   override def close(): Unit = {
     bossGroup.shutdownGracefully()
