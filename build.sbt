@@ -33,8 +33,8 @@ lazy val root = (project in file(".")).
     libraryDependencies ++= Seq(
       "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT" % "provided",
 
-      "com.typesafe" % "config" % "1.3.0" % "provided",
-      "com.typesafe.akka" %% "akka-actor" % "2.3.9" % "provided",
+      "com.typesafe" % "config" % "1.2.1" % "provided",
+      "com.typesafe.akka" %% "akka-actor" % "2.3.11" % "provided",
       "org.json4s" %% "json4s-native" % "3.2.11" % "provided",
       "org.slf4j" % "slf4j-api" % "1.7.10" % "provided",
 

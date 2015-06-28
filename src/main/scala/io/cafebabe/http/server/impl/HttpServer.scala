@@ -23,9 +23,9 @@ import io.cafebabe.util.config.wrapped
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.channel.{Channel, EventLoopGroup}
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
 /**
@@ -43,14 +43,14 @@ object HttpServer {
     val bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"http-$port-boss"))
     val workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"http-$port-worker"))
 
-    new ServerBootstrap()
+    val channel = new ServerBootstrap()
       .group(bossGroup, workerGroup)
       .channel(classOf[NioServerSocketChannel])
       .handler(new LoggingHandler(LogLevel.DEBUG))
       .childHandler(new HttpChannelInitializer(config, actors))
-      .bind(port).sync()
+      .bind(port).sync().channel
 
-    new HttpServer(port, bossGroup, workerGroup)
+    new HttpServer(port, channel, bossGroup, workerGroup)
   }
 }
 
@@ -59,9 +59,11 @@ object HttpServer {
  *
  * @author Vladimir Konstantinov
  */
-class HttpServer(val port: Int, bossGroup: EventLoopGroup, workerGroup: EventLoopGroup) extends AutoCloseable {
+class HttpServer(val port: Int, channel: Channel, bossGroup: EventLoopGroup, workerGroup: EventLoopGroup)
+  extends AutoCloseable {
 
   override def close(): Unit = {
+    channel.close().sync()
     bossGroup.shutdownGracefully()
     workerGroup.shutdownGracefully()
   }

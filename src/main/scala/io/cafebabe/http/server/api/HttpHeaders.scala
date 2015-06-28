@@ -49,4 +49,5 @@ class HttpHeaders(headers: Map[String, List[String]]) {
   def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(fromString)
   def all[T: ClassTag](name: String): List[T] = headers.get(name).map(_.map(fromString)).getOrElse(Nil)
   def toMap: Map[String, List[String]] = headers
+  override def toString: String = headers.toString()
 }

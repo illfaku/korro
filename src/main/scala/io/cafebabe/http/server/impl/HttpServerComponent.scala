@@ -52,6 +52,7 @@ class HttpServerComponent {
 
   @Deactivate def deactivate(ctx: BundleContext): Unit = {
     servers foreach { server =>
+      server.close()
       log.info("Stopped HTTP server on port {}.", server.port)
     }
   }

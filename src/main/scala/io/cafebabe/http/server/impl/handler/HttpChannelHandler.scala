@@ -93,7 +93,7 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
   }
 
   private def sendHttpResponse(ctx: ChannelHandlerContext, res: FullHttpResponse): Unit = {
-    ctx.write(res).addListener(ChannelFutureListener.CLOSE)
+    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
   }
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()

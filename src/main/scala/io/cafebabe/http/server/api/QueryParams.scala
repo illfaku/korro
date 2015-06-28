@@ -29,4 +29,5 @@ class QueryParams(parameters: Map[String, List[String]]) {
   def one[T: ClassTag](name: String): Option[T] = parameters.get(name).map(_.head).map(fromString)
   def all[T: ClassTag](name: String): List[T] = parameters.get(name).map(_.map(fromString)).getOrElse(Nil)
   def toMap: Map[String, List[String]] = parameters
+  override def toString: String = parameters.toString()
 }
