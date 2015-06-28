@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.http.server.impl
+package io.cafebabe.http.server.impl.handler
 
 import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
 import io.cafebabe.http.server.impl.convert.{HttpRequestConverter, HttpResponseConverter}
