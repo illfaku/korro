@@ -1,9 +1,28 @@
+import com.typesafe.sbt.osgi.SbtOsgi
 import sbt.Keys._
 
+lazy val compileJdkSettings = Seq(
+  javacOptions ++= Seq(
+    "-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.8", "-target", "1.8"
+  ),
+  scalacOptions ++= Seq(
+    "-encoding", "UTF-8", "-deprecation", "-unchecked", "-optimize", "-feature",
+    "-language:implicitConversions", "-language:postfixOps", "-target:jvm-1.8"
+  )
+)
+
+lazy val osgiSettings = SbtOsgi.osgiSettings ++ Seq(
+  OsgiKeys.exportPackage := Seq("io.cafebabe.http.server.api.*"),
+  OsgiKeys.privatePackage := Seq("io.cafebabe.http.server.impl.*"),
+  OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Cafebabe HTTP")
+)
+
 lazy val root = (project in file(".")).
+  settings(compileJdkSettings: _*).
+  settings(osgiSettings: _*).
   settings(
     organization := "io.cafebabe",
-    name := "http",
+    name := "cafebabe-http",
     version := "0.0.1-SNAPSHOT",
 
     scalaVersion := "2.11.6",
