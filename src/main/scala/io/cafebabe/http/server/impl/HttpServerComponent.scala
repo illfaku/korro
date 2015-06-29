@@ -38,24 +38,27 @@ class HttpServerComponent {
   private var servers = List.empty[HttpServer]
 
   @Activate def activate(ctx: BundleContext): Unit = {
-    val config = actors.settings.config
-    config.findConfigList("cafebabe.http.servers") foreach { server =>
-      val port = server.findInt("port")
+    actors.settings.config.findConfigList("cafebabe.http.servers") foreach { config =>
+      val port = config.findString("port").getOrElse("UNSPECIFIED")
       try {
-        servers = HttpServer(server, actors) :: servers
+        servers = HttpServer(config, actors) :: servers
         log.info("Started HTTP server on port {}.", port)
       } catch {
-        case e: Throwable => log.error(s"Unable to create HTTP server on port $port.", e)
+        case e: Throwable => log.error(s"Failed to start HTTP server on port $port.", e)
       }
     }
   }
 
   @Deactivate def deactivate(ctx: BundleContext): Unit = {
     servers foreach { server =>
-      server.close()
-      log.info("Stopped HTTP server on port {}.", server.port)
+      try {
+        server.stop()
+        log.info("Stopped HTTP server on port {}.", server.port)
+      } catch {
+        case e: Throwable => log.error(s"Failed to stop HTTP server on port ${server.port}.", e)
+      }
     }
   }
 
-  @Reference def setActorSystem(actors: ActorSystem): Unit = { this.actors = actors }
+  @Reference def setActorSystem(actorSystem: ActorSystem): Unit = { actors = actorSystem }
 }

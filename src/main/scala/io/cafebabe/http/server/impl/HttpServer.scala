@@ -43,12 +43,13 @@ object HttpServer {
     val bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"http-$port-boss"))
     val workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"http-$port-worker"))
 
-    val channel = new ServerBootstrap()
+    val bootstrap = new ServerBootstrap()
       .group(bossGroup, workerGroup)
       .channel(classOf[NioServerSocketChannel])
       .handler(new LoggingHandler(LogLevel.DEBUG))
       .childHandler(new HttpChannelInitializer(config, actors))
-      .bind(port).sync().channel
+
+    val channel = bootstrap.bind(port).sync().channel
 
     new HttpServer(port, channel, bossGroup, workerGroup)
   }
@@ -59,10 +60,9 @@ object HttpServer {
  *
  * @author Vladimir Konstantinov
  */
-class HttpServer(val port: Int, channel: Channel, bossGroup: EventLoopGroup, workerGroup: EventLoopGroup)
-  extends AutoCloseable {
+class HttpServer(val port: Int, channel: Channel, bossGroup: EventLoopGroup, workerGroup: EventLoopGroup) {
 
-  override def close(): Unit = {
+  def stop(): Unit = {
     channel.close().sync()
     bossGroup.shutdownGracefully()
     workerGroup.shutdownGracefully()
