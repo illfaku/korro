@@ -29,15 +29,20 @@ import java.util.concurrent.atomic.AtomicLong
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/12/2015)
  */
 object WsMessageSender {
   private val counter = new AtomicLong
-  def name = "ws-" + counter.incrementAndGet()
+  def name = "ws-sender-" + counter.incrementAndGet()
   def props(channel: Channel) = Props(new WsMessageSender(channel))
 }
 
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 class WsMessageSender(channel: Channel) extends Actor {
+
   override def receive = {
     case TextWsMessage(text) => send(new TextWebSocketFrame(text))
     case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
