@@ -20,7 +20,7 @@ import io.cafebabe.http.server.api._
 import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 
 /**
- * TODO: Add description.
+ * Methods to convert HttpRequest from/to Netty's FullHttpRequest.
  *
  * @author Vladimir Konstantinov
  */
@@ -29,11 +29,11 @@ object HttpRequestConverter {
   def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
     val path = new QueryStringDecoder(request.getUri).path
     HttpRequest(
-      request.getMethod.name,
+      HttpMethod.forName(request.getMethod.name),
       path.substring(pathPrefix.length),
       QueryParamsConverter.fromNetty(request),
-      HttpHeadersConverter.fromNetty(request),
-      HttpContentConverter.fromNetty(request)
+      HttpContentConverter.fromNetty(request),
+      HttpHeadersConverter.fromNetty(request)
     )
   }
 }

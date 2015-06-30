@@ -17,15 +17,20 @@
 package io.cafebabe.http.server.api
 
 /**
- * TODO: Add description.
+ * HTTP request representation. It contains:
+ * <ul>
+ *   <li>method
+ *   <li>path without prefix
+ *   <li>query parameters from uri or body (if Content-Type is application/x-www-form-urlencoded)
+ *   <li>content (body)
+ *   <li>headers
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (4/14/2015)
  */
 case class HttpRequest(
-  method: String,
+  method: HttpMethod,
   path: String,
   parameters: QueryParams,
-  headers: HttpHeaders,
-  content: HttpContent
+  content: HttpContent,
+  headers: HttpHeaders
 )

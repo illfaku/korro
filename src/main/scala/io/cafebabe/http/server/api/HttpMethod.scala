@@ -17,21 +17,50 @@
 package io.cafebabe.http.server.api
 
 /**
- * TODO: Add description.
+ * HTTP request methods as objects to be contained in request and handy extractors of request.
+ * <br><br>
+ * Extractors usage:
+ * {{{
+ *   import HttpMethod._
+ *   req match {
+ *     case GET(path, params, content, headers) => ???
+ *     case POST(path, params, content, headers) => ???
+ *   }
+ * }}}
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (4/17/2015)
  */
-sealed abstract class HttpMethod(name: String) {
-  def unapply(req: HttpRequest): Option[(String, HttpRequest)] =
-    if (req.method.equalsIgnoreCase(name)) Some(req.path, req) else None
+object HttpMethod {
+
+  case object GET extends HttpMethod("GET")
+
+  case object POST extends HttpMethod("POST")
+
+  case object PUT extends HttpMethod("PUT")
+
+  case object DELETE extends HttpMethod("DELETE")
+
+  case object HEAD extends HttpMethod("HEAD")
+
+  case object CONNECT extends HttpMethod("CONNECT")
+
+  case object OPTIONS extends HttpMethod("OPTIONS")
+
+  case object TRACE extends HttpMethod("TRACE")
+
+  def forName(name: String): HttpMethod = name.toUpperCase match {
+    case "GET" => GET
+    case "POST" => POST
+    case "PUT" => PUT
+    case "DELETE" => DELETE
+    case "HEAD" => HEAD
+    case "CONNECT" => CONNECT
+    case "OPTIONS" => OPTIONS
+    case "TRACE" => TRACE
+  }
 }
 
-object GET extends HttpMethod("GET")
-object POST extends HttpMethod("POST")
-object PUT extends HttpMethod("PUT")
-object DELETE extends HttpMethod("DELETE")
-object HEAD extends HttpMethod("HEAD")
-object CONNECT extends HttpMethod("CONNECT")
-object OPTIONS extends HttpMethod("OPTIONS")
-object TRACE extends HttpMethod("TRACE")
+sealed abstract class HttpMethod(val name: String) {
+  def unapply(req: HttpRequest): Option[(String, QueryParams, HttpContent, HttpHeaders)] =
+    if (this == req.method) Some(req.path, req.parameters, req.content, req.headers) else None
+}
