@@ -20,7 +20,7 @@ import io.cafebabe.http.server.api.QueryParams
 import io.cafebabe.http.server.impl.util.MimeTypes.FormUrlEncoded
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE
-import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
+import io.netty.handler.codec.http.{QueryStringEncoder, FullHttpRequest, QueryStringDecoder}
 
 import scala.collection.JavaConversions._
 
@@ -44,5 +44,15 @@ object QueryParamsConverter {
       val decoder = new QueryStringDecoder(params, false)
       decoder.parameters.toMap.mapValues(_.toList)
     } else Map.empty
+  }
+
+  def toNetty(parameters: QueryParams): String = {
+    val encoder = new QueryStringEncoder("") // without path
+    parameters.toMap foreach { case (name, values) =>
+      values foreach { value =>
+        encoder.addParam(name, value)
+      }
+    }
+    encoder.toString.substring(1) // removing of '?'
   }
 }
