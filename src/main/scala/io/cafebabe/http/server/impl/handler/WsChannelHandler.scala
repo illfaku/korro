@@ -16,7 +16,7 @@
  */
 package io.cafebabe.http.server.impl.handler
 
-import io.cafebabe.http.server.api.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
+import io.cafebabe.http.server.api.ws.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
 
 import akka.actor.{ActorRef, PoisonPill}
@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
- * @version 1.0 (6/12/2015)
  */
 class WsChannelHandler(host: String, receiver: ActorRef, sender: ActorRef)
   extends SimpleChannelInboundHandler[WebSocketFrame] {

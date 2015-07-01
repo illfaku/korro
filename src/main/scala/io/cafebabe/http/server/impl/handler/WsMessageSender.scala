@@ -16,7 +16,7 @@
  */
 package io.cafebabe.http.server.impl.handler
 
-import io.cafebabe.http.server.api.{BinaryWsMessage, TextWsMessage}
+import io.cafebabe.http.server.api.ws.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toByteBuf
 
 import akka.actor.{Actor, Props}

@@ -16,7 +16,8 @@
  */
 package io.cafebabe.http.server.impl.handler
 
-import io.cafebabe.http.server.api.{ConnectWsMessage, HttpResponse}
+import io.cafebabe.http.server.api.HttpResponse
+import io.cafebabe.http.server.api.ws.ConnectWsMessage
 import io.cafebabe.http.server.impl.convert.{HttpRequestConverter, HttpResponseConverter}
 
 import akka.actor.ActorSystem
