@@ -33,7 +33,7 @@ object HttpRequestConverter {
       path.substring(pathPrefix.length),
       QueryParamsConverter.fromNetty(request),
       HttpContentConverter.fromNetty(request.content, request.headers),
-      HttpHeadersConverter.fromNetty(request)
+      HttpHeadersConverter.fromNetty(request.headers)
     )
   }
 }

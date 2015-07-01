@@ -17,7 +17,8 @@
 package io.cafebabe.http.server.impl.convert
 
 import io.cafebabe.http.server.api.HttpHeaders
-import io.netty.handler.codec.http.{DefaultHttpHeaders, FullHttpRequest, HttpHeaders => NettyHttpHeaders}
+
+import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders => NettyHttpHeaders}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -29,9 +30,9 @@ import scala.collection.mutable
  */
 object HttpHeadersConverter {
 
-  def fromNetty(request: FullHttpRequest): HttpHeaders = {
+  def fromNetty(headers: NettyHttpHeaders): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
-    for (header <- request.headers) {
+    for (header <- headers) {
       val key = header.getKey
       val list = result.getOrElse(key, List.empty)
       result += key -> (header.getValue :: list)

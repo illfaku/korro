@@ -21,10 +21,11 @@ import io.cafebabe.http.server.api.{EmptyHttpContent, HttpContent, JsonHttpConte
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
 import io.cafebabe.http.server.impl.util.MimeTypes._
 import io.cafebabe.http.server.impl.util.{ContentType, StringUtils}
+
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.handler.codec.http.{DefaultHttpHeaders, FullHttpRequest, HttpHeaders}
+import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders}
 import org.json4s.ParserUtil.ParseException
 import org.json4s.native.JsonParser._
 
