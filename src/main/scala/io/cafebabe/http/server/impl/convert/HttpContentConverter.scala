@@ -37,18 +37,9 @@ import java.nio.charset.Charset
  */
 object HttpContentConverter {
 
-  def fromNetty(request: FullHttpRequest): HttpContent = {
-    if (contentLength(request) > 0) {
-      contentType(request) match {
-        case (TextPlain, charset) => TextHttpContent(request.content.toString(charset))
-        case (ApplicationJson, charset) =>
-          try JsonHttpContent(parse(request.content.toString(charset))) catch {
-            case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
-          }
-        case (FormUrlEncoded, _) => EmptyHttpContent
-        case (mime, _) => throw new BadRequestException(s"Unsupported Content-Type: $mime.")
-      }
-    } else EmptyHttpContent
+  def fromNetty(content: ByteBuf, headers: HttpHeaders): HttpContent = {
+    if (contentLength(headers) > 0) extractContent(content, headers)
+    else EmptyHttpContent
   }
 
   def toNetty(content: HttpContent): (ByteBuf, HttpHeaders) = {
@@ -66,8 +57,8 @@ object HttpContentConverter {
     buf -> headers
   }
 
-  private def contentLength(request: FullHttpRequest): Int = {
-    val header = request.headers.get(CONTENT_LENGTH)
+  private def contentLength(headers: HttpHeaders): Int = {
+    val header = headers.get(CONTENT_LENGTH)
     if (header != null) {
       try header.toInt catch {
         case e: NumberFormatException => 0
@@ -75,8 +66,8 @@ object HttpContentConverter {
     } else 0
   }
 
-  private def contentType(request: FullHttpRequest): (String, Charset) = {
-    request.headers.get(CONTENT_TYPE) match {
+  private def contentType(headers: HttpHeaders): (String, Charset) = {
+    headers.get(CONTENT_TYPE) match {
       case ContentType(mime, charset) =>
         try mime -> charset.map(Charset.forName).getOrElse(DEFAULT_CHARSET) catch {
           case e: IllegalArgumentException => throw new BadRequestException(s"Unsupported charset: $charset.")
@@ -85,10 +76,10 @@ object HttpContentConverter {
     }
   }
 
-  private def extractContent(request: FullHttpRequest): HttpContent = contentType(request) match {
-    case (TextPlain, charset) => TextHttpContent(request.content.toString(charset))
+  private def extractContent(content: ByteBuf, headers: HttpHeaders): HttpContent = contentType(headers) match {
+    case (TextPlain, charset) => TextHttpContent(content.toString(charset))
     case (ApplicationJson, charset) =>
-      try JsonHttpContent(parse(request.content.toString(charset))) catch {
+      try JsonHttpContent(parse(content.toString(charset))) catch {
         case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
       }
     case (FormUrlEncoded, _) => EmptyHttpContent // processed by QueryParamsConverter
