@@ -17,7 +17,7 @@
 package io.cafebabe.http.server.impl.convert
 
 import io.cafebabe.http.server.api._
-import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
+import io.netty.handler.codec.http.{HttpVersion, HttpMethod, DefaultFullHttpRequest, FullHttpRequest, QueryStringDecoder}
 
 /**
  * Methods to convert HttpRequest from/to Netty's FullHttpRequest.
@@ -27,13 +27,25 @@ import io.netty.handler.codec.http.{FullHttpRequest, QueryStringDecoder}
 object HttpRequestConverter {
 
   def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
-    val path = new QueryStringDecoder(request.getUri).path
     HttpRequest(
       request.getMethod.name,
-      path.substring(pathPrefix.length),
+      new QueryStringDecoder(request.getUri).path.substring(pathPrefix.length),
       QueryParamsConverter.fromNetty(request),
       HttpContentConverter.fromNetty(request.content, request.headers),
       HttpHeadersConverter.fromNetty(request.headers)
     )
+  }
+
+  def toNetty(request: HttpRequest): FullHttpRequest = {
+
+    val method = HttpMethod.valueOf(request.method)
+    val uri = s"${request.path}?${QueryParamsConverter.toNetty(request.parameters)}"
+    val (content, contentHeaders) = HttpContentConverter.toNetty(request.content)
+    val headers = HttpHeadersConverter.toNetty(request.headers)
+
+    val result = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, content)
+    result.headers.add(headers).add(contentHeaders)
+
+    result
   }
 }
