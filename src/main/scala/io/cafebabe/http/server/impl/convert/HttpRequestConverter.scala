@@ -29,7 +29,7 @@ object HttpRequestConverter {
   def fromNetty(request: FullHttpRequest, pathPrefix: String): HttpRequest = {
     val path = new QueryStringDecoder(request.getUri).path
     HttpRequest(
-      HttpMethod.forName(request.getMethod.name),
+      request.getMethod.name,
       path.substring(pathPrefix.length),
       QueryParamsConverter.fromNetty(request),
       HttpContentConverter.fromNetty(request),

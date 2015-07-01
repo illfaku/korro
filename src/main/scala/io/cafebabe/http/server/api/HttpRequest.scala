@@ -28,7 +28,7 @@ package io.cafebabe.http.server.api
  * @author Vladimir Konstantinov
  */
 case class HttpRequest(
-  method: HttpMethod,
+  method: String,
   path: String,
   parameters: QueryParams,
   content: HttpContent,

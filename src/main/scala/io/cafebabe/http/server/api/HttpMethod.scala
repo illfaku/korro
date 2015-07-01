@@ -17,14 +17,14 @@
 package io.cafebabe.http.server.api
 
 /**
- * HTTP request methods as objects to be contained in request and handy extractors of request.
+ * HTTP request methods as constructors and handy extractors of request.
  * <br><br>
  * Extractors usage:
  * {{{
  *   import HttpMethod._
  *   req match {
- *     case GET(path, params, content, headers) => ???
- *     case POST(path, params, content, headers) => ???
+ *     case Get(path, params, content, headers) => ???
+ *     case Post(path, params, content, headers) => ???
  *   }
  * }}}
  *
@@ -32,34 +32,39 @@ package io.cafebabe.http.server.api
  */
 object HttpMethod {
 
-  case object GET extends HttpMethod("GET")
+  case object Get extends HttpMethod("GET")
 
-  case object POST extends HttpMethod("POST")
+  case object Post extends HttpMethod("POST")
 
-  case object PUT extends HttpMethod("PUT")
+  case object Put extends HttpMethod("PUT")
 
-  case object DELETE extends HttpMethod("DELETE")
+  case object Delete extends HttpMethod("DELETE")
 
-  case object HEAD extends HttpMethod("HEAD")
+  case object Head extends HttpMethod("HEAD")
 
-  case object CONNECT extends HttpMethod("CONNECT")
+  case object Connect extends HttpMethod("CONNECT")
 
-  case object OPTIONS extends HttpMethod("OPTIONS")
+  case object Options extends HttpMethod("OPTIONS")
 
-  case object TRACE extends HttpMethod("TRACE")
+  case object Trace extends HttpMethod("TRACE")
 
   def forName(name: String): HttpMethod = name.toUpperCase match {
-    case "GET" => GET
-    case "POST" => POST
-    case "PUT" => PUT
-    case "DELETE" => DELETE
-    case "HEAD" => HEAD
-    case "CONNECT" => CONNECT
-    case "OPTIONS" => OPTIONS
-    case "TRACE" => TRACE
+    case "GET" => Get
+    case "POST" => Post
+    case "PUT" => Put
+    case "DELETE" => Delete
+    case "HEAD" => Head
+    case "CONNECT" => Connect
+    case "OPTIONS" => Options
+    case "TRACE" => Trace
   }
 }
 
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 sealed abstract class HttpMethod(val name: String) {
 
   def apply(
@@ -68,9 +73,9 @@ sealed abstract class HttpMethod(val name: String) {
     content: HttpContent = EmptyHttpContent,
     headers: HttpHeaders = HttpHeaders.empty
   ): HttpRequest = {
-    HttpRequest(this, path, parameters, content, headers)
+    HttpRequest(name, path, parameters, content, headers)
   }
 
   def unapply(req: HttpRequest): Option[(String, QueryParams, HttpContent, HttpHeaders)] =
-    if (this == req.method) Some(req.path, req.parameters, req.content, req.headers) else None
+    if (name == req.method.toUpperCase) Some(req.path, req.parameters, req.content, req.headers) else None
 }
