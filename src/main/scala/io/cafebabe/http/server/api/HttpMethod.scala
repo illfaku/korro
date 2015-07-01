@@ -61,6 +61,16 @@ object HttpMethod {
 }
 
 sealed abstract class HttpMethod(val name: String) {
+
+  def apply(
+    path: String,
+    parameters: QueryParams = QueryParams.empty,
+    content: HttpContent = EmptyHttpContent,
+    headers: HttpHeaders = HttpHeaders.empty
+  ): HttpRequest = {
+    HttpRequest(this, path, parameters, content, headers)
+  }
+
   def unapply(req: HttpRequest): Option[(String, QueryParams, HttpContent, HttpHeaders)] =
     if (this == req.method) Some(req.path, req.parameters, req.content, req.headers) else None
 }
