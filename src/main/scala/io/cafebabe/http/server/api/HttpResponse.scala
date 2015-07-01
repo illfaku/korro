@@ -17,37 +17,6 @@
 package io.cafebabe.http.server.api
 
 /**
- * Factory methods for HttpResponse class.
- *
- * @author Vladimir Konstantinov
- */
-object HttpResponse {
-
-  object Status {
-    val Ok = 200
-    val BadRequest = 400
-    val NotFound = 404
-    val InternalError = 500
-  }
-
-  def ok(content: HttpContent = EmptyHttpContent, headers: HttpHeaders = HttpHeaders.empty): HttpResponse = {
-    apply(Status.Ok, content, headers)
-  }
-
-  def badRequest(content: HttpContent = EmptyHttpContent, headers: HttpHeaders = HttpHeaders.empty): HttpResponse = {
-    apply(Status.BadRequest, content, headers)
-  }
-
-  def notFound(content: HttpContent = EmptyHttpContent, headers: HttpHeaders = HttpHeaders.empty): HttpResponse = {
-    apply(Status.NotFound, content, headers)
-  }
-
-  def error(content: HttpContent = EmptyHttpContent, headers: HttpHeaders = HttpHeaders.empty): HttpResponse = {
-    apply(Status.InternalError, content, headers)
-  }
-}
-
-/**
  * HTTP response with status code, content and headers.
  *
  * @author Vladimir Konstantinov
