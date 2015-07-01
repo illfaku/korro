@@ -16,10 +16,10 @@
  */
 package io.cafebabe.http.server.impl.convert
 
+import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
+
 import akka.actor.ActorNotFound
 import akka.pattern.AskTimeoutException
-import io.cafebabe.http.server.api.exception.{BadRequestException, NotFoundException}
-import io.cafebabe.http.server.api.{HttpContent, HttpHeaders, HttpResponse, _}
 import io.netty.handler.codec.http.HttpResponseStatus._
 import io.netty.handler.codec.http._
 import org.slf4j.LoggerFactory
@@ -50,8 +50,7 @@ object HttpResponseConverter {
   val toError: PartialFunction[Throwable, FullHttpResponse] = {
     case e: ActorNotFound => nettyResponse(SERVICE_UNAVAILABLE)
     case e: AskTimeoutException => nettyResponse(REQUEST_TIMEOUT)
-    case e: NotFoundException => nettyResponse(NOT_FOUND)
-    case e: BadRequestException => nettyResponse(BAD_REQUEST, TextHttpContent(e.getMessage))
+    case e: IllegalArgumentException => nettyResponse(BAD_REQUEST, TextHttpContent(e.getMessage))
     case e: Throwable =>
       val message = s"Internal Error #${UUID.randomUUID}."
       log.error(message, e)

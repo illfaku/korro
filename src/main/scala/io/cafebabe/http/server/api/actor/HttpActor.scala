@@ -16,9 +16,9 @@
  */
 package io.cafebabe.http.server.api.actor
 
-import akka.actor.{Actor, Status}
-import io.cafebabe.http.server.api.HttpRequest
-import io.cafebabe.http.server.api.exception.NotFoundException
+import io.cafebabe.http.server.api.{HttpRequest, HttpStatus}
+
+import akka.actor.Actor
 
 /**
  * TODO: Add description.
@@ -35,5 +35,5 @@ abstract class HttpActor extends Actor {
 
   def receiveHttp: HttpReceive
 
-  private def notFound(req: HttpRequest): Unit = sender ! Status.Failure(new NotFoundException)
+  private def notFound(req: HttpRequest): Unit = sender ! HttpStatus.NotFound()
 }

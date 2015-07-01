@@ -16,7 +16,6 @@
  */
 package io.cafebabe.http.server.impl.convert
 
-import io.cafebabe.http.server.api.exception.BadRequestException
 import io.cafebabe.http.server.api.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
 import io.cafebabe.http.server.impl.util.MimeTypes._
@@ -71,7 +70,7 @@ object HttpContentConverter {
     headers.get(CONTENT_TYPE) match {
       case ContentType(mime, charset) =>
         try mime -> charset.map(Charset.forName).getOrElse(DEFAULT_CHARSET) catch {
-          case e: IllegalArgumentException => throw new BadRequestException(s"Unsupported charset: $charset.")
+          case e: IllegalArgumentException => throw new IllegalArgumentException(s"Unsupported charset: $charset.")
         }
       case _ => TextPlain -> DEFAULT_CHARSET
     }
@@ -81,9 +80,9 @@ object HttpContentConverter {
     case (TextPlain, charset) => TextHttpContent(content.toString(charset))
     case (ApplicationJson, charset) =>
       try JsonHttpContent(parse(content.toString(charset))) catch {
-        case e: ParseException => throw new BadRequestException(s"Fail to parse json content: ${e.getMessage}")
+        case e: ParseException => throw new IllegalArgumentException(s"Failed to parse json content: ${e.getMessage}")
       }
     case (FormUrlEncoded, _) => EmptyHttpContent // processed by QueryParamsConverter
-    case (mime, _) => throw new BadRequestException(s"Unsupported Content-Type: $mime.")
+    case (mime, _) => throw new IllegalArgumentException(s"Unsupported Content-Type: $mime.")
   }
 }
