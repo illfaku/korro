@@ -16,27 +16,27 @@
  */
 package io.cafebabe.http.server.api
 
+import org.scalatest.{FlatSpec, Matchers}
+
 /**
- * Extractor for variables in URI path.
- * <br><br>
- * Example usage:
- * {{{
- *   object PetInfo extends VariablePath("/category/{}/pet/{}/info")
- *   request match {
- *     case Get(PetInfo(category, pet), params, content, headers) => ???
- *   }
- * }}}
- * Internally each occurrence of '{}' is replaced with '(\w+)'
- * and pattern compiles to regular expression.
+ * Collection of tests for [[io.cafebabe.http.server.api.VariablePath]].
  *
  * @author Vladimir Konstantinov
  */
-abstract class VariablePath(pattern: String) {
+class VariablePathSpec extends FlatSpec with Matchers {
 
-  private val regex = pattern.replace("{}", """(\w+)""").r
+  "VariablePath" should "extract no variables if pattern is equal to path" in {
+    object NoVariablePath extends VariablePath("/test/path")
+    NoVariablePath.unapplySeq("/test/path") should be (Some(Nil))
+  }
 
-  def unapplySeq(path: String): Option[List[String]] = path match {
-    case null => None
-    case _ => regex.unapplySeq(path)
+  it should "extract all variables from path" in {
+    object TestVariablePath extends VariablePath("/test/{}/path/{}")
+    TestVariablePath.unapplySeq("/test/param/path/101") should be (Some(List("param", "101")))
+  }
+
+  it should "extract nothing if path does not match pattern" in {
+    object TestVariablePath extends VariablePath("/test/{}/path/{}")
+    TestVariablePath.unapplySeq("/test/param/path") should be (None)
   }
 }
