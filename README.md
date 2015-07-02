@@ -3,20 +3,40 @@ Simple HTTP server/client powered by Netty and Akka.
 Configuration example (HOCON):
 
     cafebabe.http.servers = [{
+        
         port = 8080
-        workerGroupSize = 2  // default: 1
+        
+        // Number of workers to process incoming messages. 1 by default.
+        workerGroupSize = 2
+        
         HTTP = {
-            resolveTimeout = 5s  // default: 10 seconds
-            requestTimeout = 10s  // default: 60 seconds
-            maxContentLength = 2M  // default: 65536 bytes
+            
+            // Time limit for resolveOne operation of route actor selection. 10 seconds by default.
+            resolveTimeout = 5s
+            
+            // Time limit to ask route actor. 60 seconds by default.
+            requestTimeout = 10s
+            
+            // 65536 bytes by default.
+            maxContentLength = 2M
+            
+            // Compression level from 0 to 9. Comment this line to disable compression.
+            compression = 6
+            
             routes = [{
                 path = /api/1.0
                 actor = /user/http-router
             }]
         }
+        
         WebSocket = {
-            resolveTimeout = 5s  // default: 10 seconds
-            maxFramePayloadLength = 2M  // default: 65536 bytes
+            
+            // Time limit for resolveOne operation of route actor selection. 10 seconds by default.
+            resolveTimeout = 5s
+            
+            // 65536 bytes by default.
+            maxFramePayloadLength = 2M
+            
             routes = [{
                 path = /websocket
                 actor = /user/ws-router

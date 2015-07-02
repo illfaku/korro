@@ -22,7 +22,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.http.{HttpObjectAggregator, HttpRequestDecoder, HttpResponseEncoder}
+import io.netty.handler.codec.http._
 
 /**
  * TODO: Add description.
@@ -35,11 +35,18 @@ class HttpChannelInitializer(config: Config, actors: ActorSystem) extends Channe
 
   private val maxContentLength = config.findBytes("HTTP.maxContentLength").getOrElse(65536L).toInt
 
+  private val compressionLevel = config.findInt("HTTP.compression")
+
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
+
     pipeline.addLast(new HttpRequestDecoder)
     pipeline.addLast(new HttpObjectAggregator(maxContentLength))
+    pipeline.addLast(new HttpContentDecompressor)
+
     pipeline.addLast(new HttpResponseEncoder)
+    compressionLevel foreach { level => pipeline.addLast(new HttpContentCompressor(level)) }
+
     pipeline.addLast(new HttpChannelHandler(actors, routes))
   }
 }
