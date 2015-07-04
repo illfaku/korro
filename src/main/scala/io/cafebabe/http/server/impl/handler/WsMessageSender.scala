@@ -16,12 +16,14 @@
  */
 package io.cafebabe.http.server.impl.handler
 
+import io.cafebabe.http.server.api.protocol.jsonrpc.JsonRpcMessage
 import io.cafebabe.http.server.api.ws.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toByteBuf
 
 import akka.actor.{Actor, Props}
 import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
 import io.netty.handler.codec.http.websocketx._
+import org.json4s.native.JsonMethods.{compact, render}
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -44,11 +46,16 @@ object WsMessageSender {
 class WsMessageSender(channel: Channel) extends Actor {
 
   override def receive = {
-    case TextWsMessage(text) => send(new TextWebSocketFrame(text))
-    case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
+    case TextWsMessage(text) => sendText(text)
+    case BinaryWsMessage(bytes) => sendBytes(bytes)
+    case msg: JsonRpcMessage => sendText(compact(render(msg.toJson)))
   }
 
   override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
+
+  private def sendText(text: String): Unit = send(new TextWebSocketFrame(text))
+
+  private def sendBytes(bytes: Array[Byte]): Unit = send(new BinaryWebSocketFrame(toByteBuf(bytes)))
 
   private def send(frame: WebSocketFrame): ChannelFuture = channel.writeAndFlush(frame)
 }
