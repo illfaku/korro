@@ -24,7 +24,8 @@ import org.json4s._
  * @author Vladimir Konstantinov
  */
 case class JsonRpcRequest(method: String, params: JValue, id: Int) extends JsonRpcMessage {
-  override def toJson: JValue = JObject(
+
+  override val toJson = JObject(
     ("method", JString(method)),
     ("params", params),
     ("id", JInt(id))
@@ -37,6 +38,7 @@ case class JsonRpcRequest(method: String, params: JValue, id: Int) extends JsonR
  * @author Vladimir Konstantinov
  */
 object JsonRpcRequest {
+
   def from(json: JValue): Option[JsonRpcRequest] = json match {
     case JObject(fields) =>
       (for {

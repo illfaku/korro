@@ -24,7 +24,8 @@ import org.json4s._
  * @author Vladimir Konstantinov
  */
 case class JsonRpcError(code: Int, message: String, id: Int) extends JsonRpcMessage {
-  override def toJson: JValue = JObject(
+
+  override val toJson = JObject(
     ("error", JObject(
       ("code", JInt(code)),
       ("message", JString(message))
@@ -39,9 +40,21 @@ case class JsonRpcError(code: Int, message: String, id: Int) extends JsonRpcMess
  * @author Vladimir Konstantinov
  */
 object JsonRpcError {
+
   def parseError(message: String, id: Int): JsonRpcError = apply(-32700, message, id)
   def invalidRequest(message: String, id: Int): JsonRpcError = apply(-32600, message, id)
   def methodNotFound(message: String, id: Int): JsonRpcError = apply(-32601, message, id)
   def invalidParams(message: String, id: Int): JsonRpcError = apply(-32602, message, id)
   def internalError(message: String, id: Int): JsonRpcError = apply(-32603, message, id)
+
+  def from(json: JValue): Option[JsonRpcError] = json match {
+    case JObject(fields) =>
+      (for {
+        ("id", JInt(id)) <- fields
+        ("error", JObject(error)) <- fields
+        ("code", JInt(code)) <- error
+        ("message", JString(message)) <- error
+      } yield JsonRpcError(code.toInt, message, id.toInt)).headOption
+    case _ => None
+  }
 }

@@ -24,8 +24,26 @@ import org.json4s._
  * @author Vladimir Konstantinov
  */
 case class JsonRpcResult(result: JValue, id: Int) extends JsonRpcMessage {
-  override def toJson: JValue = JObject(
+
+  override val toJson = JObject(
     ("result", result),
     ("id", JInt(id))
   )
+}
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+object JsonRpcResult {
+
+  def from(json: JValue): Option[JsonRpcResult] = json match {
+    case JObject(fields) =>
+      (for {
+        ("result", result) <- fields
+        ("id", JInt(id)) <- fields
+      } yield JsonRpcResult(result, id.toInt)).headOption
+    case _ => None
+  }
 }
