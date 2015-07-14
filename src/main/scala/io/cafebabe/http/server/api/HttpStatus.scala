@@ -23,20 +23,13 @@ package io.cafebabe.http.server.api
  */
 object HttpStatus {
 
-  case object Ok extends HttpStatus(200)
+  object Ok extends HttpStatus(200)
 
-  case object BadRequest extends HttpStatus(400)
+  object BadRequest extends HttpStatus(400)
 
-  case object NotFound extends HttpStatus(404)
+  object NotFound extends HttpStatus(404)
 
-  case object ServerError extends HttpStatus(500)
-
-  def forCode(code: Int): HttpStatus = code match {
-    case 200 => Ok
-    case 400 => BadRequest
-    case 404 => NotFound
-    case 500 => ServerError
-  }
+  object ServerError extends HttpStatus(500)
 }
 
 /**

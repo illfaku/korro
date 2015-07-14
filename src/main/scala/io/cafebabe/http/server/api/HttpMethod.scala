@@ -32,32 +32,21 @@ package io.cafebabe.http.server.api
  */
 object HttpMethod {
 
-  case object Get extends HttpMethod("GET")
+  object Get extends HttpMethod("GET")
 
-  case object Post extends HttpMethod("POST")
+  object Post extends HttpMethod("POST")
 
-  case object Put extends HttpMethod("PUT")
+  object Put extends HttpMethod("PUT")
 
-  case object Delete extends HttpMethod("DELETE")
+  object Delete extends HttpMethod("DELETE")
 
-  case object Head extends HttpMethod("HEAD")
+  object Head extends HttpMethod("HEAD")
 
-  case object Connect extends HttpMethod("CONNECT")
+  object Connect extends HttpMethod("CONNECT")
 
-  case object Options extends HttpMethod("OPTIONS")
+  object Options extends HttpMethod("OPTIONS")
 
-  case object Trace extends HttpMethod("TRACE")
-
-  def forName(name: String): HttpMethod = name.toUpperCase match {
-    case "GET" => Get
-    case "POST" => Post
-    case "PUT" => Put
-    case "DELETE" => Delete
-    case "HEAD" => Head
-    case "CONNECT" => Connect
-    case "OPTIONS" => Options
-    case "TRACE" => Trace
-  }
+  object Trace extends HttpMethod("TRACE")
 }
 
 /**
