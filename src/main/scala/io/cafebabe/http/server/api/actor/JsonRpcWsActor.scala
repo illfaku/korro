@@ -29,24 +29,24 @@ import org.json4s.native.JsonParser.parse
  *
  * @author Vladimir Konstantinov
  */
-abstract class JsonRpcWsActor extends Actor {
+trait JsonRpcWsActor extends Actor {
 
   type JsonRpcReceive = PartialFunction[JsonRpcMessage, Unit]
 
   override final def receive: Receive = {
     case ConnectWsMessage(host) =>
-      tryReceive(JsonRpcNotification("onConnect", JObject("host" -> JString(host))), unhandled)
+      tryReceive(JsonRpcNotification("connected", JObject("host" -> JString(host))), unhandled)
     case DisconnectWsMessage =>
-      tryReceive(JsonRpcNotification("onDisconnect", JNothing), unhandled)
-    case m: TextWsMessage =>
+      tryReceive(JsonRpcNotification("disconnected", JNothing), unhandled)
+    case TextWsMessage(text) =>
       try {
-        val json = parse(m.text)
+        val json = parse(text)
         JsonRpcRequest.from(json) orElse JsonRpcNotification.from(json) match {
           case Some(msg) => tryReceive(msg, notFound)
-          case None => sender ! JsonRpcError.parseError(s"Failed to parse as json-rpc: ${m.text}", -1)
+          case None => sender ! JsonRpcError.parseError(s"Failed to parse as JSON-RPC: $text", -1)
         }
       } catch {
-        case e: ParseException => sender ! JsonRpcError.parseError(s"Failed to parse as json: ${m.text}", -1)
+        case e: ParseException => sender ! JsonRpcError.parseError(s"Failed to parse as JSON: $text", -1)
       }
   }
 
