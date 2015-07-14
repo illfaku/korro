@@ -16,17 +16,14 @@
  */
 package io.cafebabe.http.server.impl.util
 
-import org.json4s._
-import org.json4s.native.JsonMethods._
-import io.cafebabe.util.json.formats
-
 import scala.reflect._
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
- * @version 1.0 (4/12/2015)
  */
-object StringUtils {
+object StringConversion {
 
   private val converters = Map[Class[_], (String) => Any](
 
@@ -46,38 +43,11 @@ object StringUtils {
     classOf[java.lang.Long] -> java.lang.Long.valueOf,
     classOf[java.lang.Float] -> java.lang.Float.valueOf,
     classOf[java.lang.Double] -> java.lang.Double.valueOf,
-    classOf[java.lang.Boolean] -> java.lang.Boolean.valueOf,
-
-    classOf[JValue] -> { value: String => parse(value) }
+    classOf[java.lang.Boolean] -> java.lang.Boolean.valueOf
   )
 
   def fromString[T: ClassTag](value: String): T = {
     val target = classTag[T].runtimeClass
     converters.get(target).map(_(value).asInstanceOf[T]).getOrElse(throw new IllegalArgumentException(target.getName))
-  }
-
-  def toString(value: Any): String = value match {
-
-    case v: String => v
-
-    case v: Byte => v.toString
-    case v: Short => v.toString
-    case v: Int => v.toString
-    case v: Long => v.toString
-    case v: Float => v.toString
-    case v: Double => v.toString
-    case v: Boolean => v.toString
-
-    case v: java.lang.Byte => v.toString
-    case v: java.lang.Short => v.toString
-    case v: java.lang.Integer => v.toString
-    case v: java.lang.Long => v.toString
-    case v: java.lang.Float => v.toString
-    case v: java.lang.Double => v.toString
-    case v: java.lang.Boolean => v.toString
-
-    case v: JValue => compact(render(v))
-
-    case _ => throw new IllegalArgumentException(value.getClass.getName)
   }
 }

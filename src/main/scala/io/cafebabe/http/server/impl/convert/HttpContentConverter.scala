@@ -18,15 +18,16 @@ package io.cafebabe.http.server.impl.convert
 
 import io.cafebabe.http.server.api.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
 import io.cafebabe.http.server.impl.util.ByteBufUtils._
+import io.cafebabe.http.server.impl.util.ContentType
 import io.cafebabe.http.server.impl.util.MimeTypes._
-import io.cafebabe.http.server.impl.util.{ContentType, StringUtils}
 
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names._
 import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders}
 import org.json4s.ParserUtil.ParseException
-import org.json4s.native.JsonParser._
+import org.json4s.native.JsonMethods.{compact, render}
+import org.json4s.native.JsonParser.parse
 
 import java.nio.charset.Charset
 
@@ -50,7 +51,7 @@ object HttpContentConverter {
         toByteBuf(text)
       case JsonHttpContent(json) =>
         headers.add(CONTENT_TYPE, ContentType(ApplicationJson))
-        toByteBuf(StringUtils.toString(json))
+        toByteBuf(compact(render(json)))
       case EmptyHttpContent => emptyByteBuf
     }
     headers.add(CONTENT_LENGTH, buf.readableBytes)
@@ -80,7 +81,7 @@ object HttpContentConverter {
     case (TextPlain, charset) => TextHttpContent(content.toString(charset))
     case (ApplicationJson, charset) =>
       try JsonHttpContent(parse(content.toString(charset))) catch {
-        case e: ParseException => throw new IllegalArgumentException(s"Failed to parse json content: ${e.getMessage}")
+        case e: ParseException => throw new IllegalArgumentException(s"Failed to parse json content. ${e.getMessage}")
       }
     case (FormUrlEncoded, _) => EmptyHttpContent // processed by QueryParamsConverter
     case (mime, _) => throw new IllegalArgumentException(s"Unsupported Content-Type: $mime.")

@@ -16,7 +16,7 @@
  */
 package io.cafebabe.http.server.api
 
-import io.cafebabe.http.server.impl.util.StringUtils
+import io.cafebabe.http.server.impl.util.StringConversion.fromString
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -33,8 +33,8 @@ object HttpHeaders {
   def apply(headers: (String, Any)*): HttpHeaders = {
     val result = mutable.Map.empty[String, List[String]]
     headers foreach { case (key, value) =>
-      val list = result.getOrElse(key, List.empty)
-      result += key -> (StringUtils.toString(value) :: list)
+      val list = value.toString :: result.getOrElse(key, List.empty)
+      result += key -> list
     }
     new HttpHeaders(Map.empty ++ result)
   }
@@ -47,8 +47,8 @@ object HttpHeaders {
  * @author Vladimir Konstantinov
  */
 class HttpHeaders(headers: Map[String, List[String]]) {
-  def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(StringUtils.fromString)
-  def all[T: ClassTag](name: String): List[T] = headers.get(name).map(_.map(StringUtils.fromString)).getOrElse(Nil)
+  def one[T: ClassTag](name: String): Option[T] = headers.get(name).map(_.head).map(fromString)
+  def all[T: ClassTag](name: String): List[T] = headers.get(name).map(_.map(fromString)).getOrElse(List.empty)
   def toMap: Map[String, List[String]] = headers
   override def toString: String = headers.mkString("HttpHeaders(", ", ", ")")
 }
