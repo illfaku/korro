@@ -16,7 +16,7 @@
  */
 package io.cafebabe.http.server.api
 
-import io.cafebabe.http.server.impl.util.StringConversion.fromString
+import io.cafebabe.util.lang.StringUtils.fromString
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

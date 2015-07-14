@@ -17,7 +17,7 @@
 package io.cafebabe.http.server.impl
 
 import io.cafebabe.http.server.impl.handler.HttpChannelInitializer
-import io.cafebabe.http.server.impl.util.IncrementalThreadFactory
+import io.cafebabe.util.concurrent.IncrementalThreadFactory
 import io.cafebabe.util.config.wrapped
 
 import akka.actor.ActorSystem

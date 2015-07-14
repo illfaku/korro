@@ -16,9 +16,9 @@
  */
 package io.cafebabe.http.server.impl.handler
 
-import io.cafebabe.http.server.api.protocol.jsonrpc.JsonRpcMessage
 import io.cafebabe.http.server.api.ws.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toByteBuf
+import io.cafebabe.util.protocol.jsonrpc.JsonRpcMessage
 
 import akka.actor.{Actor, Props}
 import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}

@@ -16,8 +16,8 @@
  */
 package io.cafebabe.http.server.api.actor
 
-import io.cafebabe.http.server.api.protocol.jsonrpc._
 import io.cafebabe.http.server.api.ws.{ConnectWsMessage, DisconnectWsMessage, TextWsMessage}
+import io.cafebabe.util.protocol.jsonrpc._
 
 import akka.actor.Actor
 import org.json4s.ParserUtil.ParseException
