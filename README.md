@@ -1,3 +1,5 @@
+# Cafebabe HTTP [![Build Status](https://travis-ci.org/yet-another-cafebabe/http.svg?branch=master)](https://travis-ci.org/yet-another-cafebabe/http)
+
 Simple HTTP server/client powered by Netty and Akka.
 
 Configuration example (HOCON):
