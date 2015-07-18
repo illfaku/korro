@@ -18,6 +18,7 @@ package io.cafebabe.http.server.impl.handler
 
 import io.cafebabe.http.server.api.ws.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toByteBuf
+import io.cafebabe.util.io.zipString
 import io.cafebabe.util.protocol.jsonrpc.JsonRpcMessage
 
 import akka.actor.{Actor, Props}
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong
 object WsMessageSender {
   private val counter = new AtomicLong
   def name = "ws-sender-" + counter.incrementAndGet()
-  def props(channel: Channel) = Props(new WsMessageSender(channel))
+  def props(channel: Channel, compression: Boolean) = Props(new WsMessageSender(channel, compression))
 }
 
 /**
@@ -43,7 +44,7 @@ object WsMessageSender {
  *
  * @author Vladimir Konstantinov
  */
-class WsMessageSender(channel: Channel) extends Actor {
+class WsMessageSender(channel: Channel, compression: Boolean) extends Actor {
 
   override def receive = {
     case TextWsMessage(text) => sendText(text)
@@ -53,7 +54,10 @@ class WsMessageSender(channel: Channel) extends Actor {
 
   override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
 
-  private def sendText(text: String): Unit = send(new TextWebSocketFrame(text))
+  private def sendText(text: String): Unit = {
+    if (compression) sendBytes(zipString(text))
+    else send(new TextWebSocketFrame(text))
+  }
 
   private def sendBytes(bytes: Array[Byte]): Unit = send(new BinaryWebSocketFrame(toByteBuf(bytes)))
 

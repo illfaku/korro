@@ -30,28 +30,24 @@ import scala.language.postfixOps
  */
 class Routes(config: Config) {
 
-  private val httpResolveTimeout: FiniteDuration = {
-    config.findFiniteDuration("HTTP.resolveTimeout") getOrElse 10.seconds
-  }
+  private val httpResolveTimeout: FiniteDuration = config.findFiniteDuration("HTTP.resolveTimeout") getOrElse 10.seconds
 
-  private val httpRequestTimeout: FiniteDuration = {
-    config.findFiniteDuration("HTTP.requestTimeout") getOrElse 60.seconds
-  }
+  private val httpRequestTimeout: FiniteDuration = config.findFiniteDuration("HTTP.requestTimeout") getOrElse 60.seconds
 
   private val wsResolveTimeout: FiniteDuration = {
     config.findFiniteDuration("WebSocket.resolveTimeout") getOrElse 10.seconds
   }
 
-  private val maxFramePayloadLength: Int = {
-    config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
-  }
+  private val maxFramePayloadLength: Int = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
+
+  private val wsCompression: Boolean = config.findBoolean("WebSocket.compression") getOrElse false
 
   private val httpRoutes: List[HttpRoute] = config.findConfigList("HTTP.routes").toList.map { route =>
     HttpRoute(route.getString("path"), httpResolveTimeout, httpRequestTimeout, route.getString("actor"))
   }
 
   private val wsRoutes: List[WsRoute] = config.findConfigList("WebSocket.routes").toList.map { route =>
-    WsRoute(route.getString("path"), wsResolveTimeout, maxFramePayloadLength, route.getString("actor"))
+    WsRoute(route.getString("path"), wsResolveTimeout, maxFramePayloadLength, wsCompression, route.getString("actor"))
   }
 
   def apply(path: String): Route = httpRoute(path) orElse wsRoute(path) getOrElse NoRoute
@@ -89,6 +85,7 @@ case class WsRoute(
   path: String,
   resolveTimeout: FiniteDuration,
   maxFramePayloadLength: Int,
+  compression: Boolean,
   actor: String
 ) extends Route
 

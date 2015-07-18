@@ -16,10 +16,11 @@
  */
 package io.cafebabe.http.server.impl.handler
 
-import io.cafebabe.http.server.api.ws.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
-import io.cafebabe.http.server.impl.util.ByteBufUtils._
+import io.cafebabe.http.server.api.ws.{DisconnectWsMessage, TextWsMessage}
+import io.cafebabe.util.io.unzipString
 
 import akka.actor.{ActorRef, PoisonPill}
+import io.netty.buffer.ByteBufInputStream
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory
@@ -50,7 +51,8 @@ class WsChannelHandler(host: String, receiver: ActorRef, sender: ActorRef)
     case frame: PongWebSocketFrame =>
       log.trace("Pong frame from host {}.", host)
     case frame: BinaryWebSocketFrame =>
-      receiver.tell(new BinaryWsMessage(toBytes(frame.content)), sender)
+      val text = unzipString(new ByteBufInputStream(frame.content))
+      receiver.tell(new TextWsMessage(text), sender)
     case frame: TextWebSocketFrame =>
       receiver.tell(new TextWsMessage(frame.text), sender)
     case frame => log.debug("Some unpredicted frame was received: {}.", frame)

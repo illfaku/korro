@@ -70,7 +70,7 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
     if (handshaker != null) {
       actors.actorSelection(route.actor).resolveOne(route.resolveTimeout) onComplete {
         case Success(receiver) =>
-          val sender = actors.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
+          val sender = actors.actorOf(WsMessageSender.props(ctx.channel, route.compression), WsMessageSender.name)
           val host = extractHost(ctx.channel, req)
           ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(host, receiver, sender))
           handshaker.handshake(ctx.channel, req).sync()
