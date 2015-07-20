@@ -18,7 +18,6 @@ package io.cafebabe.http.server.api
 
 import io.cafebabe.util.lang.StringUtils.fromString
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /**
@@ -31,12 +30,8 @@ object HttpHeaders {
   val empty = new HttpHeaders(Map.empty)
 
   def apply(headers: (String, Any)*): HttpHeaders = {
-    val result = mutable.Map.empty[String, List[String]]
-    headers foreach { case (key, value) =>
-      val list = value.toString :: result.getOrElse(key, List.empty)
-      result += key -> list
-    }
-    new HttpHeaders(Map.empty ++ result)
+    val result = headers.groupBy(_._1).mapValues(_.map(_._2.toString).toList)
+    new HttpHeaders(result)
   }
 }
 
