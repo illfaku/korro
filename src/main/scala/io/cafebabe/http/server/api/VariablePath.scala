@@ -35,8 +35,5 @@ abstract class VariablePath(pattern: String) {
 
   private val regex = pattern.replace("{}", """(\w+)""").r
 
-  def unapplySeq(path: String): Option[List[String]] = path match {
-    case null => None
-    case _ => regex.unapplySeq(path)
-  }
+  def unapplySeq(path: String): Option[List[String]] = regex.unapplySeq(path)
 }

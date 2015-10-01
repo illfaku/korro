@@ -3,9 +3,9 @@ import sbt._
 object Dependency {
 
   object V {
-    val Scala = "2.11.6"
-    val Akka = "2.3.11"
-    val Netty = "4.0.29.Final"
+    val Scala = "2.11.7"
+    val Akka = "2.3.13"
+    val Netty = "4.0.31.Final"
   }
 
   val cafebabeUtil = "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT" % "provided"
@@ -14,7 +14,7 @@ object Dependency {
 
   val typesafeConfig = "com.typesafe" % "config" % "1.2.1" % "provided"
   val json4s = "org.json4s" %% "json4s-native" % "3.2.11" % "provided"
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.10" % "provided"
+  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.12" % "provided"
 
   val osgiCore = "org.osgi" % "org.osgi.core" % "5.0.0" % "provided"
   val bnd = "biz.aQute.bnd" % "biz.aQute.bnd.annotation" % "2.4.0" % "provided"
