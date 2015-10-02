@@ -16,15 +16,11 @@
  */
 package io.cafebabe.http.server.impl.handler
 
+import akka.actor.{Actor, Props}
 import io.cafebabe.http.server.api.ws.{BinaryWsMessage, TextWsMessage}
 import io.cafebabe.http.server.impl.util.ByteBufUtils.toByteBuf
-import io.cafebabe.util.io.zipString
-import io.cafebabe.util.protocol.jsonrpc.JsonRpcMessage
-
-import akka.actor.{Actor, Props}
 import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
 import io.netty.handler.codec.http.websocketx._
-import org.json4s.native.JsonMethods.{compact, render}
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -36,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong
 object WsMessageSender {
   private val counter = new AtomicLong
   def name = "ws-sender-" + counter.incrementAndGet()
-  def props(channel: Channel, compression: Boolean) = Props(new WsMessageSender(channel, compression))
+  def props(channel: Channel) = Props(new WsMessageSender(channel))
 }
 
 /**
@@ -44,22 +40,14 @@ object WsMessageSender {
  *
  * @author Vladimir Konstantinov
  */
-class WsMessageSender(channel: Channel, compression: Boolean) extends Actor {
+class WsMessageSender(channel: Channel) extends Actor {
 
   override def receive = {
-    case TextWsMessage(text) => sendText(text)
-    case BinaryWsMessage(bytes) => sendBytes(bytes)
-    case msg: JsonRpcMessage => sendText(compact(render(msg.toJson)))
+    case TextWsMessage(text) => send(new TextWebSocketFrame(text))
+    case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
   }
 
   override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
-
-  private def sendText(text: String): Unit = {
-    if (compression) sendBytes(zipString(text))
-    else send(new TextWebSocketFrame(text))
-  }
-
-  private def sendBytes(bytes: Array[Byte]): Unit = send(new BinaryWebSocketFrame(toByteBuf(bytes)))
 
   private def send(frame: WebSocketFrame): ChannelFuture = channel.writeAndFlush(frame)
 }

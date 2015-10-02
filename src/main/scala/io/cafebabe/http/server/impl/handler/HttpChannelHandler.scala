@@ -44,19 +44,20 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
   private val log = LoggerFactory.getLogger(getClass)
 
   override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
-      if (req.getDecoderResult.isSuccess) {
-        val path = new URI(req.getUri).getPath
-        routes(path) match {
-          case route: HttpRoute => request(ctx, req, route)
-          case route: WsRoute => handshake(ctx, req, route)
-          case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
-        }
-      } else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
+    if (req.getDecoderResult.isSuccess) {
+      val path = new URI(req.getUri).getPath
+      routes(path) match {
+        case route: HttpRoute => request(ctx, req, route)
+        case route: WsRoute => handshake(ctx, req, route)
+        case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+      }
+    } else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
   }
 
   private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: HttpRoute): Unit = {
+    val request = HttpRequestConverter.fromNetty(req, route.path)
     actors.actorSelection(route.actor).resolveOne(route.resolveTimeout)
-      .flatMap(_.ask(HttpRequestConverter.fromNetty(req, route.path))(route.requestTimeout))
+      .flatMap(_.ask(request)(route.requestTimeout))
       .mapTo[HttpResponse]
       .map(HttpResponseConverter.toNetty)
       .recover(HttpResponseConverter.toError)
@@ -70,9 +71,14 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
     if (handshaker != null) {
       actors.actorSelection(route.actor).resolveOne(route.resolveTimeout) onComplete {
         case Success(receiver) =>
-          val sender = actors.actorOf(WsMessageSender.props(ctx.channel, route.compression), WsMessageSender.name)
+          val sender = actors.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
           val host = extractHost(ctx.channel, req)
-          ctx.channel.pipeline.remove(this).addLast(new WsChannelHandler(host, receiver, sender))
+
+          val pipeline = ctx.channel.pipeline
+          pipeline.remove(this)
+          if (route.compression) pipeline.addLast(new WsCompressionHandler)
+          pipeline.addLast(new WsChannelHandler(host, receiver, sender))
+
           handshaker.handshake(ctx.channel, req).sync()
           receiver.tell(new ConnectWsMessage(host), sender)
         case Failure(error) => sendHttpResponse(ctx, HttpResponseConverter.toError(error))
