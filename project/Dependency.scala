@@ -4,15 +4,15 @@ object Dependency {
 
   object V {
     val Scala = "2.11.7"
-    val Akka = "2.3.13"
-    val Netty = "4.0.31.Final"
+    val Akka = "2.4.0"
+    val Netty = "4.0.32.Final"
   }
 
   val cafebabeUtil = "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT" % "provided"
 
   val akka = "com.typesafe.akka" %% "akka-actor" % V.Akka % "provided"
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.2.1" % "provided"
+  val typesafeConfig = "com.typesafe" % "config" % "1.3.0" % "provided"
   val json4s = "org.json4s" %% "json4s-native" % "3.2.11" % "provided"
   val slf4j = "org.slf4j" % "slf4j-api" % "1.7.12" % "provided"
 
@@ -28,5 +28,5 @@ object Dependency {
     "io.netty" % "netty-codec-http" % V.Netty % "provided"
   )
 
-  val scalatest = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  val scalatest = "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 }
