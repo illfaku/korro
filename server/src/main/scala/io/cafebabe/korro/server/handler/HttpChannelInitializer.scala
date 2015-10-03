@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.util.config.wrapped
+import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config

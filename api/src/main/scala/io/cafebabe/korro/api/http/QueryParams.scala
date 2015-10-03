@@ -16,7 +16,8 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.util.lang.StringUtils.fromString
+import io.cafebabe.korro.util.lang.StringUtils
+import StringUtils.fromString
 
 import scala.reflect.ClassTag
 

@@ -17,8 +17,8 @@
 package io.cafebabe.korro.server
 
 import io.cafebabe.korro.server.handler.HttpChannelInitializer
-import io.cafebabe.util.concurrent.IncrementalThreadFactory
-import io.cafebabe.util.config.wrapped
+import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
+import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config

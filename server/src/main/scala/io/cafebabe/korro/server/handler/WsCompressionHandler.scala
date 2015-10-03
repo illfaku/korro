@@ -17,7 +17,7 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.server.util.ByteBufUtils._
-import io.cafebabe.util.io._
+import io.cafebabe.korro.util.io.{unzipString, zipString}
 
 import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext

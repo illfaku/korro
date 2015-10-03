@@ -17,7 +17,7 @@
 package io.cafebabe.korro.api.actor
 
 import io.cafebabe.korro.api.ws.{ConnectWsMessage, DisconnectWsMessage, TextWsMessage}
-import io.cafebabe.util.protocol.jsonrpc.{JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest}
+import io.cafebabe.korro.util.protocol.jsonrpc.{JsonRpcError, JsonRpcMessage, JsonRpcNotification, JsonRpcRequest}
 
 import akka.actor.Actor
 import org.json4s.ParserUtil.ParseException

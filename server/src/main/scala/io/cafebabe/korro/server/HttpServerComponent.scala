@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server
 
-import io.cafebabe.util.config.wrapped
+import io.cafebabe.korro.util.config.wrapped
 
 import aQute.bnd.annotation.component.{Activate, Component, Deactivate, Reference}
 import akka.actor.ActorSystem

@@ -24,7 +24,7 @@ object HttpBuild extends Build {
     id = "korro",
     base = file("."),
     settings = basicSettings
-  ) aggregate (api, server, client)
+  ) aggregate (api, server, client, util)
 
   lazy val api = Project(
     id = "korro-api",
@@ -47,7 +47,11 @@ object HttpBuild extends Build {
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.client ++ Dependencies.client
   )
 
-  lazy val util = RootProject(uri("git://github.com/yet-another-cafebabe/util.git"))
+  lazy val util = Project(
+    id = "korro-util",
+    base = file("util"),
+    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
+  )
 }
 
 object OsgiSettings {
@@ -74,6 +78,11 @@ object OsgiSettings {
       "Service-Component" -> "*"
     )
   )
+
+  lazy val util = SbtOsgi.osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.util.*"),
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Utilities")
+  )
 }
 
 object Dependencies {
@@ -91,6 +100,8 @@ object Dependencies {
     akka, typesafeConfig, json4s, slf4j, osgiCore, bnd, scalatest,
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
+
+  lazy val util = deps(typesafeConfig, json4s, scalatest)
 
   private def deps(modules: ModuleID*) = Seq(libraryDependencies ++= modules)
 }
