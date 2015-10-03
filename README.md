@@ -1,4 +1,4 @@
-# Cafebabe HTTP [![Build Status](https://travis-ci.org/yet-another-cafebabe/http.svg?branch=master)](https://travis-ci.org/yet-another-cafebabe/http)
+# Korro [![Build Status](https://travis-ci.org/yet-another-cafebabe/korro.svg?branch=master)](https://travis-ci.org/yet-another-cafebabe/korro)
 
 Simple HTTP server/client powered by Netty and Akka.
 
