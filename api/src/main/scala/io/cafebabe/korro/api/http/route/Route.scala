@@ -25,6 +25,7 @@ import scala.concurrent.duration.FiniteDuration
  */
 sealed trait Route {
   def path: String
+  def actor: String
 }
 
 /**
@@ -47,7 +48,6 @@ case class HttpRoute(
 case class WsRoute(
   path: String,
   resolveTimeout: FiniteDuration,
-  requestTimeout: FiniteDuration,
   maxFramePayloadLength: Int,
   compression: Boolean,
   actor: String

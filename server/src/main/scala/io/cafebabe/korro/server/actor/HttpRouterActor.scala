@@ -17,9 +17,11 @@
 package io.cafebabe.korro.server.actor
 
 import akka.actor._
-import io.cafebabe.korro.api.http.route.{GetRoute, Route, SetRoute}
+import io.cafebabe.korro.api.http.route._
+import io.cafebabe.korro.util.config.wrapped
 
 import scala.collection.mutable
+import scala.concurrent.duration._
 
 /**
  * TODO: Add description.
@@ -41,6 +43,28 @@ class HttpRouterActor extends Actor {
   private implicit val ordering = Ordering.Int.on[Route](_.path.length)
 
   private val routes = mutable.Map.empty[Int, List[Route]]
+
+  override def preStart(): Unit = {
+    val servers = context.system.settings.config.findConfigList("korro.servers")
+    routes ++= servers.map(c => c.getInt("port") -> c).toMap mapValues { config =>
+      val httpResolveTimeout = config.findFiniteDuration("HTTP.resolveTimeout").getOrElse(10 seconds)
+      val httpRequestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
+      val httpRoutes: List[Route] = config.findConfigList("HTTP.routes").toList.map { r =>
+        HttpRoute(r.getString("path"), httpResolveTimeout, httpRequestTimeout, r.getString("actor"))
+      }
+
+      val wsResolveTimeout = config.findFiniteDuration("WebSocket.resolveTimeout").getOrElse(10 seconds)
+      val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
+      val wsCompression = config.findBoolean("WebSocket.compression").getOrElse(false)
+      val wsRoutes: List[Route] = config.findConfigList("WebSocket.routes").toList.map { r =>
+        WsRoute(r.getString("path"), wsResolveTimeout, maxFramePayloadLength, wsCompression, r.getString("actor"))
+      }
+
+      httpRoutes ++ wsRoutes
+    }
+  }
+
+  override def postStop(): Unit = routes.clear()
 
   override def receive = {
 
