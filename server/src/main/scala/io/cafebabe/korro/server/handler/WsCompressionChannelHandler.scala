@@ -35,7 +35,7 @@ import java.util
  *
  * @author Vladimir Konstantinov
  */
-class WsCompressionHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
+class WsCompressionChannelHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
 
   override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = {
     msg match {

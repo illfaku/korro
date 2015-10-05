@@ -76,7 +76,7 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
 
           val pipeline = ctx.channel.pipeline
           pipeline.remove(this)
-          if (route.compression) pipeline.addLast(new WsCompressionHandler)
+          if (route.compression) pipeline.addLast(new WsCompressionChannelHandler)
           pipeline.addLast(new WsChannelHandler(host, receiver, sender))
 
           handshaker.handshake(ctx.channel, req).sync()
