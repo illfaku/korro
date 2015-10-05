@@ -47,7 +47,7 @@ object HttpServer {
       .group(bossGroup, workerGroup)
       .channel(classOf[NioServerSocketChannel])
       .handler(new LoggingHandler(LogLevel.DEBUG))
-      .childHandler(new HttpChannelInitializer(config, actors))
+      .childHandler(new HttpChannelInitializer(config)(???))
 
     val channel = bootstrap.bind(port).sync().channel
 

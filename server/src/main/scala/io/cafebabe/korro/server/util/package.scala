@@ -14,18 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.api.ws
+package io.cafebabe.korro.server
+
+import io.netty.channel.{ChannelFutureListener, ChannelFuture}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-sealed trait WsMessage
+package object util {
 
-case class ConnectWsMessage(host: String) extends WsMessage
-case object DisconnectWsMessage extends WsMessage
-case object PingWsMessage extends WsMessage
-case object PongWsMessage extends WsMessage
-case class TextWsMessage(text: String) extends WsMessage
-case class BinaryWsMessage(bytes: Array[Byte]) extends WsMessage
+  implicit class ChannelFutureExt(future: ChannelFuture) {
+    def foreach(f: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
+      override def operationComplete(cf: ChannelFuture): Unit = f(cf)
+    })
+  }
+}

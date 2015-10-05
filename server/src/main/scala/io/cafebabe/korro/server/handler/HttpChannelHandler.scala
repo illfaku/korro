@@ -16,20 +16,19 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.api.ws.ConnectWsMessage
-import io.cafebabe.korro.server.convert.{HttpRequestConverter, HttpResponseConverter}
+import io.cafebabe.korro.api.http.route.{GetRoute, HttpRoute, Route, WsRoute}
+import io.cafebabe.korro.server.actor.HttpRouterActor
 
-import akka.actor.ActorSystem
+import akka.actor.ActorContext
 import akka.pattern.ask
-import io.netty.channel.{Channel, ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
+import akka.util.Timeout
+import io.netty.channel._
 import io.netty.handler.codec.http._
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse
-import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory
 
-import java.net.{InetSocketAddress, URI}
+import java.net.URI
 
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /**
@@ -37,62 +36,29 @@ import scala.util.{Failure, Success}
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChannelInboundHandler[FullHttpRequest] {
-
-  import actors.dispatcher
+class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  override def channelRead0(ctx: ChannelHandlerContext, req: FullHttpRequest): Unit = {
-    if (req.getDecoderResult.isSuccess) {
+  import context.dispatcher
+  implicit val timeout = Timeout(2 seconds)
+
+  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
+    case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
       val path = new URI(req.getUri).getPath
-      routes(path) match {
-        case route: HttpRoute => request(ctx, req, route)
-        case route: WsRoute => handshake(ctx, req, route)
-        case NoRoute => sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+      (HttpRouterActor.selection ? GetRoute(port, path)).mapTo[Option[Route]] onComplete {
+        case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
+        case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
+        case Success(None) =>
+          req.release()
+          sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+        case Failure(error) =>
+          req.release()
+          log.error("Error while trying to get route.", error)
+          sendHttpResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR)
       }
-    } else sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
-  }
-
-  private def request(ctx: ChannelHandlerContext, req: FullHttpRequest, route: HttpRoute): Unit = {
-    val request = HttpRequestConverter.fromNetty(req, route.path)
-    actors.actorSelection(route.actor).resolveOne(route.resolveTimeout)
-      .flatMap(_.ask(request)(route.requestTimeout))
-      .mapTo[HttpResponse]
-      .map(HttpResponseConverter.toNetty)
-      .recover(HttpResponseConverter.toError)
-      .foreach(sendHttpResponse(ctx, _))
-  }
-
-  private def handshake(ctx: ChannelHandlerContext, req: FullHttpRequest, route: WsRoute): Unit = {
-    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}${route.path}"
-    val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true)
-    val handshaker = handshakerFactory.newHandshaker(req)
-    if (handshaker != null) {
-      actors.actorSelection(route.actor).resolveOne(route.resolveTimeout) onComplete {
-        case Success(receiver) =>
-          val sender = actors.actorOf(WsMessageSender.props(ctx.channel), WsMessageSender.name)
-          val host = extractHost(ctx.channel, req)
-
-          val pipeline = ctx.channel.pipeline
-          pipeline.remove(this)
-          if (route.compression) pipeline.addLast(new WsCompressionChannelHandler)
-          pipeline.addLast(new WsChannelHandler(host, receiver, sender))
-
-          handshaker.handshake(ctx.channel, req).sync()
-          receiver.tell(new ConnectWsMessage(host), sender)
-        case Failure(error) => sendHttpResponse(ctx, HttpResponseConverter.toError(error))
-      }
-    } else sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
-  }
-
-  private def extractHost(ch: Channel, req: FullHttpRequest): String = {
-    val host = req.headers().get("X-Real-IP")
-    if (host != null && host.trim.nonEmpty) host
-    else ch.remoteAddress match {
-      case address: InetSocketAddress => address.getHostString
-      case _ => "UNKNOWN"
-    }
+    case req: FullHttpRequest => sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
+    case _ => ctx.fireChannelRead(msg)
   }
 
   private def sendHttpResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
@@ -104,9 +70,4 @@ class HttpChannelHandler(actors: ActorSystem, routes: Routes) extends SimpleChan
   }
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
-
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    log.error("Something unthinkable happened while processing http request.", cause)
-    ctx.close()
-  }
 }

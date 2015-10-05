@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.handler
+package io.cafebabe.korro.server.actor
 
-import io.cafebabe.korro.api.ws.{BinaryWsMessage, TextWsMessage}
+import io.cafebabe.korro.api.ws.{PingWsMessage, BinaryWsMessage, TextWsMessage}
 import io.cafebabe.korro.server.util.ByteBufUtils.toByteBuf
 
-import akka.actor.{Actor, Props}
-import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
+import akka.actor.{ActorRef, ActorRefFactory, Actor, Props}
+import io.netty.channel.{ChannelHandlerContext, Channel, ChannelFuture, ChannelFutureListener}
 import io.netty.handler.codec.http.websocketx._
 
 import java.util.concurrent.atomic.AtomicLong
@@ -31,9 +31,12 @@ import java.util.concurrent.atomic.AtomicLong
  * @author Vladimir Konstantinov
  */
 object WsMessageSender {
+
   private val counter = new AtomicLong
-  def name = "ws-sender-" + counter.incrementAndGet()
-  def props(channel: Channel) = Props(new WsMessageSender(channel))
+
+  def create(ctx: ChannelHandlerContext)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new WsMessageSender(ctx)), "ws-sender-" + counter.incrementAndGet())
+  }
 }
 
 /**
@@ -41,14 +44,15 @@ object WsMessageSender {
  *
  * @author Vladimir Konstantinov
  */
-class WsMessageSender(channel: Channel) extends Actor {
+class WsMessageSender(ctx: ChannelHandlerContext) extends Actor {
 
   override def receive = {
+    case PingWsMessage => send(new PingWebSocketFrame())
     case TextWsMessage(text) => send(new TextWebSocketFrame(text))
     case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
   }
 
   override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
 
-  private def send(frame: WebSocketFrame): ChannelFuture = channel.writeAndFlush(frame)
+  private def send(frame: WebSocketFrame): ChannelFuture = ctx.writeAndFlush(frame)
 }

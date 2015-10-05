@@ -18,7 +18,7 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.util.config.wrapped
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorContext, ActorSystem}
 import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
@@ -29,9 +29,7 @@ import io.netty.handler.codec.http._
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: Config, actors: ActorSystem) extends ChannelInitializer[SocketChannel] {
-
-  private val routes = new Routes(config)
+class HttpChannelInitializer(config: Config)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
   private val maxContentLength = config.findBytes("HTTP.maxContentLength").getOrElse(65536L).toInt
 
@@ -47,6 +45,6 @@ class HttpChannelInitializer(config: Config, actors: ActorSystem) extends Channe
     pipeline.addLast(new HttpResponseEncoder)
     compressionLevel foreach { level => pipeline.addLast(new HttpContentCompressor(level)) }
 
-    pipeline.addLast(new HttpChannelHandler(actors, routes))
+    pipeline.addLast(new HttpChannelHandler(config.getInt("port")))
   }
 }

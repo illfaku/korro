@@ -16,10 +16,11 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.ws.{BinaryWsMessage, DisconnectWsMessage, TextWsMessage}
+import io.cafebabe.korro.api.ws.{BinaryWsMessage, DisconnectWsMessage, PongWsMessage, TextWsMessage}
 import io.cafebabe.korro.server.util.ByteBufUtils.toBytes
+import io.cafebabe.korro.server.util.ChannelFutureExt
 
-import akka.actor.{ActorRef, PoisonPill}
+import akka.actor.{ActorRef, ActorSelection, PoisonPill}
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 import org.slf4j.LoggerFactory
@@ -29,7 +30,7 @@ import org.slf4j.LoggerFactory
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, receiver: ActorRef, sender: ActorRef)
+class WsChannelHandler(host: String, receiver: ActorSelection, sender: ActorRef)
   extends SimpleChannelInboundHandler[WebSocketFrame] {
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -37,28 +38,27 @@ class WsChannelHandler(host: String, receiver: ActorRef, sender: ActorRef)
   override def channelRead0(ctx: ChannelHandlerContext, msg: WebSocketFrame): Unit = msg match {
     case frame: CloseWebSocketFrame =>
       log.trace("Close frame from host {}.", host)
-      ctx.channel.writeAndFlush(frame.retain()).addListener(new ChannelFutureListener {
-        override def operationComplete(future: ChannelFuture): Unit = {
-          future.channel.close()
-          receiver.tell(DisconnectWsMessage, sender)
-          sender ! PoisonPill
-        }
-      })
+      ctx.writeAndFlush(frame.retain()) foreach { future =>
+        future.channel.close()
+        finish()
+      }
     case frame: PingWebSocketFrame =>
-      log.trace("Ping frame from host {}.", host)
-      ctx.channel.writeAndFlush(new PongWebSocketFrame(frame.content.retain()))
+      log.trace("Ping frame from host {}. Responding with Pong frame.", host)
+      ctx.writeAndFlush(new PongWebSocketFrame(frame.content.retain()))
     case frame: PongWebSocketFrame =>
-      log.trace("Pong frame from host {}.", host)
+      receiver.tell(PongWsMessage, sender)
     case frame: BinaryWebSocketFrame =>
       receiver.tell(new BinaryWsMessage(toBytes(frame.content)), sender)
     case frame: TextWebSocketFrame =>
       receiver.tell(new TextWsMessage(frame.text), sender)
-    case frame => log.debug("Some unpredicted frame was received: {}.", frame)
+    case frame =>
+      log.debug(s"Unknown frame from host $host: $frame.")
   }
 
-  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = finish()
+
+  private def finish(): Unit = {
     receiver.tell(DisconnectWsMessage, sender)
     sender ! PoisonPill
-    super.channelInactive(ctx)
   }
 }
