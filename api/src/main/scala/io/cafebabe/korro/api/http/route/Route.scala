@@ -16,8 +16,6 @@
  */
 package io.cafebabe.korro.api.http.route
 
-import scala.concurrent.duration.FiniteDuration
-
 /**
  * TODO: Add description.
  *
@@ -33,20 +31,11 @@ sealed trait Route {
  *
  * @author Vladimir Konstantinov
  */
-case class HttpRoute(
-  path: String,
-  requestTimeout: FiniteDuration,
-  actor: String
-) extends Route
+case class HttpRoute(path: String, actor: String) extends Route
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-case class WsRoute(
-  path: String,
-  maxFramePayloadLength: Int,
-  compression: Boolean,
-  actor: String
-) extends Route
+case class WsRoute(path: String, actor: String) extends Route

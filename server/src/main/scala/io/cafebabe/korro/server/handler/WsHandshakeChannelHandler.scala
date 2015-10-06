@@ -20,8 +20,10 @@ import io.cafebabe.korro.api.http.route.WsRoute
 import io.cafebabe.korro.api.ws.ConnectWsMessage
 import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.server.util.ChannelFutureExt
+import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext
+import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory
@@ -37,14 +39,17 @@ import java.net.{InetSocketAddress, URI}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class WsHandshakeChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
+class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   private val log = LoggerFactory.getLogger(getClass)
+
+  private val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
+  private val compression = config.findBoolean("WebSocket.compression").getOrElse(false)
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case RoutedWsHandshake(req, route) =>
       val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
-      val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true, route.maxFramePayloadLength)
+      val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true, maxFramePayloadLength)
       val handshaker = handshakerFactory.newHandshaker(req)
       if (handshaker != null) {
         val receiver = context.actorSelection(route.actor)
@@ -52,7 +57,7 @@ class WsHandshakeChannelHandler(implicit context: ActorContext) extends ChannelI
         val host = extractHost(ctx.channel, req)
 
         val pipeline = ctx.channel.pipeline
-        if (route.compression) pipeline.addLast("ws-compression", new WsCompressionChannelHandler)
+        if (compression) pipeline.addLast("ws-compression", new WsCompressionChannelHandler)
         pipeline.addLast("ws", new WsChannelHandler(host, receiver, sender))
 
         handshaker.handshake(ctx.channel, req) foreach { future =>

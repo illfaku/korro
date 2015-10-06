@@ -19,11 +19,15 @@ package io.cafebabe.korro.server.handler
 import io.cafebabe.korro.api.http.route.HttpRoute
 import io.cafebabe.korro.server.actor.HttpResponseSender
 import io.cafebabe.korro.server.convert.HttpRequestConverter
+import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext
+import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.netty.handler.codec.http.FullHttpRequest
+
+import scala.concurrent.duration._
 
 /**
  * TODO: Add description.
@@ -31,11 +35,13 @@ import io.netty.handler.codec.http.FullHttpRequest
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpRequestChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
+class HttpRequestChannelHandler(config: Config)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
+
+  private val requestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case RoutedHttpRequest(req, route) =>
-      val sender = HttpResponseSender.create(ctx, route.requestTimeout)
+      val sender = HttpResponseSender.create(ctx, requestTimeout)
       context.actorSelection(route.actor).tell(HttpRequestConverter.fromNetty(req, route.path), sender)
       req.release()
     case _ => ctx.fireChannelRead(msg)

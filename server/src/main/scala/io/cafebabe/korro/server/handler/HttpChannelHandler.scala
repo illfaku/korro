@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.route.{GetRoute, HttpRoute, Route, WsRoute}
+import io.cafebabe.korro.api.http.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
 
 import akka.actor.ActorContext
@@ -50,7 +50,7 @@ class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends Chan
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
       val path = new URI(req.getUri).getPath
-      (HttpRouterActor.selection ? GetRoute(port, path)).mapTo[Option[Route]] onComplete {
+      (HttpRouterActor.selection(port) ? path).mapTo[Option[Route]] onComplete {
         case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
         case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
         case Success(None) => sendHttpResponse(ctx, req, HttpResponseStatus.NOT_FOUND)

@@ -16,12 +16,11 @@
  */
 package io.cafebabe.korro.server.actor
 
-import akka.actor._
 import io.cafebabe.korro.api.http.route._
 import io.cafebabe.korro.util.config.wrapped
 
-import scala.collection.mutable
-import scala.concurrent.duration._
+import akka.actor._
+import com.typesafe.config.Config
 
 /**
  * TODO: Add description.
@@ -30,45 +29,36 @@ import scala.concurrent.duration._
  */
 object HttpRouterActor {
 
-  val name = "http-router"
-  val path = s"${KorroActor.path}/$name"
+  def name(port: Int) = s"router-$port"
+  def path(port: Int) = s"${KorroActor.path}/${name(port)}"
 
-  def create(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props(new HttpRouterActor), name)
+  def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new HttpRouterActor(config)), name(config.getInt("port")))
+  }
 
-  def selection(implicit factory: ActorRefFactory): ActorSelection = factory.actorSelection(path)
+  def selection(port: Int)(implicit factory: ActorRefFactory): ActorSelection = factory.actorSelection(path(port))
 }
 
-class HttpRouterActor extends Actor {
+class HttpRouterActor(config: Config) extends Actor {
 
   private implicit val ordering = Ordering.Int.on[Route](_.path.length)
 
-  private val routes = mutable.Map.empty[Int, List[Route]]
+  private var routes = List.empty[Route]
 
   override def preStart(): Unit = {
-    val servers = context.system.settings.config.findConfigList("korro.servers")
-    routes ++= servers.map(c => c.getInt("port") -> c).toMap mapValues { config =>
-      val httpRequestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
-      val httpRoutes: List[Route] = config.findConfigList("HTTP.routes").toList.map { r =>
-        HttpRoute(r.getString("path"), httpRequestTimeout, r.getString("actor"))
-      }
-
-      val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
-      val wsCompression = config.findBoolean("WebSocket.compression").getOrElse(false)
-      val wsRoutes: List[Route] = config.findConfigList("WebSocket.routes").toList.map { r =>
-        WsRoute(r.getString("path"), maxFramePayloadLength, wsCompression, r.getString("actor"))
-      }
-
-      httpRoutes ++ wsRoutes
+    val httpRoutes: List[Route] = config.findConfigList("HTTP.routes").toList.map { r =>
+      HttpRoute(r.getString("path"), r.getString("actor"))
     }
+    val wsRoutes: List[Route] = config.findConfigList("WebSocket.routes").toList.map { r =>
+      WsRoute(r.getString("path"), r.getString("actor"))
+    }
+    routes = httpRoutes ++ wsRoutes
   }
 
-  override def postStop(): Unit = routes.clear()
+  override def postStop(): Unit = routes = List.empty
 
   override def receive = {
-
-    case SetRoute(port, route) => routes += port -> (route :: routes.getOrElse(port, List.empty))
-
-    case GetRoute(port, path) =>
-      sender ! routes.get(port).map(_.filter(path startsWith _.path)).filter(_.nonEmpty).map(_.max)
+    case SetRoute(port, route) => routes = route :: routes
+    case path: String => sender ! Some(routes.filter(path startsWith _.path)).filter(_.nonEmpty).map(_.max)
   }
 }

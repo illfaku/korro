@@ -34,7 +34,7 @@ class KorroActor extends Actor {
   private var router: ActorRef = null
 
   override def preStart(): Unit = {
-    router = HttpRouterActor.create
+    router = HttpRouterActor.create(???)
   }
 
   override def receive = {

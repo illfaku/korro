@@ -35,8 +35,8 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
   private val compressionLevel = config.findInt("HTTP.compression")
 
   private val httpHandler = new HttpChannelHandler(config.getInt("port"))
-  private val httpReqHandler = new HttpRequestChannelHandler
-  private val wsHandshakeHandler = new WsHandshakeChannelHandler
+  private val httpReqHandler = new HttpRequestChannelHandler(config)
+  private val wsHandshakeHandler = new WsHandshakeChannelHandler(config)
 
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
