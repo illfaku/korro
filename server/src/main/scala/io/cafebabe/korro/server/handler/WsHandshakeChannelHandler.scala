@@ -22,6 +22,7 @@ import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.server.util.ChannelFutureExt
 
 import akka.actor.ActorContext
+import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory._
@@ -35,6 +36,7 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
+@Sharable
 class WsHandshakeChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -50,8 +52,8 @@ class WsHandshakeChannelHandler(implicit context: ActorContext) extends ChannelI
         val host = extractHost(ctx.channel, req)
 
         val pipeline = ctx.channel.pipeline
-        if (route.compression) pipeline.addLast(new WsCompressionChannelHandler)
-        pipeline.addLast(new WsChannelHandler(host, receiver, sender))
+        if (route.compression) pipeline.addLast("ws-compression", new WsCompressionChannelHandler)
+        pipeline.addLast("ws", new WsChannelHandler(host, receiver, sender))
 
         handshaker.handshake(ctx.channel, req) foreach { future =>
           req.release()

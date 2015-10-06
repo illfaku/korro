@@ -32,19 +32,24 @@ import io.netty.handler.codec.http._
 class HttpChannelInitializer(config: Config)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
   private val maxContentLength = config.findBytes("HTTP.maxContentLength").getOrElse(65536L).toInt
-
   private val compressionLevel = config.findInt("HTTP.compression")
+
+  private val httpHandler = new HttpChannelHandler(config.getInt("port"))
+  private val httpReqHandler = new HttpRequestChannelHandler
+  private val wsHandshakeHandler = new WsHandshakeChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
 
-    pipeline.addLast(new HttpRequestDecoder)
-    pipeline.addLast(new HttpObjectAggregator(maxContentLength))
-    pipeline.addLast(new HttpContentDecompressor)
+    pipeline.addLast("http-res-encoder", new HttpResponseEncoder)
+    compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
 
-    pipeline.addLast(new HttpResponseEncoder)
-    compressionLevel foreach { level => pipeline.addLast(new HttpContentCompressor(level)) }
+    pipeline.addLast("http-req-decoder", new HttpRequestDecoder)
+    pipeline.addLast("http-aggregator", new HttpObjectAggregator(maxContentLength))
+    pipeline.addLast("http-decompressor", new HttpContentDecompressor)
 
-    pipeline.addLast(new HttpChannelHandler(config.getInt("port")))
+    pipeline.addLast("http", httpHandler)
+    pipeline.addLast("http-request", httpReqHandler)
+    pipeline.addLast("ws-handshake", wsHandshakeHandler)
   }
 }

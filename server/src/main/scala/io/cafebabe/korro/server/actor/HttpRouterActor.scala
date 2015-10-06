@@ -47,17 +47,15 @@ class HttpRouterActor extends Actor {
   override def preStart(): Unit = {
     val servers = context.system.settings.config.findConfigList("korro.servers")
     routes ++= servers.map(c => c.getInt("port") -> c).toMap mapValues { config =>
-      val httpResolveTimeout = config.findFiniteDuration("HTTP.resolveTimeout").getOrElse(10 seconds)
       val httpRequestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
       val httpRoutes: List[Route] = config.findConfigList("HTTP.routes").toList.map { r =>
-        HttpRoute(r.getString("path"), httpResolveTimeout, httpRequestTimeout, r.getString("actor"))
+        HttpRoute(r.getString("path"), httpRequestTimeout, r.getString("actor"))
       }
 
-      val wsResolveTimeout = config.findFiniteDuration("WebSocket.resolveTimeout").getOrElse(10 seconds)
       val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
       val wsCompression = config.findBoolean("WebSocket.compression").getOrElse(false)
       val wsRoutes: List[Route] = config.findConfigList("WebSocket.routes").toList.map { r =>
-        WsRoute(r.getString("path"), wsResolveTimeout, maxFramePayloadLength, wsCompression, r.getString("actor"))
+        WsRoute(r.getString("path"), maxFramePayloadLength, wsCompression, r.getString("actor"))
       }
 
       httpRoutes ++ wsRoutes

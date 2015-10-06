@@ -22,6 +22,7 @@ import io.cafebabe.korro.server.actor.HttpRouterActor
 import akka.actor.ActorContext
 import akka.pattern.ask
 import akka.util.Timeout
+import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http._
 import org.slf4j.LoggerFactory
@@ -36,12 +37,15 @@ import scala.util.{Failure, Success}
  *
  * @author Vladimir Konstantinov
  */
+@Sharable
 class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   private val log = LoggerFactory.getLogger(getClass)
 
   import context.dispatcher
-  implicit val timeout = Timeout(2 seconds)
+  implicit val timeout = Timeout(5 seconds)
+
+  override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
@@ -49,25 +53,18 @@ class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends Chan
       (HttpRouterActor.selection ? GetRoute(port, path)).mapTo[Option[Route]] onComplete {
         case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
         case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
-        case Success(None) =>
-          req.release()
-          sendHttpResponse(ctx, HttpResponseStatus.NOT_FOUND)
+        case Success(None) => sendHttpResponse(ctx, req, HttpResponseStatus.NOT_FOUND)
         case Failure(error) =>
-          req.release()
           log.error("Error while trying to get route.", error)
-          sendHttpResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR)
+          sendHttpResponse(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR)
       }
-    case req: FullHttpRequest => sendHttpResponse(ctx, HttpResponseStatus.BAD_REQUEST)
+    case req: FullHttpRequest => sendHttpResponse(ctx, req, HttpResponseStatus.BAD_REQUEST)
     case _ => ctx.fireChannelRead(msg)
   }
 
-  private def sendHttpResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
-    sendHttpResponse(ctx, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status))
-  }
-
-  private def sendHttpResponse(ctx: ChannelHandlerContext, res: FullHttpResponse): Unit = {
+  private def sendHttpResponse(ctx: ChannelHandlerContext, req: FullHttpRequest, status: HttpResponseStatus): Unit = {
+    req.release()
+    val res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)
     ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
   }
-
-  override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
 }

@@ -21,6 +21,7 @@ import io.cafebabe.korro.server.actor.HttpResponseSender
 import io.cafebabe.korro.server.convert.HttpRequestConverter
 
 import akka.actor.ActorContext
+import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.netty.handler.codec.http.FullHttpRequest
 
@@ -29,6 +30,7 @@ import io.netty.handler.codec.http.FullHttpRequest
  *
  * @author Vladimir Konstantinov
  */
+@Sharable
 class HttpRequestChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {

@@ -35,7 +35,6 @@ sealed trait Route {
  */
 case class HttpRoute(
   path: String,
-  resolveTimeout: FiniteDuration,
   requestTimeout: FiniteDuration,
   actor: String
 ) extends Route
@@ -47,7 +46,6 @@ case class HttpRoute(
  */
 case class WsRoute(
   path: String,
-  resolveTimeout: FiniteDuration,
   maxFramePayloadLength: Int,
   compression: Boolean,
   actor: String

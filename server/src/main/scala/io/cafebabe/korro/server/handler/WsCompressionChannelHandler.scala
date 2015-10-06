@@ -37,17 +37,13 @@ import java.util
  */
 class WsCompressionChannelHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
 
-  override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = {
-    msg match {
-      case f: TextWebSocketFrame => out add new BinaryWebSocketFrame(toByteBuf(zipString(f.text)))
-      case _ => out add msg
-    }
+  override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
+    case f: TextWebSocketFrame => out add new BinaryWebSocketFrame(toByteBuf(zipString(f.text)))
+    case _ => out add msg
   }
 
-  override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = {
-    msg match {
-      case f: BinaryWebSocketFrame => out add new TextWebSocketFrame(unzipString(new ByteBufInputStream(f.content)))
-      case _ => out add msg
-    }
+  override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
+    case f: BinaryWebSocketFrame => out add new TextWebSocketFrame(unzipString(new ByteBufInputStream(f.content)))
+    case _ => out add msg
   }
 }
