@@ -16,6 +16,8 @@
  */
 package io.cafebabe.korro.api.http
 
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
+
 /**
  * HTTP request methods as constructors and handy extractors of request.
  * <br><br>
@@ -58,13 +60,13 @@ sealed abstract class HttpMethod(val name: String) {
 
   def apply(
     path: String,
-    parameters: QueryParams = QueryParams.empty,
+    parameters: HttpParams = Map.empty,
     content: HttpContent = EmptyHttpContent,
-    headers: HttpHeaders = HttpHeaders.empty
+    headers: HttpParams = Map.empty
   ): HttpRequest = {
     HttpRequest(name, path, parameters, content, headers)
   }
 
-  def unapply(req: HttpRequest): Option[(String, QueryParams, HttpContent, HttpHeaders)] =
+  def unapply(req: HttpRequest): Option[(String, HttpParams, HttpContent, HttpParams)] =
     if (name == req.method.toUpperCase) Some(req.path, req.parameters, req.content, req.headers) else None
 }

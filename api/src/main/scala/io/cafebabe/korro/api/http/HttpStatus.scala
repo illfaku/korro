@@ -16,6 +16,8 @@
  */
 package io.cafebabe.korro.api.http
 
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
+
 /**
  * TODO: Add description.
  *
@@ -39,11 +41,11 @@ object HttpStatus {
  */
 sealed abstract class HttpStatus(val code: Int) {
 
-  def apply(content: HttpContent = EmptyHttpContent, headers: HttpHeaders = HttpHeaders.empty): HttpResponse = {
+  def apply(content: HttpContent = EmptyHttpContent, headers: HttpParams = Map.empty): HttpResponse = {
     HttpResponse(code, content, headers)
   }
 
-  def unapply(res: HttpResponse): Option[(HttpContent, HttpHeaders)] = {
+  def unapply(res: HttpResponse): Option[(HttpContent, HttpParams)] = {
     if (code == res.status) Some(res.content, res.headers) else None
   }
 }

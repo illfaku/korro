@@ -16,9 +16,11 @@
  */
 package io.cafebabe.korro.api.http
 
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
+
 /**
  * HTTP response with status code, content and headers.
  *
  * @author Vladimir Konstantinov
  */
-case class HttpResponse(status: Int, content: HttpContent, headers: HttpHeaders)
+case class HttpResponse(status: Int, content: HttpContent, headers: HttpParams)

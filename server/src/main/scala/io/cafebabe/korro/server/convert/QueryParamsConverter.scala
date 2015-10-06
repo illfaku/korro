@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.convert
 
-import io.cafebabe.korro.api.http.QueryParams
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
 import io.cafebabe.korro.server.util.MimeTypes.FormUrlEncoded
 
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
@@ -32,7 +32,7 @@ import scala.collection.JavaConversions._
  */
 object QueryParamsConverter {
 
-  def fromNetty(request: FullHttpRequest): QueryParams = new QueryParams(fromUri(request) ++ fromBody(request))
+  def fromNetty(request: FullHttpRequest): HttpParams = fromUri(request) ++ fromBody(request)
 
   private def fromUri(request: FullHttpRequest): Map[String, List[String]] = {
     val decoder = new QueryStringDecoder(request.getUri)
@@ -47,9 +47,9 @@ object QueryParamsConverter {
     } else Map.empty
   }
 
-  def toNetty(parameters: QueryParams): String = {
+  def toNetty(parameters: HttpParams): String = {
     val encoder = new QueryStringEncoder("") // without path
-    parameters.toMap foreach { case (name, values) =>
+    parameters foreach { case (name, values) =>
       values foreach { value =>
         encoder.addParam(name, value)
       }

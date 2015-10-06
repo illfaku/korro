@@ -16,6 +16,8 @@
  */
 package io.cafebabe.korro.api.http
 
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
+
 /**
  * HTTP request representation. It contains:
  * <ul>
@@ -30,7 +32,7 @@ package io.cafebabe.korro.api.http
 case class HttpRequest(
   method: String,
   path: String,
-  parameters: QueryParams,
+  parameters: HttpParams,
   content: HttpContent,
-  headers: HttpHeaders
+  headers: HttpParams
 )

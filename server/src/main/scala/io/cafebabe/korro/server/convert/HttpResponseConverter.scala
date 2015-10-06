@@ -16,7 +16,8 @@
  */
 package io.cafebabe.korro.server.convert
 
-import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, HttpHeaders, HttpResponse, TextHttpContent}
+import io.cafebabe.korro.api.http.HttpParams.HttpParams
+import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, HttpResponse, TextHttpContent}
 
 import akka.actor.ActorNotFound
 import akka.pattern.AskTimeoutException
@@ -60,10 +61,10 @@ object HttpResponseConverter {
   private def nettyResponse(status: HttpResponseStatus): FullHttpResponse = nettyResponse(status, EmptyHttpContent)
 
   private def nettyResponse(status: HttpResponseStatus, content: HttpContent): FullHttpResponse = {
-    nettyResponse(status, content, HttpHeaders.empty)
+    nettyResponse(status, content, Map.empty)
   }
 
-  private def nettyResponse(status: HttpResponseStatus, content: HttpContent, headers: HttpHeaders): FullHttpResponse = {
+  private def nettyResponse(status: HttpResponseStatus, content: HttpContent, headers: HttpParams): FullHttpResponse = {
     val nettyHeaders = HttpHeadersConverter.toNetty(headers)
     val (buf, contentHeaders) = HttpContentConverter.toNetty(content)
     val result = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, buf)
