@@ -16,8 +16,9 @@
  */
 package io.cafebabe.korro.server.actor
 
-import akka.actor.{Actor, ActorRef}
-import io.cafebabe.korro.api.http.route.SetRoute
+import io.cafebabe.korro.util.config.wrapped
+
+import akka.actor._
 
 /**
  * TODO: Add description.
@@ -25,19 +26,20 @@ import io.cafebabe.korro.api.http.route.SetRoute
  * @author Vladimir Konstantinov
  */
 object KorroServerActor {
+
   val name = "korro-server"
   val path = s"/user/$name"
+
+  def create(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props(new KorroServerActor), name)
 }
 
-class KorroServerActor extends Actor {
-
-  private var router: ActorRef = null
+class KorroServerActor extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
-    router = HttpRouterActor.create(???)
+    context.system.settings.config.findConfigList("korro.servers").foreach(HttpServerActor.create)
   }
 
   override def receive = {
-    case r: SetRoute => router forward r
+    case _ => ()
   }
 }

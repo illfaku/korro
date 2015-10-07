@@ -16,10 +16,10 @@
  */
 package io.cafebabe.korro.server
 
-import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.server.actor.KorroServerActor
 
 import aQute.bnd.annotation.component.{Activate, Component, Deactivate, Reference}
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import org.osgi.framework.BundleContext
 import org.slf4j.LoggerFactory
 
@@ -35,29 +35,14 @@ class HttpServerComponent {
 
   private var actors: ActorSystem = null
 
-  private var servers = List.empty[HttpServer]
+  private var korro: ActorRef = null
 
   @Activate def activate(ctx: BundleContext): Unit = {
-    actors.settings.config.findConfigList("cafebabe.http.servers") foreach { config =>
-      val port = config.findString("port").getOrElse("UNSPECIFIED")
-      try {
-        servers = HttpServer(config, actors) :: servers
-        log.info("Started HTTP server on port {}.", port)
-      } catch {
-        case e: Throwable => log.error(s"Failed to start HTTP server on port $port.", e)
-      }
-    }
+    korro = KorroServerActor.create(actors)
   }
 
   @Deactivate def deactivate(ctx: BundleContext): Unit = {
-    servers foreach { server =>
-      try {
-        server.stop()
-        log.info("Stopped HTTP server on port {}.", server.port)
-      } catch {
-        case e: Throwable => log.error(s"Failed to stop HTTP server on port ${server.port}.", e)
-      }
-    }
+    actors.stop(korro)
   }
 
   @Reference def setActorSystem(actorSystem: ActorSystem): Unit = { actors = actorSystem }

@@ -16,12 +16,75 @@
  */
 package io.cafebabe.korro.server.actor
 
+import io.cafebabe.korro.server.handler.HttpChannelInitializer
+import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
+import io.cafebabe.korro.util.config.wrapped
+
+import akka.actor._
+import com.typesafe.config.Config
+import io.netty.bootstrap.ServerBootstrap
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.channel.{Channel, EventLoopGroup}
+import io.netty.handler.logging.{LogLevel, LoggingHandler}
+
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
 object HttpServerActor {
+
   def name(port: Int) = port.toString
   def path(port: Int) = s"${KorroServerActor.path}/${name(port)}"
+
+  def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new HttpServerActor(config)), name(config.getInt("port")))
+  }
+}
+
+class HttpServerActor(config: Config) extends Actor with ActorLogging {
+
+  private var bossGroup: EventLoopGroup = null
+  private var workerGroup: EventLoopGroup = null
+  private var channel: Channel = null
+
+  override def preStart(): Unit = {
+    try {
+      val port = config.getInt("port")
+      val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
+
+      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$port-boss"))
+      workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-server-$port-worker"))
+
+      val bootstrap = new ServerBootstrap()
+        .group(bossGroup, workerGroup)
+        .channel(classOf[NioServerSocketChannel])
+        .handler(new LoggingHandler(LogLevel.DEBUG))
+        .childHandler(new HttpChannelInitializer(config))
+
+      channel = bootstrap.bind(port).sync().channel
+
+      HttpRouterActor.create(config)
+
+      log.debug("Started HTTP server on port {}.", port)
+    } catch {
+      case e: Throwable => log.error(e, s"Failed to start HTTP server.")
+    }
+  }
+
+  override def postStop(): Unit = {
+    try {
+      if (channel != null) channel.close().sync()
+      if (bossGroup != null) bossGroup.shutdownGracefully()
+      if (workerGroup != null) workerGroup.shutdownGracefully()
+      log.debug("Stopped HTTP server.")
+    } catch {
+      case e: Throwable => log.error(e, s"Failed to stop HTTP server.")
+    }
+  }
+
+  override def receive = {
+    case _ => ()
+  }
 }
