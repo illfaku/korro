@@ -34,6 +34,7 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
   private val maxContentLength = config.findBytes("HTTP.maxContentLength").getOrElse(65536L).toInt
   private val compressionLevel = config.findInt("HTTP.compression")
 
+  private val httpResHandler = new HttpResponseChannelHandler
   private val httpHandler = new HttpChannelHandler(config.getInt("port"))
   private val httpReqHandler = new HttpRequestChannelHandler(config)
   private val wsHandshakeHandler = new WsHandshakeChannelHandler(config)
@@ -43,6 +44,7 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
 
     pipeline.addLast("http-res-encoder", new HttpResponseEncoder)
     compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
+    pipeline.addLast("http-response", httpResHandler)
 
     pipeline.addLast("http-req-decoder", new HttpRequestDecoder)
     pipeline.addLast("http-aggregator", new HttpObjectAggregator(maxContentLength))

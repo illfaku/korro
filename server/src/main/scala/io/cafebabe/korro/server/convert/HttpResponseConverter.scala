@@ -36,12 +36,10 @@ object HttpResponseConverter {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def fromNetty(response: FullHttpResponse): HttpResponse = {
-    HttpResponse(
-      response.getStatus.code,
-      HttpContentConverter.fromNetty(response.content, response.headers),
-      HttpHeadersConverter.fromNetty(response.headers)
-    )
+  def fromNetty(response: FullHttpResponse): Either[ConversionFailure, HttpResponse] = {
+    for {
+      content <- HttpContentConverter.fromNetty(response.content, response.headers).right
+    } yield HttpResponse(response.getStatus.code, content, HttpHeadersConverter.fromNetty(response.headers))
   }
 
   def toNetty(response: HttpResponse): FullHttpResponse = {

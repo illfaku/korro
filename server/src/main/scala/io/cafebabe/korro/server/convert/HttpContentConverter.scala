@@ -31,6 +31,8 @@ import org.json4s.native.JsonParser.parse
 
 import java.nio.charset.Charset
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * TODO: Add description.
  *
@@ -38,9 +40,19 @@ import java.nio.charset.Charset
  */
 object HttpContentConverter {
 
-  def fromNetty(content: ByteBuf, headers: HttpHeaders): HttpContent = {
-    if (contentLength(headers) > 0) extractContent(content, headers)
-    else EmptyHttpContent
+  def fromNetty(content: ByteBuf, headers: HttpHeaders): Either[ConversionFailure, HttpContent] = {
+    contentType(headers) match {
+      case Some((TextPlain, charset)) => Right(TextHttpContent(content.toString(charset)))
+      case Some((ApplicationJson, charset)) =>
+        val text = content.toString(charset)
+        Try(parse(text)) match {
+          case Success(json) => Right(JsonHttpContent(json))
+          case Failure(error) => Left(MalformedJson(text))
+        }
+      case Some((FormUrlEncoded, _)) => Right(EmptyHttpContent) // processed by QueryParamsConverter
+      case Some((mime, _)) => Left(UnsupportedContentType(mime))
+      case None => Right(EmptyHttpContent)
+    }
   }
 
   def toNetty(content: HttpContent): (ByteBuf, HttpHeaders) = {
@@ -58,6 +70,15 @@ object HttpContentConverter {
     buf -> headers
   }
 
+  private def contentType(headers: HttpHeaders): Option[(String, Charset)] = {
+    if (contentLength(headers) > 0) {
+      headers.get(CONTENT_TYPE) match {
+        case ContentType(mime, charset) => Some(mime -> charset.flatMap(toCharset).getOrElse(DEFAULT_CHARSET))
+        case _ => Some(TextPlain -> DEFAULT_CHARSET)
+      }
+    } else None
+  }
+
   private def contentLength(headers: HttpHeaders): Int = {
     val header = headers.get(CONTENT_LENGTH)
     if (header != null) {
@@ -67,23 +88,7 @@ object HttpContentConverter {
     } else 0
   }
 
-  private def contentType(headers: HttpHeaders): (String, Charset) = {
-    headers.get(CONTENT_TYPE) match {
-      case ContentType(mime, charset) =>
-        try mime -> charset.map(Charset.forName).getOrElse(DEFAULT_CHARSET) catch {
-          case e: IllegalArgumentException => throw new IllegalArgumentException(s"Unsupported charset: $charset.")
-        }
-      case _ => TextPlain -> DEFAULT_CHARSET
-    }
-  }
-
-  private def extractContent(content: ByteBuf, headers: HttpHeaders): HttpContent = contentType(headers) match {
-    case (TextPlain, charset) => TextHttpContent(content.toString(charset))
-    case (ApplicationJson, charset) =>
-      try JsonHttpContent(parse(content.toString(charset))) catch {
-        case e: ParseException => throw new IllegalArgumentException(s"Failed to parse json content. ${e.getMessage}")
-      }
-    case (FormUrlEncoded, _) => EmptyHttpContent // processed by QueryParamsConverter
-    case (mime, _) => throw new IllegalArgumentException(s"Unsupported Content-Type: $mime.")
+  private def toCharset(name: String): Option[Charset] = {
+    try Some(Charset.forName(name)) catch { case e: Throwable => None }
   }
 }

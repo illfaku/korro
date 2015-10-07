@@ -70,7 +70,7 @@ class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) 
         }
       } else {
         req.release()
-        sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
+        sendUnsupportedVersionResponse(ctx.channel)
       }
     case _ => ctx.fireChannelRead(msg)
   }

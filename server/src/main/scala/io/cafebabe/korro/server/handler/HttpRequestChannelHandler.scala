@@ -16,9 +16,11 @@
  */
 package io.cafebabe.korro.server.handler
 
+import io.cafebabe.korro.api.http.HttpStatus.BadRequest
+import io.cafebabe.korro.api.http.TextHttpContent
 import io.cafebabe.korro.api.http.route.HttpRoute
 import io.cafebabe.korro.server.actor.HttpResponseSender
-import io.cafebabe.korro.server.convert.HttpRequestConverter
+import io.cafebabe.korro.server.convert.{ConversionFailure, HttpRequestConverter}
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext
@@ -41,8 +43,13 @@ class HttpRequestChannelHandler(config: Config)(implicit context: ActorContext) 
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case RoutedHttpRequest(req, route) =>
-      val sender = HttpResponseSender.create(ctx, requestTimeout)
-      context.actorSelection(route.actor).tell(HttpRequestConverter.fromNetty(req, route.path), sender)
+      HttpRequestConverter.fromNetty(req, route.path) match {
+        case Right(request) =>
+          val sender = HttpResponseSender.create(ctx, requestTimeout)
+          context.actorSelection(route.actor).tell(request, sender)
+        case Left(fail: ConversionFailure) =>
+          ctx.writeAndFlush(BadRequest(TextHttpContent(fail.toString)))
+      }
       req.release()
     case _ => ctx.fireChannelRead(msg)
   }

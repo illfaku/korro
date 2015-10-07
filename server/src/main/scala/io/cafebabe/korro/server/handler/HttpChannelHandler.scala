@@ -16,6 +16,8 @@
  */
 package io.cafebabe.korro.server.handler
 
+import io.cafebabe.korro.api.http.HttpResponse
+import io.cafebabe.korro.api.http.HttpStatus._
 import io.cafebabe.korro.api.http.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
 
@@ -53,18 +55,17 @@ class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends Chan
       (HttpRouterActor.selection(port) ? path).mapTo[Option[Route]] onComplete {
         case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
         case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
-        case Success(None) => sendHttpResponse(ctx, req, HttpResponseStatus.NOT_FOUND)
+        case Success(None) => sendResponse(ctx, req, NotFound())
         case Failure(error) =>
           log.error("Error while trying to get route.", error)
-          sendHttpResponse(ctx, req, HttpResponseStatus.INTERNAL_SERVER_ERROR)
+          sendResponse(ctx, req, ServerError())
       }
-    case req: FullHttpRequest => sendHttpResponse(ctx, req, HttpResponseStatus.BAD_REQUEST)
+    case req: FullHttpRequest => sendResponse(ctx, req, BadRequest())
     case _ => ctx.fireChannelRead(msg)
   }
 
-  private def sendHttpResponse(ctx: ChannelHandlerContext, req: FullHttpRequest, status: HttpResponseStatus): Unit = {
+  private def sendResponse(ctx: ChannelHandlerContext, req: FullHttpRequest, res: HttpResponse): Unit = {
     req.release()
-    val res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)
-    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
+    ctx.writeAndFlush(res)
   }
 }
