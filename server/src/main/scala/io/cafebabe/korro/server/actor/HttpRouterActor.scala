@@ -29,11 +29,11 @@ import com.typesafe.config.Config
  */
 object HttpRouterActor {
 
-  def name(port: Int) = s"router-$port"
-  def path(port: Int) = s"${KorroActor.path}/${name(port)}"
+  val name = "router"
+  def path(port: Int) = s"${HttpServerActor.path(port)}/$name"
 
   def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpRouterActor(config)), name(config.getInt("port")))
+    factory.actorOf(Props(new HttpRouterActor(config)), name)
   }
 
   def selection(port: Int)(implicit factory: ActorRefFactory): ActorSelection = factory.actorSelection(path(port))

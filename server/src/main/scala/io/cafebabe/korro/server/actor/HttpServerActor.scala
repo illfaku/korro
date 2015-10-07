@@ -16,28 +16,12 @@
  */
 package io.cafebabe.korro.server.actor
 
-import akka.actor.{Actor, ActorRef}
-import io.cafebabe.korro.api.http.route.SetRoute
-
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroActor {
-  val name = "korro"
-  val path = s"/user/$name"
-}
-
-class KorroActor extends Actor {
-
-  private var router: ActorRef = null
-
-  override def preStart(): Unit = {
-    router = HttpRouterActor.create(???)
-  }
-
-  override def receive = {
-    case r: SetRoute => router forward r
-  }
+object HttpServerActor {
+  def name(port: Int) = port.toString
+  def path(port: Int) = s"${KorroServerActor.path}/${name(port)}"
 }
