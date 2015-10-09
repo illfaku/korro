@@ -22,7 +22,9 @@ package io.cafebabe.korro.util.lang
  * @author Vladimir Konstantinov
  */
 object Loan {
-  def loan[A <: AutoCloseable](a: A): Loan1[A] = new Loan1(a)
+  def loan[A <: AutoCloseable](a: A) = new Loan1(a)
+  def loan[A <: AutoCloseable, B <: AutoCloseable](a: A, b: B) = new Loan2(a, b)
+  def loan[A <: AutoCloseable, B <: AutoCloseable, C <: AutoCloseable](a: A, b: B, c: C) = new Loan3(a, b, c)
 }
 
 /**
@@ -38,9 +40,7 @@ sealed abstract class Loan {
     } finally {
       resources.filter(_ != null) foreach { res =>
         try res.close() catch {
-          case e: Throwable =>
-            if (t == null) t = e
-            else t.addSuppressed(e)
+          case e: Throwable => if (t == null) t = e else t.addSuppressed(e)
         }
       }
     }

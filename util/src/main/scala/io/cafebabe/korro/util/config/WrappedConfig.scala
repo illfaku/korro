@@ -25,22 +25,12 @@ import scala.collection.JavaConversions._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
+ * TODO: Add description.
+ *
  * @author Vladimir Konstantinov
  * @author Yuriy Gintsyak
  */
 class WrappedConfig(config: Config) {
-
-  // Internal
-  @inline
-  private [this] def lookupValue[V](path: String, f: (String) => V): Option[V] =
-    if (config.hasPath(path)) Option(f(path)) else None
-
-  @inline
-  private [this] def lookupIterable[V](path: String, f: (String) => util.List[V]): Iterable[V] =
-    lookupValue(path, f) match {
-      case Some(x) => x.toIterable
-      case None => Iterable.empty
-    }
 
   // Value retrieval
   def findBoolean(path: String):Option[Boolean] = lookupValue(path, config.getBoolean)
@@ -49,14 +39,17 @@ class WrappedConfig(config: Config) {
   def findLong(path: String): Option[Long] = lookupValue(path, config.getLong)
   def findDouble(path: String): Option[Double] = lookupValue(path, config.getDouble)
   def findString(path: String): Option[String] = lookupValue(path, config.getString)
+
   def findObject(path: String): Option[ConfigObject] = lookupValue(path, config.getObject)
   def findConfig(path: String): Option[Config] = lookupValue(path, config.getConfig)
   def findValue(path: String): Option[ConfigValue] = lookupValue(path, config.getValue)
+
   def findBytes(path: String): Option[Long] = lookupValue(path, config.getBytes)
 
   def findDuration(path: String): Option[Duration] = findString(path).map(Duration.apply)
-  def findFiniteDuration(path: String): Option[FiniteDuration] =
-    findDuration(path).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+  def findFiniteDuration(path: String): Option[FiniteDuration] = {
+    findDuration(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+  }
 
   // Collection retrieval
   def findList(path: String): Option[ConfigList] = lookupValue(path, config.getList)
@@ -78,7 +71,21 @@ class WrappedConfig(config: Config) {
   }
 
   def findBytesList(path: String): Iterable[Long] = lookupIterable(path, config.getBytesList).map(_.longValue)
+
   def findDurationList(path: String): Iterable[Duration] = findStringList(path).map(Duration.apply)
-  def findFiniteDurationList(path: String): Iterable[FiniteDuration] =
-    findDurationList(path).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+  def findFiniteDurationList(path: String): Iterable[FiniteDuration] = {
+    findDurationList(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+  }
+
+  // Internal
+  @inline private def lookupValue[V](path: String, f: (String) => V): Option[V] = {
+    if (config.hasPath(path)) Option(f(path)) else None
+  }
+
+  @inline private def lookupIterable[V](path: String, f: (String) => util.List[V]): Iterable[V] = {
+    lookupValue(path, f) match {
+      case Some(x) => x.toIterable
+      case None => Iterable.empty
+    }
+  }
 }

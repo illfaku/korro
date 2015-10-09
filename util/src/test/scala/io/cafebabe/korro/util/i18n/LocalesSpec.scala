@@ -14,9 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.util.reflect
-
-import io.cafebabe.korro.util.i18n.Locales
+package io.cafebabe.korro.util.i18n
 
 import org.scalatest._
 
