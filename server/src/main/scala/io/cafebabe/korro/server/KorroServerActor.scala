@@ -14,28 +14,33 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.api.http.route
+package io.cafebabe.korro.server
+
+import io.cafebabe.korro.server.actor.HttpServerActor
+import io.cafebabe.korro.util.config.wrapped
+
+import akka.actor._
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-sealed trait Route {
-  def path: String
-  def actor: String
+object KorroServerActor {
+
+  val name = "korro-server"
+  val path = s"/user/$name"
+
+  def create(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props(new KorroServerActor), name)
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class HttpRoute(path: String, actor: String) extends Route
+class KorroServerActor extends Actor {
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class WsRoute(path: String, actor: String) extends Route
+  override def preStart(): Unit = {
+    context.system.settings.config.findConfigList("korro.servers").foreach(HttpServerActor.create)
+  }
+
+  override def receive = {
+    case _ => ()
+  }
+}

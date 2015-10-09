@@ -16,6 +16,7 @@
  */
 package io.cafebabe.korro.server.actor
 
+import io.cafebabe.korro.server.KorroServerActor
 import io.cafebabe.korro.server.handler.HttpChannelInitializer
 import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
 import io.cafebabe.korro.util.config.wrapped

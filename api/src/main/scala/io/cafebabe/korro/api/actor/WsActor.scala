@@ -14,11 +14,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.api.http.route
+package io.cafebabe.korro.api.actor
+
+import io.cafebabe.korro.api.ws.WsMessage
+
+import akka.actor.Actor
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-case class UnsetRoute(route: Route)
+trait WsActor extends Actor {
+
+  type WsReceive = PartialFunction[WsMessage, Unit]
+
+  override final def receive: Receive = {
+    case msg: WsMessage => receiveWs.applyOrElse(msg, unhandled)
+  }
+
+  def receiveWs: WsReceive
+}

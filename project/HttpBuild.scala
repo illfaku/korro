@@ -29,7 +29,6 @@ object HttpBuild extends Build {
   lazy val api = Project(
     id = "korro-api",
     base = file("api"),
-    dependencies = Seq(util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.api ++ Dependencies.api
   )
 
@@ -63,20 +62,13 @@ object OsgiSettings {
 
   lazy val server = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.privatePackage := Seq("io.cafebabe.korro.server.*"),
-    OsgiKeys.importPackage := Seq("!aQute.bnd.annotation.*", "*"),
-    OsgiKeys.additionalHeaders := Map(
-      "Bundle-Name" -> "Korro Server",
-      "Service-Component" -> "*"
-    )
+    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.server"),
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Server")
   )
 
   lazy val client = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.privatePackage := Seq("io.cafebabe.korro.client.*"),
-    OsgiKeys.importPackage := Seq("!aQute.bnd.annotation.*", "*"),
-    OsgiKeys.additionalHeaders := Map(
-      "Bundle-Name" -> "Korro Client",
-      "Service-Component" -> "*"
-    )
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Client")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
@@ -92,12 +84,12 @@ object Dependencies {
   lazy val api = deps(akka, json4s, scalatest)
 
   lazy val server = deps(
-    akka, typesafeConfig, json4s, slf4j, osgiCore, bnd, scalatest,
+    akka, typesafeConfig, json4s, slf4j, scalatest,
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
 
   lazy val client = deps(
-    akka, typesafeConfig, json4s, slf4j, osgiCore, bnd, scalatest,
+    akka, typesafeConfig, json4s, slf4j, scalatest,
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
 
@@ -121,9 +113,6 @@ object Dependency {
   val typesafeConfig = "com.typesafe" % "config" % "1.3.0" % "provided"
   val json4s = "org.json4s" %% "json4s-native" % "3.2.11" % "provided"
   val slf4j = "org.slf4j" % "slf4j-api" % "1.7.12" % "provided"
-
-  val osgiCore = "org.osgi" % "org.osgi.core" % "5.0.0" % "provided"
-  val bnd = "biz.aQute.bnd" % "biz.aQute.bnd.annotation" % "2.4.0" % "provided"
 
   val nettyCommon = "io.netty" % "netty-common" % V.Netty % "provided"
   val nettyBuffer = "io.netty" % "netty-buffer" % V.Netty % "provided"

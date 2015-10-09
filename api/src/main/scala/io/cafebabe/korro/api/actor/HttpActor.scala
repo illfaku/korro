@@ -25,7 +25,7 @@ import akka.actor.Actor
  *
  * @author Vladimir Konstantinov
  */
-abstract class HttpActor extends Actor {
+trait HttpActor extends Actor {
 
   type HttpReceive = PartialFunction[HttpRequest, Unit]
 

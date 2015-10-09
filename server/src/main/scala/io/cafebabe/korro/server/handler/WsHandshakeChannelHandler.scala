@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.route.WsRoute
+import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.api.ws.ConnectWsMessage
 import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.server.util.ChannelFutureExt

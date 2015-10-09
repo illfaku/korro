@@ -18,7 +18,7 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.http.HttpResponse
 import io.cafebabe.korro.api.http.HttpStatus._
-import io.cafebabe.korro.api.http.route.{HttpRoute, Route, WsRoute}
+import io.cafebabe.korro.api.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
 
 import akka.actor.ActorContext

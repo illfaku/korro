@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.actor
 
-import io.cafebabe.korro.api.http.route._
+import io.cafebabe.korro.api.route._
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor._

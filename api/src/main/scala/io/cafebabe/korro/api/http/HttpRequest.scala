@@ -29,10 +29,4 @@ import io.cafebabe.korro.api.http.HttpParams.HttpParams
  *
  * @author Vladimir Konstantinov
  */
-case class HttpRequest(
-  method: String,
-  path: String,
-  parameters: HttpParams,
-  content: HttpContent,
-  headers: HttpParams
-)
+case class HttpRequest(method: String, path: String, parameters: HttpParams, content: HttpContent, headers: HttpParams)

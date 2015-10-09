@@ -14,36 +14,28 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server
-
-import io.cafebabe.korro.server.actor.KorroServerActor
-
-import aQute.bnd.annotation.component.{Activate, Component, Deactivate, Reference}
-import akka.actor.{ActorRef, ActorSystem}
-import org.osgi.framework.BundleContext
-import org.slf4j.LoggerFactory
+package io.cafebabe.korro.api.route
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-@Component
-class HttpServerComponent {
-
-  private val log = LoggerFactory.getLogger(getClass)
-
-  private var actors: ActorSystem = null
-
-  private var korro: ActorRef = null
-
-  @Activate def activate(ctx: BundleContext): Unit = {
-    korro = KorroServerActor.create(actors)
-  }
-
-  @Deactivate def deactivate(ctx: BundleContext): Unit = {
-    actors.stop(korro)
-  }
-
-  @Reference def setActorSystem(actorSystem: ActorSystem): Unit = { actors = actorSystem }
+sealed trait Route {
+  def path: String
+  def actor: String
 }
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+case class HttpRoute(path: String, actor: String) extends Route
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+case class WsRoute(path: String, actor: String) extends Route
