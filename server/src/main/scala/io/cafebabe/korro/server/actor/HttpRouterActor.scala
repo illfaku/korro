@@ -22,6 +22,8 @@ import io.cafebabe.korro.util.config.wrapped
 import akka.actor._
 import com.typesafe.config.Config
 
+import scala.collection.mutable
+
 /**
  * TODO: Add description.
  *
@@ -43,22 +45,25 @@ class HttpRouterActor(config: Config) extends Actor {
 
   private implicit val ordering = Ordering.Int.on[Route](_.path.length)
 
-  private var routes = List.empty[Route]
+  private val routes = mutable.Set.empty[Route]
 
   override def preStart(): Unit = {
-    val httpRoutes: List[Route] = config.findConfigList("HTTP.routes").toList.map { r =>
-      HttpRoute(r.getString("path"), r.getString("actor"))
-    }
-    val wsRoutes: List[Route] = config.findConfigList("WebSocket.routes").toList.map { r =>
-      WsRoute(r.getString("path"), r.getString("actor"))
-    }
-    routes = httpRoutes ++ wsRoutes
+    routes ++= config.findConfigList("HTTP.routes")
+      .filter(_.hasPath("path")).filter(_.hasPath("actor"))
+      .map(r => HttpRoute(r.getString("path"), r.getString("actor")))
+
+    routes ++= config.findConfigList("WebSocket.routes")
+      .filter(_.hasPath("path")).filter(_.hasPath("actor"))
+      .map(r => WsRoute(r.getString("path"), r.getString("actor")))
   }
 
-  override def postStop(): Unit = routes = List.empty
+  override def postStop(): Unit = routes.clear()
 
   override def receive = {
-    case SetRoute(port, route) => routes = route :: routes
+
+    case SetRoute(route) => routes += route
+    case UnsetRoute(route) => routes -= route
+
     case path: String => sender ! Some(routes.filter(path startsWith _.path)).filter(_.nonEmpty).map(_.max)
   }
 }

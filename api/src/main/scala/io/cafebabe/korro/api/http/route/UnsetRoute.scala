@@ -21,4 +21,4 @@ package io.cafebabe.korro.api.http.route
  *
  * @author Vladimir Konstantinov
  */
-case class SetRoute(route: Route)
+case class UnsetRoute(route: Route)
