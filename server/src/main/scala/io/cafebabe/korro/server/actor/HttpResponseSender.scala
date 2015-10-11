@@ -17,7 +17,7 @@
 package io.cafebabe.korro.server.actor
 
 import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.server.convert.HttpResponseConverter
+import io.cafebabe.korro.netty.convert.HttpResponseConverter
 
 import akka.actor._
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}

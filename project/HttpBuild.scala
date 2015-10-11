@@ -35,21 +35,28 @@ object HttpBuild extends Build {
   lazy val server = Project(
     id = "korro-server",
     base = file("server"),
-    dependencies = Seq(api, util),
+    dependencies = Seq(api, netty, util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.server ++ Dependencies.server
   )
 
   lazy val client = Project(
     id = "korro-client",
     base = file("client"),
-    dependencies = Seq(api, util),
+    dependencies = Seq(api, netty, util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.client ++ Dependencies.client
   )
 
+  lazy val netty = Project(
+    id = "korro-netty",
+    base = file("netty"),
+    dependencies = Seq(api, util),
+    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.netty ++ Dependencies.netty
+  )
+
   lazy val util = Project(
-    id = "korro-util",
-    base = file("util"),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
+  id = "korro-util",
+  base = file("util"),
+  settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
   )
 }
 
@@ -68,7 +75,13 @@ object OsgiSettings {
 
   lazy val client = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.privatePackage := Seq("io.cafebabe.korro.client.*"),
+    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.client"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Client")
+  )
+
+  lazy val netty = SbtOsgi.osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.netty.*"),
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro-Netty Utilities")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
@@ -93,7 +106,9 @@ object Dependencies {
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
 
-  lazy val util = deps(typesafeConfig, json4s, scalatest)
+  lazy val netty = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s)
+
+  lazy val util = deps(akka, typesafeConfig, json4s, scalatest)
 
   private def deps(modules: ModuleID*) = Seq(libraryDependencies ++= modules)
 }

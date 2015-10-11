@@ -14,17 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.convert
+package io.cafebabe.korro.util.protocol.http
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-sealed trait ConversionFailure
-case class UnsupportedContentType(name: String) extends ConversionFailure {
-  override val toString = s"Unsupported Content Type: $name."
-}
-case class MalformedJson(json: String) extends ConversionFailure {
-  override val toString = s"Malformed JSON: $json."
+object ContentType {
+
+  private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
+
+  def apply(mime: String, charset: String = "utf-8"): String = s"$mime; charset=$charset"
+
+  def unapply(contentType: String): Option[(String, Option[String])] = {
+    regex.unapplySeq(contentType).map(l => l.head -> l.drop(1).headOption)
+  }
 }

@@ -14,15 +14,30 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.util
+package io.cafebabe.korro.netty
+
+import io.netty.buffer.{ByteBuf, ByteBufUtil, Unpooled}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object MimeTypes {
-  val TextPlain = "text/plain"
-  val ApplicationJson = "application/json"
-  val FormUrlEncoded = "application/x-www-form-urlencoded"
+object ByteBufUtils {
+
+  implicit def toBytes(buf: ByteBuf): Array[Byte] = {
+    val bytes = new Array[Byte](buf.readableBytes)
+    buf.readBytes(bytes)
+    bytes
+  }
+
+  implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+
+  implicit def toByteBuf(text: String): ByteBuf = {
+    val buf = Unpooled.buffer()
+    ByteBufUtil.writeUtf8(buf, text)
+    buf
+  }
+
+  def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }

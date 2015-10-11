@@ -14,20 +14,19 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.util
+package io.cafebabe.korro.netty.convert
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object ContentType {
+sealed trait ConversionFailure
 
-  private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
+case class UnsupportedContentType(name: String) extends ConversionFailure {
+  override val toString = s"Unsupported Content Type: $name."
+}
 
-  def apply(mime: String, charset: String = "utf-8"): String = s"$mime; charset=$charset"
-
-  def unapply(contentType: String): Option[(String, Option[String])] = {
-    regex.unapplySeq(contentType).map(l => l.head -> l.drop(1).headOption)
-  }
+case class MalformedJson(json: String) extends ConversionFailure {
+  override val toString = s"Malformed JSON: $json."
 }

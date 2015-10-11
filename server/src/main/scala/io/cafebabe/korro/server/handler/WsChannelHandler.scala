@@ -17,8 +17,8 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.ws.{BinaryWsMessage, DisconnectWsMessage, PongWsMessage, TextWsMessage}
-import io.cafebabe.korro.server.util.ByteBufUtils.toBytes
-import io.cafebabe.korro.server.util.ChannelFutureExt
+import io.cafebabe.korro.netty.ByteBufUtils.toBytes
+import io.cafebabe.korro.netty.ChannelFutureExt
 
 import akka.actor.{ActorRef, ActorSelection, PoisonPill}
 import io.netty.channel._
@@ -48,7 +48,7 @@ class WsChannelHandler(host: String, receiver: ActorSelection, sender: ActorRef)
     case frame: PongWebSocketFrame =>
       receiver.tell(PongWsMessage, sender)
     case frame: BinaryWebSocketFrame =>
-      receiver.tell(new BinaryWsMessage(toBytes(frame.content)), sender)
+      receiver.tell(new BinaryWsMessage(frame.content), sender)
     case frame: TextWebSocketFrame =>
       receiver.tell(new TextWsMessage(frame.text), sender)
     case frame =>

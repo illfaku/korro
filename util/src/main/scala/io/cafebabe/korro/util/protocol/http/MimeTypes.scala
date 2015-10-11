@@ -14,26 +14,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.handler
-
-import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.netty.convert.HttpResponseConverter
-
-import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.MessageToMessageEncoder
-
-import java.util
+package io.cafebabe.korro.util.protocol.http
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-@Sharable
-class HttpResponseChannelHandler extends MessageToMessageEncoder[HttpResponse] {
-
-  override def encode(ctx: ChannelHandlerContext, msg: HttpResponse, out: util.List[AnyRef]): Unit = {
-    out add HttpResponseConverter.toNetty(msg)
-  }
+object MimeTypes {
+  val TextPlain = "text/plain"
+  val ApplicationJson = "application/json"
+  val FormUrlEncoded = "application/x-www-form-urlencoded"
 }

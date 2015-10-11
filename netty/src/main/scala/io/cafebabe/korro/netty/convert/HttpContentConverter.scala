@@ -14,18 +14,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.convert
+package io.cafebabe.korro.netty.convert
 
 import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
-import io.cafebabe.korro.server.util.ByteBufUtils._
-import io.cafebabe.korro.server.util.ContentType
-import io.cafebabe.korro.server.util.MimeTypes._
+import io.cafebabe.korro.netty.ByteBufUtils._
+import io.cafebabe.korro.util.protocol.http.ContentType
+import io.cafebabe.korro.util.protocol.http.MimeTypes._
 
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names._
 import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders}
-import org.json4s.ParserUtil.ParseException
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parse
 
@@ -42,29 +41,34 @@ object HttpContentConverter {
 
   def fromNetty(content: ByteBuf, headers: HttpHeaders): Either[ConversionFailure, HttpContent] = {
     contentType(headers) match {
-      case Some((TextPlain, charset)) => Right(TextHttpContent(content.toString(charset)))
+      case Some((TextPlain, charset)) =>
+        Right(TextHttpContent(content.toString(charset)))
       case Some((ApplicationJson, charset)) =>
         val text = content.toString(charset)
         Try(parse(text)) match {
           case Success(json) => Right(JsonHttpContent(json))
           case Failure(error) => Left(MalformedJson(text))
         }
-      case Some((FormUrlEncoded, _)) => Right(EmptyHttpContent) // processed by QueryParamsConverter
-      case Some((mime, _)) => Left(UnsupportedContentType(mime))
-      case None => Right(EmptyHttpContent)
+      case Some((FormUrlEncoded, _)) =>
+        Right(EmptyHttpContent) // processed by QueryParamsConverter
+      case Some((mime, _)) =>
+        Left(UnsupportedContentType(mime))
+      case None =>
+        Right(EmptyHttpContent)
     }
   }
 
   def toNetty(content: HttpContent): (ByteBuf, HttpHeaders) = {
     val headers = new DefaultHttpHeaders
-    val buf = content match {
+    val buf: ByteBuf = content match {
       case TextHttpContent(text) =>
         headers.add(CONTENT_TYPE, ContentType(TextPlain))
-        toByteBuf(text)
+        text
       case JsonHttpContent(json) =>
         headers.add(CONTENT_TYPE, ContentType(ApplicationJson))
-        toByteBuf(compact(render(json)))
-      case EmptyHttpContent => emptyByteBuf
+        compact(render(json))
+      case EmptyHttpContent =>
+        emptyByteBuf
     }
     headers.add(CONTENT_LENGTH, buf.readableBytes)
     buf -> headers

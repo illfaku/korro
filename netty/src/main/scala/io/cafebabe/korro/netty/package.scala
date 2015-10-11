@@ -14,30 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.util
+package io.cafebabe.korro
 
-import io.netty.buffer.{ByteBuf, ByteBufUtil, Unpooled}
+import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object ByteBufUtils {
+package object netty {
 
-  def toBytes(buf: ByteBuf): Array[Byte] = {
-    val bytes = new Array[Byte](buf.readableBytes)
-    buf.readBytes(bytes)
-    bytes
+  implicit class ChannelFutureExt(future: ChannelFuture) {
+    def foreach(f: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
+      override def operationComplete(cf: ChannelFuture): Unit = f(cf)
+    })
   }
-
-  def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
-
-  def toByteBuf(text: String): ByteBuf = {
-    val buf = Unpooled.buffer()
-    ByteBufUtil.writeUtf8(buf, text)
-    buf
-  }
-
-  def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }

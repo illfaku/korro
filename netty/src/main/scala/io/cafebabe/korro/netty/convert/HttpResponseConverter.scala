@@ -14,18 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.convert
+package io.cafebabe.korro.netty.convert
 
 import io.cafebabe.korro.api.http.HttpParams.HttpParams
-import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, HttpResponse, TextHttpContent}
+import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, HttpResponse}
 
-import akka.actor.ActorNotFound
-import akka.pattern.AskTimeoutException
-import io.netty.handler.codec.http.HttpResponseStatus._
 import io.netty.handler.codec.http._
-import org.slf4j.LoggerFactory
-
-import java.util.UUID
 
 /**
  * TODO: Add description.
@@ -33,8 +27,6 @@ import java.util.UUID
  * @author Vladimir Konstantinov
  */
 object HttpResponseConverter {
-
-  private val log = LoggerFactory.getLogger(getClass)
 
   def fromNetty(response: FullHttpResponse): Either[ConversionFailure, HttpResponse] = {
     for {
@@ -44,16 +36,6 @@ object HttpResponseConverter {
 
   def toNetty(response: HttpResponse): FullHttpResponse = {
     nettyResponse(HttpResponseStatus.valueOf(response.status), response.content, response.headers)
-  }
-
-  val toError: PartialFunction[Throwable, FullHttpResponse] = {
-    case e: ActorNotFound => nettyResponse(SERVICE_UNAVAILABLE)
-    case e: AskTimeoutException => nettyResponse(REQUEST_TIMEOUT)
-    case e: IllegalArgumentException => nettyResponse(BAD_REQUEST, TextHttpContent(e.getMessage))
-    case e: Throwable =>
-      val message = s"Internal Error #${UUID.randomUUID}."
-      log.error(message, e)
-      nettyResponse(INTERNAL_SERVER_ERROR, TextHttpContent(message))
   }
 
   private def nettyResponse(status: HttpResponseStatus): FullHttpResponse = nettyResponse(status, EmptyHttpContent)

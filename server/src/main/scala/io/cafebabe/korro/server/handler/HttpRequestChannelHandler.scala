@@ -20,7 +20,7 @@ import io.cafebabe.korro.api.http.HttpStatus.BadRequest
 import io.cafebabe.korro.api.http.TextHttpContent
 import io.cafebabe.korro.api.route.HttpRoute
 import io.cafebabe.korro.server.actor.HttpResponseSender
-import io.cafebabe.korro.server.convert.{ConversionFailure, HttpRequestConverter}
+import io.cafebabe.korro.netty.convert.{ConversionFailure, HttpRequestConverter}
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext

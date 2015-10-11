@@ -14,20 +14,33 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server
+package io.cafebabe.korro.client
 
-import io.netty.channel.{ChannelFutureListener, ChannelFuture}
+import io.cafebabe.korro.client.actor.HttpClientActor
+import io.cafebabe.korro.util.config.wrapped
+
+import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-package object util {
+object KorroClientActor {
 
-  implicit class ChannelFutureExt(future: ChannelFuture) {
-    def foreach(f: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
-      override def operationComplete(cf: ChannelFuture): Unit = f(cf)
-    })
+  val name = "korro-client"
+  val path = s"/user/$name"
+
+  def create(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props(new KorroClientActor), name)
+}
+
+class KorroClientActor extends Actor {
+
+  override def preStart(): Unit = {
+    context.system.settings.config.findConfigList("korro.clients").foreach(HttpClientActor.create)
+  }
+
+  override def receive = {
+    case _ => ()
   }
 }

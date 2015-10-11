@@ -18,8 +18,8 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.api.ws.ConnectWsMessage
+import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.server.actor.WsMessageSender
-import io.cafebabe.korro.server.util.ChannelFutureExt
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext

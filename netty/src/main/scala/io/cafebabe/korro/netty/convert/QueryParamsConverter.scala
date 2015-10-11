@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.convert
+package io.cafebabe.korro.netty.convert
 
 import io.cafebabe.korro.api.http.HttpParams.HttpParams
-import io.cafebabe.korro.server.util.MimeTypes.FormUrlEncoded
+import io.cafebabe.korro.util.protocol.http.MimeTypes
+import MimeTypes.FormUrlEncoded
 
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE
@@ -40,11 +41,13 @@ object QueryParamsConverter {
   }
 
   private def fromBody(request: FullHttpRequest): Map[String, List[String]] = {
-    if (FormUrlEncoded == request.headers.get(CONTENT_TYPE)) {
-      val params = request.content.toString(DEFAULT_CHARSET)
-      val decoder = new QueryStringDecoder(params, false)
-      decoder.parameters.toMap.mapValues(_.toList)
-    } else Map.empty
+    request.headers.get(CONTENT_TYPE) match {
+      case FormUrlEncoded =>
+        val params = request.content.toString(DEFAULT_CHARSET)
+        val decoder = new QueryStringDecoder(params, false)
+        decoder.parameters.toMap.mapValues(_.toList)
+      case _ => Map.empty
+    }
   }
 
   def toNetty(parameters: HttpParams): String = {

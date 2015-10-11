@@ -17,7 +17,8 @@
 package io.cafebabe.korro.server.actor
 
 import io.cafebabe.korro.api.ws.{PingWsMessage, BinaryWsMessage, TextWsMessage}
-import io.cafebabe.korro.server.util.ByteBufUtils.toByteBuf
+import io.cafebabe.korro.netty.ByteBufUtils
+import ByteBufUtils.toByteBuf
 
 import akka.actor.{ActorRef, ActorRefFactory, Actor, Props}
 import io.netty.channel.{ChannelHandlerContext, Channel, ChannelFuture, ChannelFutureListener}
