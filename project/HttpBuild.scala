@@ -24,7 +24,7 @@ object HttpBuild extends Build {
     id = "korro",
     base = file("."),
     settings = basicSettings
-  ) aggregate (api, server, client, util)
+  ) aggregate (api, server, client, util, netty)
 
   lazy val api = Project(
     id = "korro-api",
