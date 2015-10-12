@@ -16,25 +16,24 @@
  */
 package io.cafebabe.korro.client.handler
 
-import io.cafebabe.korro.api.http.{HttpResponse, HttpRequest}
+import io.cafebabe.korro.api.http.HttpRequest
 
+import akka.actor.ActorRef
 import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.http.{HttpObjectAggregator, HttpClientCodec}
+import io.netty.handler.codec.http.{HttpClientCodec, HttpObjectAggregator}
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 
 import java.net.URI
-
-import scala.concurrent.Promise
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: Config, uri: URI, req: HttpRequest, promise: Promise[HttpResponse])
+class HttpChannelInitializer(config: Config, uri: URI, req: HttpRequest, sender: ActorRef)
   extends ChannelInitializer[SocketChannel] {
 
   override def initChannel(ch: SocketChannel): Unit = {
@@ -48,6 +47,6 @@ class HttpChannelInitializer(config: Config, uri: URI, req: HttpRequest, promise
 
     pipe.addLast("http-codec", new HttpClientCodec)
     pipe.addLast("http-aggregate", new HttpObjectAggregator(1048576))
-    pipe.addLast("http", new HttpChannelHandler(uri, req, promise))
+    pipe.addLast("http", new HttpChannelHandler(uri, req, sender))
   }
 }

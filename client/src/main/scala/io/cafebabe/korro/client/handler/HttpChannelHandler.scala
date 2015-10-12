@@ -16,24 +16,23 @@
  */
 package io.cafebabe.korro.client.handler
 
-import io.cafebabe.korro.api.http.{HttpRequest, HttpResponse}
+import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.netty.convert.HttpRequestConverter.toNetty
 import io.cafebabe.korro.netty.convert.HttpResponseConverter.fromNetty
 
+import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
-import io.netty.handler.codec.http.{HttpHeaders, FullHttpResponse}
+import io.netty.handler.codec.http.{FullHttpResponse, HttpHeaders}
 
 import java.net.URI
-
-import scala.concurrent.Promise
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelHandler(uri: URI, req: HttpRequest, promise: Promise[HttpResponse])
+class HttpChannelHandler(uri: URI, req: HttpRequest, sender: ActorRef)
   extends SimpleChannelInboundHandler[FullHttpResponse] {
 
   override def channelActive(ctx: ChannelHandlerContext): Unit = {
@@ -42,7 +41,7 @@ class HttpChannelHandler(uri: URI, req: HttpRequest, promise: Promise[HttpRespon
 
     ctx.writeAndFlush(request) foreach { future =>
       if (!future.isSuccess) {
-        promise.failure(future.cause)
+        sender ! Status.Failure(future.cause)
         future.channel.close()
       }
     }
@@ -50,14 +49,14 @@ class HttpChannelHandler(uri: URI, req: HttpRequest, promise: Promise[HttpRespon
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
     fromNetty(msg) match {
-      case Right(res) => promise.success(res)
-      case Left(fail) => promise.failure(new Exception(s"Conversion failure. $fail"))
+      case Right(res) => sender ! Status.Success(res)
+      case Left(fail) => sender ! Status.Failure(new Exception(s"Conversion failure. $fail"))
     }
     ctx.close()
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    promise.failure(cause)
+    sender ! Status.Failure(cause)
     ctx.close()
   }
 }

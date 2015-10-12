@@ -16,13 +16,13 @@
  */
 package io.cafebabe.korro.client.actor
 
-import io.cafebabe.korro.api.http.{HttpResponse, HttpRequest}
+import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.client.KorroClientActor
 import io.cafebabe.korro.client.handler.HttpChannelInitializer
+import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor._
-import akka.pattern.pipe
 import com.typesafe.config.Config
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.EventLoopGroup
@@ -30,8 +30,6 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
 
 import java.net.URI
-
-import scala.concurrent.Promise
 
 /**
  * TODO: Add description.
@@ -62,8 +60,6 @@ class HttpClientActor(config: Config) extends Actor {
     if (group != null) group.shutdownGracefully()
   }
 
-  import context.dispatcher
-
   override def receive = {
 
     case req: HttpRequest => uriOption match {
@@ -72,12 +68,11 @@ class HttpClientActor(config: Config) extends Actor {
     }
 
     case (uri: URI, req: HttpRequest) =>
-      val promise = Promise[HttpResponse]()
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(config, uri, req, promise))
+        .handler(new HttpChannelInitializer(config, uri, req, sender()))
         .connect(uri.getHost, uri.getPort)
-      promise.future pipeTo sender
+        .foreach(f => if (!f.isSuccess) f.channel.pipeline.fireExceptionCaught(f.cause))
   }
 }
