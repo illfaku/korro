@@ -27,9 +27,13 @@ object HttpParams {
 
     private def one(name: String): Option[(String, String)] = params.get(name).flatMap(_.headOption).map(name -> _)
 
-    // TODO: refactoring required
     private implicit val ord = Ordering.String.on[(String, List[String])](_._1)
-    def asString: String = params.toList.sorted.map(e => e._1 + e._2.sorted.mkString).foldLeft("")(_ + _)
+    def asString: String = {
+      params.toList.sorted.foldLeft(new StringBuilder) { (b, e) =>
+        b.append(e._1).append("=")
+        e._2.sorted.addString(b, ",").append(";")
+      } toString()
+    }
   }
 
   trait Failure
