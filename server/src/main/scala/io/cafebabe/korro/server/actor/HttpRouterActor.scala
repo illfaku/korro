@@ -32,13 +32,10 @@ import scala.collection.mutable
 object HttpRouterActor {
 
   val name = "router"
-  def path(port: Int) = s"${HttpServerActor.path(port)}/$name"
 
   def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
     factory.actorOf(Props(new HttpRouterActor(config)), name)
   }
-
-  def selection(port: Int)(implicit factory: ActorRefFactory): ActorSelection = factory.actorSelection(path(port))
 }
 
 class HttpRouterActor(config: Config) extends Actor {

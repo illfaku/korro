@@ -40,7 +40,7 @@ import scala.util.{Failure, Success}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
+class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -52,7 +52,7 @@ class HttpChannelHandler(port: Int)(implicit context: ActorContext) extends Chan
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
       val path = new URI(req.getUri).getPath
-      (HttpRouterActor.selection(port) ? path).mapTo[Option[Route]] onComplete {
+      (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
         case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
         case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
         case Success(None) => sendResponse(ctx, req, NotFound())

@@ -83,9 +83,7 @@ class WrappedConfig(config: Config) {
   }
 
   // Internal
-  @inline private def lookupValue[V](path: String, f: (String) => V): Option[V] = {
-    if (config.hasPath(path)) Option(f(path)) else None
-  }
+  @inline private def lookupValue[V](path: String, f: (String) => V): Option[V] = Try(f(path)).toOption
 
   @inline private def lookupIterable[V](path: String, f: (String) => util.List[V]): Iterable[V] = {
     lookupValue(path, f) match {

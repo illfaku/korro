@@ -4,61 +4,65 @@ Simple HTTP server/client powered by Netty and Akka.
 
 Configuration example (HOCON):
 
-    korro.servers = [{
+    korro.server = {
         
-        // Port to bind on.
-        port = 8080
+        default = {
         
-        // Number of workers to process incoming messages.
-        // 1 by default.
-        workerGroupSize = 2
-        
-        HTTP = {
+            // Port to bind on.
+            // 8080 by default.
+            port = 8282
             
-            // Time limit to ask route actor.
-            // 60 seconds by default.
-            requestTimeout = 10s
+            // Number of workers to process incoming messages.
+            // 1 by default.
+            workerGroupSize = 2
             
-            // Maximal length of HTTP request content.
-            // 65536 bytes by default.
-            maxContentLength = 2M
+            HTTP = {
+                
+                // Time limit to ask route actor.
+                // 60 seconds by default.
+                requestTimeout = 10s
+                
+                // Maximal length of HTTP request content.
+                // 65536 bytes by default.
+                maxContentLength = 2M
+                
+                // Compression level from 0 to 9.
+                // Comment this line to disable compression.
+                compression = 6
+                
+                routes = [{
+                    path = /api/1.0
+                    actor = /user/http-router
+                }]
+            }
             
-            // Compression level from 0 to 9.
-            // Comment this line to disable compression.
-            compression = 6
-            
-            routes = [{
-                path = /api/1.0
-                actor = /user/http-router
-            }]
+            WebSocket = {
+                
+                // Maximal WebSocket frame payload length.
+                // 65536 bytes by default.
+                maxFramePayloadLength = 2M
+                
+                // Compression of WebSocket text frames.
+                // false by default.
+                compression = true
+                
+                routes = [{
+                    path = /websocket
+                    actor = /user/ws-router
+                }]
+            }
         }
-        
-        WebSocket = {
-            
-            // Maximal WebSocket frame payload length.
-            // 65536 bytes by default.
-            maxFramePayloadLength = 2M
-            
-            // Compression of WebSocket text frames.
-            // false by default.
-            compression = true
-            
-            routes = [{
-                path = /websocket
-                actor = /user/ws-router
-            }]
-        }
-    }]
+    }
     
-    korro.clients = [{
+    korro.client = {
         
-        // Actor name accessible at path /user/korro-client/${name}.
-        name = default
-        
-        // Optional URI
-        uri = http://127.0.0.1:8080
-        
-        // Number of workers to process outgoing messages.
-        // 1 by default.
-        workerGroupSize = 2
-    }]
+        default = { // Accessible at path /user/korro-client/default.
+            
+            // Optional URI
+            uri = "http://127.0.0.1:8080"
+            
+            // Number of workers to process outgoing messages.
+            // 1 by default.
+            workerGroupSize = 2
+        }
+    }

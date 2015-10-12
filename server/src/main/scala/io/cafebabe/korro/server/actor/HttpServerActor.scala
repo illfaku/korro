@@ -36,15 +36,14 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
  */
 object HttpServerActor {
 
-  def name(port: Int) = port.toString
-  def path(port: Int) = s"${KorroServerActor.path}/${name(port)}"
+  def path(name: String): String = s"${KorroServerActor.path}/$name"
 
-  def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpServerActor(config)), name(config.getInt("port")))
+  def create(name: String, config: Config)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new HttpServerActor(name, config)), name)
   }
 }
 
-class HttpServerActor(config: Config) extends Actor with ActorLogging {
+class HttpServerActor(name: String, config: Config) extends Actor with ActorLogging {
 
   private var bossGroup: EventLoopGroup = null
   private var workerGroup: EventLoopGroup = null
@@ -52,11 +51,11 @@ class HttpServerActor(config: Config) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     try {
-      val port = config.getInt("port")
+      val port = config.findInt("port").getOrElse(8080)
       val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
 
-      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$port-boss"))
-      workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-server-$port-worker"))
+      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$name-boss"))
+      workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-server-$name-worker"))
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)

@@ -19,7 +19,11 @@ package io.cafebabe.korro.server
 import io.cafebabe.korro.server.actor.HttpServerActor
 import io.cafebabe.korro.util.config.wrapped
 
-import akka.actor._
+import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
+
+import java.util.Collections.emptySet
+
+import scala.collection.JavaConversions._
 
 /**
  * TODO: Add description.
@@ -36,8 +40,12 @@ object KorroServerActor {
 
 class KorroServerActor extends Actor {
 
+  private val config = context.system.settings.config
+
   override def preStart(): Unit = {
-    context.system.settings.config.findConfigList("korro.servers").foreach(HttpServerActor.create)
+    config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
+      HttpServerActor.create(name, config.getConfig(s"korro.server.$name"))
+    }
   }
 
   override def receive = {

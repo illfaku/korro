@@ -35,7 +35,7 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
   private val compressionLevel = config.findInt("HTTP.compression")
 
   private val httpResHandler = new HttpResponseChannelHandler
-  private val httpHandler = new HttpChannelHandler(config.getInt("port"))
+  private val httpHandler = new HttpChannelHandler
   private val httpReqHandler = new HttpRequestChannelHandler(config)
   private val wsHandshakeHandler = new WsHandshakeChannelHandler(config)
 

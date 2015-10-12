@@ -21,6 +21,10 @@ import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 
+import java.util.Collections.emptySet
+
+import scala.collection.JavaConversions._
+
 /**
  * TODO: Add description.
  *
@@ -36,8 +40,12 @@ object KorroClientActor {
 
 class KorroClientActor extends Actor {
 
+  private val config = context.system.settings.config
+
   override def preStart(): Unit = {
-    context.system.settings.config.findConfigList("korro.clients").foreach(HttpClientActor.create)
+    config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
+      HttpClientActor.create(name, config.getConfig(s"korro.client.$name"))
+    }
   }
 
   override def receive = {

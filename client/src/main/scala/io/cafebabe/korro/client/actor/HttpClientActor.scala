@@ -20,6 +20,7 @@ import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.client.KorroClientActor
 import io.cafebabe.korro.client.handler.HttpChannelInitializer
 import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor._
@@ -40,12 +41,12 @@ object HttpClientActor {
 
   def path(name: String): String = s"${KorroClientActor.path}/$name"
 
-  def create(config: Config)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpClientActor(config)), config.getString("name"))
+  def create(name: String, config: Config)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new HttpClientActor(name, config)), name)
   }
 }
 
-class HttpClientActor(config: Config) extends Actor {
+class HttpClientActor(name: String, config: Config) extends Actor {
 
   private val uriOption = config.findURI("uri")
   private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
@@ -53,7 +54,7 @@ class HttpClientActor(config: Config) extends Actor {
   private var group: EventLoopGroup = null
 
   override def preStart(): Unit = {
-    group = new NioEventLoopGroup(workerGroupSize)
+    group = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-client-$name"))
   }
 
   override def postStop(): Unit = {
