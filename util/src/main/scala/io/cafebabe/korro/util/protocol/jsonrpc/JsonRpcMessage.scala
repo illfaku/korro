@@ -26,3 +26,7 @@ import org.json4s.JValue
 trait JsonRpcMessage {
   def toJson: JValue
 }
+
+object JsonRpcMessage {
+  implicit def toJson(msg: JsonRpcMessage): JValue = msg.toJson
+}
