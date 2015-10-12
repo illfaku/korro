@@ -4,8 +4,9 @@ Simple HTTP server/client powered by Netty and Akka.
 
 Configuration example (HOCON):
 
-    cafebabe.http.servers = [{
+    korro.servers = [{
         
+        // Port to bind on.
         port = 8080
         
         // Number of workers to process incoming messages.
@@ -13,10 +14,6 @@ Configuration example (HOCON):
         workerGroupSize = 2
         
         HTTP = {
-            
-            // Time limit for resolveOne operation of route actor selection.
-            // 10 seconds by default.
-            resolveTimeout = 5s
             
             // Time limit to ask route actor.
             // 60 seconds by default.
@@ -38,10 +35,6 @@ Configuration example (HOCON):
         
         WebSocket = {
             
-            // Time limit for resolveOne operation of route actor selection.
-            // 10 seconds by default.
-            resolveTimeout = 5s
-            
             // Maximal WebSocket frame payload length.
             // 65536 bytes by default.
             maxFramePayloadLength = 2M
@@ -55,4 +48,17 @@ Configuration example (HOCON):
                 actor = /user/ws-router
             }]
         }
+    }]
+    
+    korro.clients = [{
+        
+        // Actor name accessible at path /user/korro-client/${name}.
+        name = default
+        
+        // Optional URI
+        uri = http://127.0.0.1:8080
+        
+        // Number of workers to process outgoing messages.
+        // 1 by default.
+        workerGroupSize = 2
     }]
