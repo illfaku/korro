@@ -11,16 +11,25 @@ object HttpParams {
   type HttpParams = Map[String, List[String]]
   type HttpParamsExtraction[V] = ((String, String)) => Either[Failure, V]
 
+  val empty: HttpParams = Map.empty
+
   def apply(headers: (String, Any)*): HttpParams = headers.groupBy(_._1).mapValues(_.map(_._2.toString).toList)
 
   implicit class Extractor(params: HttpParams) {
+
     def mandatory[V](name: String)(f: HttpParamsExtraction[V]): Either[Failure, V] = {
       one(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
     }
+
     def optional[V](name: String)(f: HttpParamsExtraction[V]): Either[Failure, Option[V]] = {
       one(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
     }
+
     private def one(name: String): Option[(String, String)] = params.get(name).flatMap(_.headOption).map(name -> _)
+
+    // TODO: refactoring required
+    private implicit val ord = Ordering.String.on[(String, List[String])](_._1)
+    def asString: String = params.toList.sorted.map(e => e._1 + e._2.sorted.mkString).foldLeft("")(_ + _)
   }
 
   trait Failure
