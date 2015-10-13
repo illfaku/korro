@@ -45,3 +45,13 @@ case class JsonHttpContent(json: JValue) extends HttpContent
  * @author Vladimir Konstantinov
  */
 case object EmptyHttpContent extends HttpContent
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+object HttpContent {
+  implicit def string2content(text: String): HttpContent = TextHttpContent(text)
+  implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
+}
