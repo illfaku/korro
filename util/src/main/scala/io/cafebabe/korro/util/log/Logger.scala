@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory.getLogger
  * @author Vladimir Konstantinov
  */
 object Logger {
-  def apply(clazz: Class[_]): LoggingAdapter with TraceLoggingAdapter = new Slf4jLoggingAdapter(getLogger(clazz))
-  def apply(name: String): LoggingAdapter with TraceLoggingAdapter = new Slf4jLoggingAdapter(getLogger(name))
+  type Logger = LoggingAdapter with TraceLoggingAdapter
+
+  def apply(clazz: Class[_]): Logger = new Slf4jLoggingAdapter(getLogger(clazz))
+  def apply(name: String): Logger = new Slf4jLoggingAdapter(getLogger(name))
 }

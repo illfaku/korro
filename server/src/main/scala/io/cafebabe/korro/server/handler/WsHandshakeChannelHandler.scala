@@ -56,13 +56,14 @@ class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) 
         val sender = WsMessageSender.create(ctx)
         val host = extractHost(ctx.channel, req)
 
-        val pipeline = ctx.channel.pipeline
+        val pipeline = ctx.channel.pipeline // TODO: maybe it should be done after successful handshake
         if (compression) pipeline.addLast("ws-compression", new WsCompressionChannelHandler)
+        pipeline.addLast(pipeline.remove("logging"))
         pipeline.addLast("ws", new WsChannelHandler(host, receiver, sender))
 
         handshaker.handshake(ctx.channel, req) foreach { future =>
-          req.release()
-          if (future.isSuccess) receiver.tell(new ConnectWsMessage(host), sender)
+          req.release() // TODO: should it be here?
+          if (future.isSuccess) receiver.tell(new ConnectWsMessage(host), sender) // TODO: move it to WsChannelHandler?
           else {
             log.error("Error during handshake.", future.cause)
             future.channel.close()

@@ -17,8 +17,9 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.util.log.Logger
 
-import akka.actor.{ActorContext, ActorSystem}
+import akka.actor.ActorContext
 import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
@@ -49,6 +50,7 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
     pipeline.addLast("http-req-decoder", new HttpRequestDecoder)
     pipeline.addLast("http-aggregator", new HttpObjectAggregator(maxContentLength))
     pipeline.addLast("http-decompressor", new HttpContentDecompressor)
+    pipeline.addLast("logging", new LoggingChannelHandler(Logger("korro")))
 
     pipeline.addLast("http", httpHandler)
     pipeline.addLast("http-request", httpReqHandler)
