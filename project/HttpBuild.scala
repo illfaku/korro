@@ -108,7 +108,7 @@ object Dependencies {
 
   lazy val netty = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s)
 
-  lazy val util = deps(akka, typesafeConfig, json4s, scalatest)
+  lazy val util = deps(akka, typesafeConfig, json4s, slf4j, scalatest)
 
   private def deps(modules: ModuleID*) = Seq(libraryDependencies ++= modules)
 }
