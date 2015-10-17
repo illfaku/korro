@@ -26,9 +26,13 @@ import io.netty.buffer.{ByteBuf, ByteBufUtil, Unpooled}
 object ByteBufUtils {
 
   implicit def toBytes(buf: ByteBuf): Array[Byte] = {
-    val bytes = new Array[Byte](buf.readableBytes)
-    buf.readBytes(bytes)
-    bytes
+    if (buf.hasArray) {
+      buf.array
+    } else {
+      val bytes = new Array[Byte](buf.readableBytes)
+      buf.getBytes(0, bytes)
+      bytes
+    }
   }
 
   implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
