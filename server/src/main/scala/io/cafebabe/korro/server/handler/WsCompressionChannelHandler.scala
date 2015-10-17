@@ -16,16 +16,18 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.netty.ByteBufUtils
-import ByteBufUtils._
+import io.cafebabe.korro.netty.ByteBufUtils._
 import io.cafebabe.korro.util.io.{unzipString, zipString}
 
 import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame, WebSocketFrame}
+import org.slf4j.LoggerFactory
 
 import java.util
+
+import scala.util.Try
 
 /**
  * Simple implementation of compression/decompression of WebSocket frames.
@@ -38,13 +40,25 @@ import java.util
  */
 class WsCompressionChannelHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
 
+  private val log = LoggerFactory.getLogger(getClass)
+
   override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
-    case f: TextWebSocketFrame => out add new BinaryWebSocketFrame(toByteBuf(zipString(f.text)))
+    case f: TextWebSocketFrame =>
+      Try(zipString(f.text)).map(new BinaryWebSocketFrame(_)) recover {
+        case e: Throwable =>
+          log.debug("Failed to compress Text WebSocket frame. Cause: {}", e.getMessage)
+          f
+      } foreach out.add
     case _ => out add msg
   }
 
   override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
-    case f: BinaryWebSocketFrame => out add new TextWebSocketFrame(unzipString(new ByteBufInputStream(f.content)))
+    case f: BinaryWebSocketFrame =>
+      Try(unzipString(new ByteBufInputStream(f.content))).map(new TextWebSocketFrame(_)) recover {
+        case e: Throwable =>
+          log.debug("Failed to decompress Binary WebSocket frame. Cause: {}", e.getMessage)
+          f
+      } foreach out.add
     case _ => out add msg
   }
 }
