@@ -16,34 +16,43 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.ws.{BinaryWsMessage, DisconnectWsMessage, PongWsMessage, TextWsMessage}
+import io.cafebabe.korro.api.ws._
 import io.cafebabe.korro.netty.ByteBufUtils.toBytes
 import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.server.actor.WsMessageSender
+import io.cafebabe.korro.util.log.Logger
 
-import akka.actor.{ActorRef, ActorSelection, PoisonPill}
+import akka.actor.{ActorContext, ActorRef, ActorSelection, PoisonPill}
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
-import org.slf4j.LoggerFactory
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, receiver: ActorSelection, sender: ActorRef)
+class WsChannelHandler(host: String, actor: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[WebSocketFrame] {
 
-  private val log = LoggerFactory.getLogger(getClass)
+  private val log = Logger(getClass)
+
+  private var receiver: ActorSelection = null
+
+  private var sender: ActorRef = null
+
+  override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
+    receiver = context.actorSelection(actor)
+    sender = WsMessageSender.create(ctx)
+    receiver.tell(new ConnectWsMessage(host), sender)
+  }
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: WebSocketFrame): Unit = msg match {
     case frame: CloseWebSocketFrame =>
-      log.trace("Close frame from host {}.", host)
       ctx.writeAndFlush(frame.retain()) foreach { future =>
         future.channel.close()
         finish()
       }
     case frame: PingWebSocketFrame =>
-      log.trace("Ping frame from host {}. Responding with Pong frame.", host)
       ctx.writeAndFlush(new PongWebSocketFrame(frame.content.retain()))
     case frame: PongWebSocketFrame =>
       receiver.tell(PongWsMessage, sender)
@@ -59,6 +68,6 @@ class WsChannelHandler(host: String, receiver: ActorSelection, sender: ActorRef)
 
   private def finish(): Unit = {
     receiver.tell(DisconnectWsMessage, sender)
-    sender ! PoisonPill
+    context.stop(sender)
   }
 }

@@ -17,19 +17,16 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.route.WsRoute
-import io.cafebabe.korro.api.ws.ConnectWsMessage
 import io.cafebabe.korro.netty.ChannelFutureExt
-import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorContext
 import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory._
+import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
-import org.slf4j.LoggerFactory
 
 import java.net.{InetSocketAddress, URI}
 
@@ -41,39 +38,44 @@ import java.net.{InetSocketAddress, URI}
 @Sharable
 class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
 
-  private val log = LoggerFactory.getLogger(getClass)
+  private val log = Logger(getClass)
 
   private val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
   private val compression = config.findBoolean("WebSocket.compression").getOrElse(false)
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
-    case RoutedWsHandshake(req, route) =>
-      val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
-      val handshakerFactory = new WebSocketServerHandshakerFactory(location, null, true, maxFramePayloadLength)
-      val handshaker = handshakerFactory.newHandshaker(req)
-      if (handshaker != null) {
-        val receiver = context.actorSelection(route.actor)
-        val sender = WsMessageSender.create(ctx)
-        val host = extractHost(ctx.channel, req)
-
-        val pipeline = ctx.channel.pipeline // TODO: maybe it should be done after successful handshake
-        if (compression) pipeline.addLast("ws-compression", new WsCompressionChannelHandler)
-        pipeline.addLast(pipeline.remove("logging"))
-        pipeline.addLast("ws", new WsChannelHandler(host, receiver, sender))
-
-        handshaker.handshake(ctx.channel, req) foreach { future =>
-          req.release() // TODO: should it be here?
-          if (future.isSuccess) receiver.tell(new ConnectWsMessage(host), sender) // TODO: move it to WsChannelHandler?
-          else {
-            log.error("Error during handshake.", future.cause)
-            future.channel.close()
-          }
-        }
-      } else {
-        req.release()
-        sendUnsupportedVersionResponse(ctx.channel)
+    case m: RoutedWsHandshake =>
+      newHandshaker(m.req) match {
+        case Some(handshaker) => handshake(handshaker, ctx, m)
+        case None => WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel)
       }
+      m.req.release()
     case _ => ctx.fireChannelRead(msg)
+  }
+
+  private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
+    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
+    val factory = new WebSocketServerHandshakerFactory(location, null, true, maxFramePayloadLength)
+    Option(factory.newHandshaker(req))
+  }
+
+  private def handshake(handshaker: WebSocketServerHandshaker, ctx: ChannelHandlerContext, msg: RoutedWsHandshake): Unit = {
+    val host = extractHost(ctx.channel, msg.req)
+    handshaker.handshake(ctx.channel, msg.req) foreach { future =>
+      if (future.isSuccess) {
+        val pipeline = ctx.channel.pipeline
+        pipeline.remove("http-decompressor")
+        pipeline.remove("http-response")
+        pipeline.remove("http")
+        pipeline.remove("http-request")
+        pipeline.remove("ws-handshake")
+        if (compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
+        pipeline.addAfter("logging", "ws", new WsChannelHandler(host, msg.route.actor))
+      } else {
+        log.error("Error during handshake.", future.cause)
+        future.channel.close()
+      }
+    }
   }
 
   private def extractHost(ch: Channel, req: FullHttpRequest): String = {

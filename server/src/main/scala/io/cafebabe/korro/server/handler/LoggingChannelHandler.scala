@@ -18,6 +18,7 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.util.log.Logger.Logger
 
+import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelPromise, ChannelHandlerContext, ChannelDuplexHandler}
 import io.netty.handler.codec.http.websocketx._
 
@@ -28,6 +29,7 @@ import java.net.SocketAddress
  *
  * @author Vladimir Konstantinov
  */
+@Sharable
 class LoggingChannelHandler(logger: Logger) extends ChannelDuplexHandler {
 
   private def enabled: Boolean = logger.isTraceEnabled
