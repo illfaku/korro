@@ -16,14 +16,14 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.netty.ByteBufUtils._
+import io.cafebabe.korro.netty.ByteBufUtils.toByteBuf
 import io.cafebabe.korro.util.io.{unzipString, zipString}
+import io.cafebabe.korro.util.log.Logger
 
 import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame, WebSocketFrame}
-import org.slf4j.LoggerFactory
 
 import java.util
 
@@ -40,11 +40,11 @@ import scala.util.Try
  */
 class WsCompressionChannelHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
 
-  private val log = LoggerFactory.getLogger(getClass)
+  private val log = Logger(getClass)
 
   override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
     case f: TextWebSocketFrame =>
-      Try(zipString(f.text)).map(new BinaryWebSocketFrame(_)) recover {
+      Try(zipString(f.text)).map(toByteBuf).map(new BinaryWebSocketFrame(_)) recover {
         case e: Throwable =>
           log.debug("Failed to compress Text WebSocket frame. Cause: {}", e.getMessage)
           f
