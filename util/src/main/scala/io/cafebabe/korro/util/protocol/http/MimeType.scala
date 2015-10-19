@@ -20,7 +20,7 @@ import io.cafebabe.korro.util.log.Logger
 import io.cafebabe.korro.util.lang.Loan._
 
 import java.io.{Reader, InputStreamReader}
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Path, Paths, Files}
 
 import scala.collection.JavaConversions._
 
@@ -64,8 +64,18 @@ object MimeType {
       ext2mime
     }
 
-    def getExtension(mimeType: String): Option[String] = getMime2Ext.get(mimeType).map(_.head)
+    def getExtension(mimeType: String): Option[String] = getMime2Ext.get(mimeType.toLowerCase).map(_.head)
 
-    def getMimeType(extension: String): Option[String] = getExt2Mime.get(extension).map(_.head)
+    def getMimeType(extension: String): Option[String] = getExt2Mime.get(extension.toLowerCase).map(_.head)
+
+    def getMimeType(path: Path): Option[String] = {
+      val filename = path.toFile.getName
+      filename.lastIndexOf('.') match {
+        case -1 => None
+        case pos =>
+          val extension = filename.substring(pos + 1)
+          getMimeType(extension)
+      }
+    }
   }
 }
