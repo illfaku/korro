@@ -17,8 +17,7 @@
 package io.cafebabe.korro.netty.convert
 
 import io.cafebabe.korro.api.http.HttpParams.HttpParams
-import io.cafebabe.korro.util.protocol.http.MimeTypes
-import MimeTypes.FormUrlEncoded
+import io.cafebabe.korro.util.protocol.http.MimeType.Names.FormUrlEncoded
 
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE

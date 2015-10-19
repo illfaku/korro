@@ -17,9 +17,8 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.util.log.Logger
-
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import io.netty.channel.{ChannelHandlerAdapter, ChannelHandlerContext}
 
 /**
  * TODO: Add description.
@@ -27,7 +26,7 @@ import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class LastChannelHandler extends ChannelInboundHandlerAdapter {
+class LastChannelHandler extends ChannelHandlerAdapter {
 
   private val log = Logger(getClass)
 

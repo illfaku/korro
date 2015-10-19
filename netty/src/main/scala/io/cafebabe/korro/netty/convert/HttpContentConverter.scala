@@ -19,7 +19,7 @@ package io.cafebabe.korro.netty.convert
 import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
 import io.cafebabe.korro.netty.ByteBufUtils._
 import io.cafebabe.korro.util.protocol.http.ContentType
-import io.cafebabe.korro.util.protocol.http.MimeTypes._
+import io.cafebabe.korro.util.protocol.http.MimeType.Names._
 
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
