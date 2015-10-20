@@ -16,15 +16,16 @@
  */
 package io.cafebabe.korro.netty.convert
 
-import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, JsonHttpContent, TextHttpContent}
+import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.netty.ByteBufUtils._
+import io.cafebabe.korro.netty.{DefaultNettyContent, FileStreamNettyContent, NettyContent}
 import io.cafebabe.korro.util.protocol.http.ContentType
 import io.cafebabe.korro.util.protocol.http.MimeType.Names._
 
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
+import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.HttpHeaders.Names._
-import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders}
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parse
 
@@ -58,22 +59,6 @@ object HttpContentConverter {
     }
   }
 
-  def toNetty(content: HttpContent): (ByteBuf, HttpHeaders) = {
-    val headers = new DefaultHttpHeaders
-    val buf: ByteBuf = content match {
-      case TextHttpContent(text) =>
-        headers.add(CONTENT_TYPE, ContentType(TextPlain))
-        text
-      case JsonHttpContent(json) =>
-        headers.add(CONTENT_TYPE, ContentType(ApplicationJson))
-        compact(render(json))
-      case EmptyHttpContent =>
-        emptyByteBuf
-    }
-    headers.add(CONTENT_LENGTH, buf.readableBytes)
-    buf -> headers
-  }
-
   private def contentType(headers: HttpHeaders): Option[(String, Charset)] = {
     if (contentLength(headers) > 0) {
       headers.get(CONTENT_TYPE) match {
@@ -94,5 +79,12 @@ object HttpContentConverter {
 
   private def toCharset(name: String): Option[Charset] = {
     try Some(Charset.forName(name)) catch { case e: Throwable => None }
+  }
+
+  def toNetty(content: HttpContent): NettyContent = content match {
+    case TextHttpContent(text) => new DefaultNettyContent(text, ContentType(TextPlain))
+    case JsonHttpContent(json) => new DefaultNettyContent(compact(render(json)), ContentType(ApplicationJson))
+    case EmptyHttpContent => new DefaultNettyContent(emptyByteBuf, ContentType(TextPlain))
+    case FileStreamHttpContent(path, pos) => new FileStreamNettyContent(path, pos)
   }
 }

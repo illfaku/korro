@@ -17,6 +17,7 @@
 package io.cafebabe.korro.netty.convert
 
 import io.cafebabe.korro.api.http.HttpRequest
+import io.cafebabe.korro.netty.{FileStreamNettyContent, DefaultNettyContent}
 
 import io.netty.handler.codec.http._
 
@@ -43,12 +44,16 @@ object HttpRequestConverter {
 
     val method = HttpMethod.valueOf(request.method)
     val uri = s"${request.path}?${QueryParamsConverter.toNetty(request.parameters)}"
-    val (content, contentHeaders) = HttpContentConverter.toNetty(request.content)
     val headers = HttpHeadersConverter.toNetty(request.headers)
 
-    val result = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, content)
-    result.headers.add(headers).add(contentHeaders)
-
-    result
+    HttpContentConverter.toNetty(request.content) match {
+      case content: DefaultNettyContent =>
+        val result = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, content.data)
+        result.headers.add(headers)
+        result.headers.add(HttpHeaders.Names.CONTENT_LENGTH, content.contentLength)
+        result.headers.add(HttpHeaders.Names.CONTENT_TYPE, content.contentType)
+        result
+      case content: FileStreamNettyContent => ???
+    }
   }
 }

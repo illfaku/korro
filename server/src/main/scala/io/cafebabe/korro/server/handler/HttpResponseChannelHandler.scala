@@ -17,11 +17,13 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.netty.convert.HttpResponseConverter
+import io.cafebabe.korro.netty.{FileStreamNettyContent, DefaultNettyContent}
+import io.cafebabe.korro.netty.convert.{HttpContentConverter, HttpHeadersConverter, HttpResponseConverter}
 
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.{DefaultFileRegion, ChannelPromise, ChannelOutboundHandlerAdapter, ChannelHandlerContext}
 import io.netty.handler.codec.MessageToMessageEncoder
+import io.netty.handler.codec.http._
 
 import java.util
 
@@ -34,6 +36,30 @@ import java.util
 class HttpResponseChannelHandler extends MessageToMessageEncoder[HttpResponse] {
 
   override def encode(ctx: ChannelHandlerContext, msg: HttpResponse, out: util.List[AnyRef]): Unit = {
-    out add HttpResponseConverter.toNetty(msg)
+    val status = HttpResponseStatus.valueOf(msg.status)
+    val nettyHeaders = HttpHeadersConverter.toNetty(msg.headers)
+
+    HttpContentConverter.toNetty(msg.content) match {
+
+      case content: DefaultNettyContent =>
+
+        val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content.data)
+        response.headers.add(nettyHeaders)
+        response.headers.add(HttpHeaders.Names.CONTENT_LENGTH, content.contentLength)
+        response.headers.add(HttpHeaders.Names.CONTENT_TYPE, content.contentType)
+
+        out add response
+
+      case content: FileStreamNettyContent =>
+
+        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status)
+        response.headers.add(nettyHeaders)
+        response.headers.add(HttpHeaders.Names.CONTENT_LENGTH, content.contentLength)
+        response.headers.add(HttpHeaders.Names.CONTENT_TYPE, content.contentType)
+
+        out add response
+        out add content.toFileRegion
+        out add LastHttpContent.EMPTY_LAST_CONTENT
+    }
   }
 }

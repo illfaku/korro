@@ -16,8 +16,7 @@
  */
 package io.cafebabe.korro.netty.convert
 
-import io.cafebabe.korro.api.http.HttpParams.HttpParams
-import io.cafebabe.korro.api.http.{EmptyHttpContent, HttpContent, HttpResponse}
+import io.cafebabe.korro.api.http.HttpResponse
 
 import io.netty.handler.codec.http._
 
@@ -32,23 +31,5 @@ object HttpResponseConverter {
     for {
       content <- HttpContentConverter.fromNetty(response.content, response.headers).right
     } yield HttpResponse(response.getStatus.code, content, HttpHeadersConverter.fromNetty(response.headers))
-  }
-
-  def toNetty(response: HttpResponse): FullHttpResponse = {
-    nettyResponse(HttpResponseStatus.valueOf(response.status), response.content, response.headers)
-  }
-
-  private def nettyResponse(status: HttpResponseStatus): FullHttpResponse = nettyResponse(status, EmptyHttpContent)
-
-  private def nettyResponse(status: HttpResponseStatus, content: HttpContent): FullHttpResponse = {
-    nettyResponse(status, content, Map.empty)
-  }
-
-  private def nettyResponse(status: HttpResponseStatus, content: HttpContent, headers: HttpParams): FullHttpResponse = {
-    val nettyHeaders = HttpHeadersConverter.toNetty(headers)
-    val (buf, contentHeaders) = HttpContentConverter.toNetty(content)
-    val result = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, buf)
-    result.headers.add(nettyHeaders).add(contentHeaders)
-    result
   }
 }

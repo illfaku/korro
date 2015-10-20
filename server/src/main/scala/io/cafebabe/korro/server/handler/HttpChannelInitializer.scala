@@ -51,9 +51,10 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
 
     pipeline.addLast("http-res-encoder", new HttpResponseEncoder)
     compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
-    pipeline.addLast("http-response", httpResHandler)
 
     pipeline.addLast("logging", loggingHandler)
+
+    pipeline.addLast("http-response", httpResHandler)
 
     pipeline.addLast("http", httpHandler)
     pipeline.addLast("http-request", httpReqHandler)

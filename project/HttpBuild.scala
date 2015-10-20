@@ -106,7 +106,7 @@ object Dependencies {
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
 
-  lazy val netty = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s)
+  lazy val netty = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s, akka)
 
   lazy val util = deps(akka, typesafeConfig, json4s, slf4j, scalatest)
 

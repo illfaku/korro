@@ -18,6 +18,9 @@ package io.cafebabe.korro.api.http
 
 import org.json4s.JValue
 
+import java.io.File
+import java.nio.file.{Paths, Path}
+
 /**
  * TODO: Add description.
  *
@@ -44,6 +47,13 @@ case class JsonHttpContent(json: JValue) extends HttpContent
  *
  * @author Vladimir Konstantinov
  */
+case class FileStreamHttpContent(path: Path, pos: Long = 0) extends HttpContent
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 case object EmptyHttpContent extends HttpContent
 
 /**
@@ -54,4 +64,6 @@ case object EmptyHttpContent extends HttpContent
 object HttpContent {
   implicit def string2content(text: String): HttpContent = TextHttpContent(text)
   implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
+  implicit def file2content(file: File): HttpContent = FileStreamHttpContent(Paths.get(file.toURI))
+  implicit def path2content(path: Path): HttpContent = FileStreamHttpContent(path)
 }

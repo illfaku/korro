@@ -35,38 +35,31 @@ object MimeType {
     val TextPlain = "text/plain"
     val ApplicationJson = "application/json"
     val FormUrlEncoded = "application/x-www-form-urlencoded"
+    val OctetStream = "application/octet-stream"
   }
 
   object Mapping {
 
     private val log = Logger(getClass)
 
-    private var mime2Ext: Map[String, List[String]] = null
-
-    private var ext2mime: Map[String, List[String]] = null
-
-    private def getMime2Ext: Map[String, List[String]] = {
-      if (mime2Ext == null) {
-        try {
-          val lines = Files.readAllLines(Paths.get(getClass.getClassLoader.getResource("/mime.types").toURI))
-          mime2Ext = lines.map(_.split(" ", 2)).map(l => l(0) -> l(1).split(" ").toList).toMap
-        } catch {
-          case e: Throwable => log.error("Failed to load mime types.")
-        }
+    private lazy val mime2Ext: Map[String, List[String]] = {
+      try {
+        val lines = Files.readAllLines(Paths.get(getClass.getClassLoader.getResource("/mime.types").toURI))
+        lines.map(_.split(" ", 2)).map(l => l(0) -> l(1).split(" ").toList).toMap
+      } catch {
+        case e: Throwable =>
+          log.error("Failed to load mime types.")
+          Map.empty
       }
-      mime2Ext
     }
 
-    private def getExt2Mime: Map[String, List[String]] = {
-      if (ext2mime == null) {
-        ext2mime = getMime2Ext.toList.flatMap(e => e._2.map(_ -> e._1)).groupBy(_._1).mapValues(_.map(_._2))
-      }
-      ext2mime
+    private lazy val ext2mime: Map[String, List[String]] = {
+      mime2Ext.toList.flatMap(e => e._2.map(_ -> e._1)).groupBy(_._1).mapValues(_.map(_._2))
     }
 
-    def getExtension(mimeType: String): Option[String] = getMime2Ext.get(mimeType.toLowerCase).map(_.head)
+    def getExtension(mimeType: String): Option[String] = mime2Ext.get(mimeType.toLowerCase).map(_.head)
 
-    def getMimeType(extension: String): Option[String] = getExt2Mime.get(extension.toLowerCase).map(_.head)
+    def getMimeType(extension: String): Option[String] = ext2mime.get(extension.toLowerCase).map(_.head)
 
     def getMimeType(path: Path): Option[String] = {
       val filename = path.toFile.getName

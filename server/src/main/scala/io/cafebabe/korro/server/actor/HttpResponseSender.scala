@@ -17,11 +17,10 @@
 package io.cafebabe.korro.server.actor
 
 import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.netty.convert.HttpResponseConverter
+import io.cafebabe.korro.api.http.HttpStatus._
 
 import akka.actor._
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
-import io.netty.handler.codec.http.{DefaultFullHttpResponse, FullHttpResponse, HttpResponseStatus, HttpVersion}
+import io.netty.channel.ChannelHandlerContext
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -51,14 +50,12 @@ class HttpResponseSender(ctx: ChannelHandlerContext, timeout: FiniteDuration) ex
   context.setReceiveTimeout(timeout)
 
   override def receive = {
-    case res: HttpResponse => send(HttpResponseConverter.toNetty(res))
-    case ReceiveTimeout => send(HttpResponseStatus.REQUEST_TIMEOUT)
+    case res: HttpResponse => send(res)
+    case ReceiveTimeout => send(RequestTimeout())
   }
 
-  private def send(status: HttpResponseStatus): Unit = send(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status))
-
-  private def send(res: FullHttpResponse): Unit = {
-    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
+  private def send(res: HttpResponse): Unit = {
+    ctx.writeAndFlush(res)
     context.stop(self)
   }
 }

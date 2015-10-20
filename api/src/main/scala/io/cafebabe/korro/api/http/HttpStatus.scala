@@ -24,13 +24,10 @@ import io.cafebabe.korro.api.http.HttpParams.HttpParams
  * @author Vladimir Konstantinov
  */
 object HttpStatus {
-
   object Ok extends HttpStatus(200)
-
   object BadRequest extends HttpStatus(400)
-
   object NotFound extends HttpStatus(404)
-
+  object RequestTimeout extends HttpStatus(408)
   object ServerError extends HttpStatus(500)
 }
 
