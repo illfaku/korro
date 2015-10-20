@@ -82,9 +82,13 @@ object HttpContentConverter {
   }
 
   def toNetty(content: HttpContent): NettyContent = content match {
-    case TextHttpContent(text) => new DefaultNettyContent(text, ContentType(TextPlain))
-    case JsonHttpContent(json) => new DefaultNettyContent(compact(render(json)), ContentType(ApplicationJson))
-    case EmptyHttpContent => new DefaultNettyContent(emptyByteBuf, ContentType(TextPlain))
-    case FileStreamHttpContent(path, pos) => new FileStreamNettyContent(path, pos)
+    case TextHttpContent(text, charset) =>
+      new DefaultNettyContent(toByteBuf(text, charset), ContentType(TextPlain, charset.name))
+    case JsonHttpContent(json, charset) =>
+      new DefaultNettyContent(toByteBuf(compact(render(json)), charset), ContentType(ApplicationJson, charset.name))
+    case EmptyHttpContent =>
+      new DefaultNettyContent(emptyByteBuf, ContentType(TextPlain))
+    case FileStreamHttpContent(path, pos) =>
+      new FileStreamNettyContent(path, pos)
   }
 }

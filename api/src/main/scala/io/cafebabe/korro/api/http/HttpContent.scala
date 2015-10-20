@@ -19,6 +19,7 @@ package io.cafebabe.korro.api.http
 import org.json4s.JValue
 
 import java.io.File
+import java.nio.charset.Charset
 import java.nio.file.{Paths, Path}
 
 /**
@@ -33,14 +34,14 @@ sealed trait HttpContent
  *
  * @author Vladimir Konstantinov
  */
-case class TextHttpContent(text: String) extends HttpContent
+case class TextHttpContent(text: String, charset: Charset = Charset.defaultCharset) extends HttpContent
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-case class JsonHttpContent(json: JValue) extends HttpContent
+case class JsonHttpContent(json: JValue, charset: Charset = Charset.defaultCharset) extends HttpContent
 
 /**
  * TODO: Add description.

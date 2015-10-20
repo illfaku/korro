@@ -25,7 +25,7 @@ object ContentType {
 
   private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
 
-  def apply(mime: String, charset: String = "utf-8"): String = s"$mime; charset=$charset"
+  def apply(mime: String, charset: String = "utf-8"): String = s"$mime; charset=${charset.toLowerCase}"
 
   def unapply(contentType: String): Option[(String, Option[String])] = {
     regex.unapplySeq(contentType).map(l => l.head -> l.drop(1).headOption)
