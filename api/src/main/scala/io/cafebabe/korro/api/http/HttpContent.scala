@@ -34,7 +34,7 @@ sealed trait HttpContent
  *
  * @author Vladimir Konstantinov
  */
-case class TextHttpContent(text: String, charset: Charset = Charset.defaultCharset) extends HttpContent
+case class TextHttpContent(text: CharSequence, charset: Charset = Charset.defaultCharset) extends HttpContent
 
 /**
  * TODO: Add description.
@@ -63,7 +63,7 @@ case object EmptyHttpContent extends HttpContent
  * @author Vladimir Konstantinov
  */
 object HttpContent {
-  implicit def string2content(text: String): HttpContent = TextHttpContent(text)
+  implicit def string2content(text: CharSequence): HttpContent = TextHttpContent(text)
   implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
   implicit def file2content(file: File): HttpContent = FileStreamHttpContent(Paths.get(file.toURI))
   implicit def path2content(path: Path): HttpContent = FileStreamHttpContent(path)
