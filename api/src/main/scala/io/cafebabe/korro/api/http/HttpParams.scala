@@ -8,20 +8,22 @@ import scala.util.{Failure, Success, Try}
  * @author Vladimir Konstantinov
  */
 object HttpParams {
+
   type HttpParams = Map[String, List[String]]
-  type HttpParamsExtraction[V] = ((String, String)) => Either[Failure, V]
+
 
   val empty: HttpParams = Map.empty
 
   def apply(headers: (String, Any)*): HttpParams = headers.groupBy(_._1).mapValues(_.map(_._2.toString).toList)
 
+
   implicit class Extractor(params: HttpParams) {
 
-    def mandatory[V](name: String)(f: HttpParamsExtraction[V]): Either[Failure, V] = {
+    def mandatory[V](name: String)(f: Extractions.HttpParamsExtraction[V]): Either[Failure, V] = {
       one(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
     }
 
-    def optional[V](name: String)(f: HttpParamsExtraction[V]): Either[Failure, Option[V]] = {
+    def optional[V](name: String)(f: Extractions.HttpParamsExtraction[V]): Either[Failure, Option[V]] = {
       one(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
     }
 
@@ -36,21 +38,36 @@ object HttpParams {
     }
   }
 
-  trait Failure
-  case class Absent(name: String) extends Failure
-  case class Malformed(name: String, value: String) extends Failure
 
-  class GenericExtraction[V](f: (String) => V) extends HttpParamsExtraction[V] {
-    override def apply(v: (String, String)): Either[Failure, V] = {
-      val (name, value) = v
-      Try(f(value)) match {
-        case Success(newVal) => Right(newVal)
-        case Failure(t) => Left(Malformed(name, value))
-      }
-    }
-  }
+  sealed trait Failure
+  case class Absent(name: String) extends Failure
+  case class Malformed(name: String, cause: Throwable) extends Failure
+
 
   object Extractions {
+
+    trait HttpParamsExtraction[V] extends (((String, String)) => Either[Failure, V]) { self =>
+      def map[U](f: V => U): HttpParamsExtraction[U] = new HttpParamsExtraction[U] {
+        override def apply(v: (String, String)): Either[Failure, U] = {
+          try {
+            self.apply(v).right.map(f)
+          } catch {
+            case cause: Throwable => Left(Malformed(v._1, cause))
+          }
+        }
+      }
+    }
+
+    class GenericExtraction[V](f: (String) => V) extends HttpParamsExtraction[V] {
+      override def apply(v: (String, String)): Either[Failure, V] = {
+        val (name, value) = v
+        Try(f(value)) match {
+          case Success(result) => Right(result)
+          case Failure(cause) => Left(Malformed(name, cause))
+        }
+      }
+    }
+
     val asString: HttpParamsExtraction[String] = new GenericExtraction(_.toString)
     val asLong: HttpParamsExtraction[Long] = new GenericExtraction(_.toLong)
     val asDouble: HttpParamsExtraction[Double] = new GenericExtraction(_.toDouble)
