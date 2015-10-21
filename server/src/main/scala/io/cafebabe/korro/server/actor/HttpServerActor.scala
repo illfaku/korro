@@ -45,13 +45,14 @@ object HttpServerActor {
 
 class HttpServerActor(name: String, config: Config) extends Actor with ActorLogging {
 
+  private val port = config.findInt("port").getOrElse(8080)
+
   private var bossGroup: EventLoopGroup = null
   private var workerGroup: EventLoopGroup = null
   private var channel: Channel = null
 
   override def preStart(): Unit = {
     try {
-      val port = config.findInt("port").getOrElse(8080)
       val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
 
       bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$name-boss"))
@@ -67,9 +68,9 @@ class HttpServerActor(name: String, config: Config) extends Actor with ActorLogg
 
       HttpRouterActor.create(config)
 
-      log.debug("Started HTTP server on port {}.", port)
+      log.info("Started Korro HTTP server \"{}\" on port {}.", name, port)
     } catch {
-      case e: Throwable => log.error(e, s"Failed to start HTTP server.")
+      case e: Throwable => log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", name, port)
     }
   }
 
@@ -78,9 +79,9 @@ class HttpServerActor(name: String, config: Config) extends Actor with ActorLogg
       if (channel != null) channel.close().sync()
       if (bossGroup != null) bossGroup.shutdownGracefully()
       if (workerGroup != null) workerGroup.shutdownGracefully()
-      log.debug("Stopped HTTP server.")
+      log.info("Stopped Korro HTTP server \"{}\".", name)
     } catch {
-      case e: Throwable => log.error(e, s"Failed to stop HTTP server.")
+      case e: Throwable => log.error(e, "Failed to stop Korro HTTP server \"{}\".", name)
     }
   }
 

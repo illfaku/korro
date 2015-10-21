@@ -46,7 +46,7 @@ object HttpClientActor {
   }
 }
 
-class HttpClientActor(name: String, config: Config) extends Actor {
+class HttpClientActor(name: String, config: Config) extends Actor with ActorLogging {
 
   private val uriOption = config.findURI("uri")
   private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
@@ -55,10 +55,12 @@ class HttpClientActor(name: String, config: Config) extends Actor {
 
   override def preStart(): Unit = {
     group = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-client-$name"))
+    log.info("Started HTTP client \"{}\" with URI: {}.", name, uriOption)
   }
 
   override def postStop(): Unit = {
     if (group != null) group.shutdownGracefully()
+    log.info("Stopped HTTP client \"{}\".", name)
   }
 
   override def receive = {
