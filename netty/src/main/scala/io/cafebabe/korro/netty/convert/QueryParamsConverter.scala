@@ -49,13 +49,13 @@ object QueryParamsConverter {
     }
   }
 
-  def toNetty(parameters: HttpParams): String = {
-    val encoder = new QueryStringEncoder("") // without path
+  def toNetty(path: String, parameters: HttpParams): String = {
+    val encoder = new QueryStringEncoder(path)
     parameters foreach { case (name, values) =>
       values foreach { value =>
         encoder.addParam(name, value)
       }
     }
-    encoder.toString.substring(1) // removing of '?'
+    encoder.toString
   }
 }

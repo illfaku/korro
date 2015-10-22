@@ -43,7 +43,7 @@ object HttpRequestConverter {
   def toNetty(request: HttpRequest): FullHttpRequest = {
 
     val method = HttpMethod.valueOf(request.method)
-    val uri = s"${request.path}?${QueryParamsConverter.toNetty(request.parameters)}"
+    val uri = QueryParamsConverter.toNetty(request.path, request.parameters)
     val headers = HttpHeadersConverter.toNetty(request.headers)
 
     HttpContentConverter.toNetty(request.content) match {
