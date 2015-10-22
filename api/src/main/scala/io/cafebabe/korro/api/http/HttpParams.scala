@@ -59,8 +59,12 @@ object HttpParams {
 
 
   sealed trait Failure
-  case class Absent(name: String) extends Failure
-  case class Malformed(name: String, value: String, cause: Throwable) extends Failure
+  case class Absent(name: String) extends Failure {
+    override lazy val toString = s"Missing parameter: $name."
+  }
+  case class Malformed(name: String, value: String, cause: Throwable) extends Failure {
+    override lazy val toString = s"Invalid parameter: $name=$value. Cause: ${cause.getMessage}"
+  }
 
 
   object Extractions {
