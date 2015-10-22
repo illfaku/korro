@@ -67,6 +67,14 @@ sealed abstract class HttpMethod(val name: String) {
     HttpRequest(name, path, parameters, content, headers)
   }
 
-  def unapply(req: HttpRequest): Option[(String, HttpParams, HttpContent, HttpParams)] =
-    if (name == req.method.toUpperCase) Some(req.path, req.parameters, req.content, req.headers) else None
+  def unapply(req: HttpRequest): Option[(String, HttpParams, Any, HttpParams)] = {
+    if (name == req.method.toUpperCase) {
+      val content = req.content match {
+        case TextHttpContent(text, _) => text.toString
+        case JsonHttpContent(json, _) => json
+        case _ => req.content
+      }
+      Some(req.path, req.parameters, content, req.headers)
+    } else None
+  }
 }

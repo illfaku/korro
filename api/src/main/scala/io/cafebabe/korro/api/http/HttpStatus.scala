@@ -42,7 +42,14 @@ sealed abstract class HttpStatus(val code: Int) {
     HttpResponse(code, content, headers)
   }
 
-  def unapply(res: HttpResponse): Option[(HttpContent, HttpParams)] = {
-    if (code == res.status) Some(res.content, res.headers) else None
+  def unapply(res: HttpResponse): Option[(Any, HttpParams)] = {
+    if (code == res.status) {
+      val content = res.content match {
+        case TextHttpContent(text, _) => text.toString
+        case JsonHttpContent(json, _) => json
+        case _ => res.content
+      }
+      Some(content, res.headers)
+    } else None
   }
 }
