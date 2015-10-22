@@ -1,5 +1,8 @@
 package io.cafebabe.korro.api.http
 
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
+
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -69,8 +72,19 @@ object HttpParams {
     }
 
     val asString: HttpParamsExtraction[String] = new GenericExtraction(_.toString)
+
     val asLong: HttpParamsExtraction[Long] = new GenericExtraction(_.toLong)
+    val asInt: HttpParamsExtraction[Int] = asLong.map(_.toInt)
+    val asShort: HttpParamsExtraction[Short] = asLong.map(_.toShort)
+    val asByte: HttpParamsExtraction[Byte] = asLong.map(_.toByte)
+    val asBigInt: HttpParamsExtraction[BigInt] = new GenericExtraction(BigInt(_))
+
     val asDouble: HttpParamsExtraction[Double] = new GenericExtraction(_.toDouble)
+    val asFloat: HttpParamsExtraction[Float] = asDouble.map(_.toFloat)
+    val asBigDecimal: HttpParamsExtraction[BigDecimal] = new GenericExtraction(BigDecimal(_))
+
     val asBoolean: HttpParamsExtraction[Boolean] = new GenericExtraction(_.toBoolean)
+
+    def asTemporalAccessor(format: DateTimeFormatter): HttpParamsExtraction[TemporalAccessor] = new GenericExtraction(format.parse)
   }
 }
