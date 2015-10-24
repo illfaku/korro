@@ -17,7 +17,6 @@
 package io.cafebabe.korro.client.actor
 
 import io.cafebabe.korro.api.http.HttpRequest
-import io.cafebabe.korro.client.KorroClientActor
 import io.cafebabe.korro.client.handler.HttpChannelInitializer
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
@@ -30,7 +29,9 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
 
-import java.net.URI
+import java.net.{URI, URL}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * TODO: Add description.
@@ -38,44 +39,44 @@ import java.net.URI
  * @author Vladimir Konstantinov
  */
 object HttpClientActor {
-
-  def path(name: String): String = s"${KorroClientActor.path}/$name"
-
-  def create(name: String, config: Config)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpClientActor(name, config)), name)
-  }
+  def props(name: String, config: Config): Props = Props(new HttpClientActor(name, config))
 }
 
 class HttpClientActor(name: String, config: Config) extends Actor with ActorLogging {
 
-  private val uriOption = config.findURI("uri")
+  private val urlOption = config.findURL("url")
   private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
 
   private var group: EventLoopGroup = null
 
   override def preStart(): Unit = {
     group = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-client-$name"))
-    log.info("Started HTTP client \"{}\" with URI: {}.", name, uriOption)
+    log.info("Started HTTP client \"{}\" with URL: {}.", name, urlOption)
   }
 
   override def postStop(): Unit = {
     if (group != null) group.shutdownGracefully()
-    log.info("Stopped HTTP client \"{}\".", name)
   }
 
   override def receive = {
 
-    case req: HttpRequest => uriOption match {
-      case Some(uri) => self forward (uri -> req)
-      case None => sender ! Status.Failure(new IllegalStateException("URI is not configured."))
+    case req: HttpRequest => urlOption match {
+      case Some(url) => self forward (url -> req)
+      case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
     case (uri: URI, req: HttpRequest) =>
+      Try (uri.toURL) match {
+        case Success(url) => self forward (url -> req)
+        case Failure(err) => sender ! Status.Failure(err)
+      }
+
+    case (url: URL, req: HttpRequest) =>
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(config, uri, req, sender()))
-        .connect(uri.getHost, uri.getPort)
+        .handler(new HttpChannelInitializer(config, url, req, sender()))
+        .connect(url.getHost, url.getPort)
         .foreach(f => if (!f.isSuccess) f.channel.pipeline.fireExceptionCaught(f.cause))
   }
 }

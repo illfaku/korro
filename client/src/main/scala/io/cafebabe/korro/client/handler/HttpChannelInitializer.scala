@@ -17,6 +17,8 @@
 package io.cafebabe.korro.client.handler
 
 import io.cafebabe.korro.api.http.HttpRequest
+import io.cafebabe.korro.netty.handler.LoggingChannelHandler
+import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorRef
 import com.typesafe.config.Config
@@ -26,27 +28,30 @@ import io.netty.handler.codec.http.{HttpClientCodec, HttpObjectAggregator}
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 
-import java.net.URI
+import java.net.URL
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: Config, uri: URI, req: HttpRequest, sender: ActorRef)
+class HttpChannelInitializer(config: Config, url: URL, req: HttpRequest, sender: ActorRef)
   extends ChannelInitializer[SocketChannel] {
 
-  override def initChannel(ch: SocketChannel): Unit = {
-    val pipe = ch.pipeline
+  private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
 
-    Option(uri.getScheme).filter(_.equalsIgnoreCase("https")).map { _ =>
+  override def initChannel(ch: SocketChannel): Unit = {
+    val pipeline = ch.pipeline
+
+    Option(url.getProtocol).filter(_.equalsIgnoreCase("https")).map { _ =>
       SslContextBuilder.forClient.trustManager(InsecureTrustManagerFactory.INSTANCE).build
     } foreach { ctx =>
-      pipe.addLast("ssl", ctx.newHandler(ch.alloc()))
+      pipeline.addLast("ssl", ctx.newHandler(ch.alloc()))
     }
 
-    pipe.addLast("http-codec", new HttpClientCodec)
-    pipe.addLast("http-aggregate", new HttpObjectAggregator(1048576))
-    pipe.addLast("http", new HttpChannelHandler(uri, req, sender))
+    pipeline.addLast("http-codec", new HttpClientCodec)
+    pipeline.addLast("http-aggregate", new HttpObjectAggregator(1048576))
+    pipeline.addLast("logging", loggingHandler)
+    pipeline.addLast("http", new HttpChannelHandler(url, req, sender))
   }
 }

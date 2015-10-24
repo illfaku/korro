@@ -44,17 +44,14 @@ class HttpRouterActor(config: Config) extends Actor {
 
   private val routes = mutable.Set.empty[Route]
 
-  override def preStart(): Unit = {
-    routes ++= config.findConfigList("HTTP.routes")
-      .filter(_.hasPath("path")).filter(_.hasPath("actor"))
-      .map(r => HttpRoute(r.getString("path"), r.getString("actor")))
+  routes ++= config.findConfigList("HTTP.routes")
+    .filter(_.hasPath("path")).filter(_.hasPath("actor"))
+    .map(r => HttpRoute(r.getString("path"), r.getString("actor")))
 
-    routes ++= config.findConfigList("WebSocket.routes")
-      .filter(_.hasPath("path")).filter(_.hasPath("actor"))
-      .map(r => WsRoute(r.getString("path"), r.getString("actor")))
-  }
+  routes ++= config.findConfigList("WebSocket.routes")
+    .filter(_.hasPath("path")).filter(_.hasPath("actor"))
+    .map(r => WsRoute(r.getString("path"), r.getString("actor")))
 
-  override def postStop(): Unit = routes.clear()
 
   override def receive = {
 

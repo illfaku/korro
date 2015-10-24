@@ -25,19 +25,19 @@ import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http.{FullHttpResponse, HttpHeaders}
 
-import java.net.URI
+import java.net.URL
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelHandler(uri: URI, req: HttpRequest, sender: ActorRef)
+class HttpChannelHandler(url: URL, req: HttpRequest, sender: ActorRef)
   extends SimpleChannelInboundHandler[FullHttpResponse] {
 
   override def channelActive(ctx: ChannelHandlerContext): Unit = {
     val request = toNetty(req)
-    request.headers().add(HttpHeaders.Names.HOST, uri.getHost)
+    request.headers().add(HttpHeaders.Names.HOST, url.getHost)
 
     ctx.writeAndFlush(request) foreach { future =>
       if (!future.isSuccess) {

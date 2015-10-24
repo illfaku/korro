@@ -16,8 +16,8 @@
  */
 package io.cafebabe.korro.server.actor
 
-import io.cafebabe.korro.server.KorroServerActor
 import io.cafebabe.korro.server.handler.HttpChannelInitializer
+import io.cafebabe.korro.util.akka.NoReceiveActor
 import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
 import io.cafebabe.korro.util.config.wrapped
 
@@ -27,7 +27,6 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{Channel, EventLoopGroup}
-import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
 /**
  * TODO: Add description.
@@ -35,17 +34,13 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
  * @author Vladimir Konstantinov
  */
 object HttpServerActor {
-
-  def path(name: String): String = s"${KorroServerActor.path}/$name"
-
-  def create(name: String, config: Config)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpServerActor(name, config)), name)
-  }
+  def props(name: String, config: Config): Props = Props(new HttpServerActor(name, config))
 }
 
-class HttpServerActor(name: String, config: Config) extends Actor with ActorLogging {
+class HttpServerActor(name: String, config: Config) extends Actor with ActorLogging with NoReceiveActor {
 
   private val port = config.findInt("port").getOrElse(8080)
+  private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
 
   private var bossGroup: EventLoopGroup = null
   private var workerGroup: EventLoopGroup = null
@@ -53,15 +48,12 @@ class HttpServerActor(name: String, config: Config) extends Actor with ActorLogg
 
   override def preStart(): Unit = {
     try {
-      val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
-
       bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$name-boss"))
       workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-server-$name-worker"))
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
-        .handler(new LoggingHandler(LogLevel.DEBUG))
         .childHandler(new HttpChannelInitializer(config))
 
       channel = bootstrap.bind(port).sync().channel
@@ -70,22 +62,15 @@ class HttpServerActor(name: String, config: Config) extends Actor with ActorLogg
 
       log.info("Started Korro HTTP server \"{}\" on port {}.", name, port)
     } catch {
-      case e: Throwable => log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", name, port)
+      case e: Throwable =>
+        log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", name, port)
+        context.stop(self)
     }
   }
 
   override def postStop(): Unit = {
-    try {
-      if (channel != null) channel.close().sync()
-      if (bossGroup != null) bossGroup.shutdownGracefully()
-      if (workerGroup != null) workerGroup.shutdownGracefully()
-      log.info("Stopped Korro HTTP server \"{}\".", name)
-    } catch {
-      case e: Throwable => log.error(e, "Failed to stop Korro HTTP server \"{}\".", name)
-    }
-  }
-
-  override def receive = {
-    case _ => ()
+    if (channel != null) channel.close()
+    if (bossGroup != null) bossGroup.shutdownGracefully()
+    if (workerGroup != null) workerGroup.shutdownGracefully()
   }
 }

@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.handler
+package io.cafebabe.korro.netty.handler
 
 import io.cafebabe.korro.util.log.Logger.Logger
 
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelPromise, ChannelHandlerContext, ChannelDuplexHandler}
+import io.netty.channel.{ChannelDuplexHandler, ChannelHandlerContext, ChannelPromise}
 import io.netty.handler.codec.http.websocketx._
 
 import java.net.SocketAddress

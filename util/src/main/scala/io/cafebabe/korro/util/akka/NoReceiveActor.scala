@@ -14,32 +14,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server
+package io.cafebabe.korro.util.akka
 
-import io.cafebabe.korro.server.actor.HttpServerActor
-import io.cafebabe.korro.util.akka.NoReceiveActor
-import io.cafebabe.korro.util.config.wrapped
-
-import akka.actor.{Actor, Props}
-
-import java.util.Collections.emptySet
-
-import scala.collection.JavaConversions._
+import akka.actor.Actor
 
 /**
- * TODO: Add description.
+ * Mixin for parent actors which don't need to receive any messages.
  *
  * @author Vladimir Konstantinov
  */
-object KorroServerActor {
-  val props: Props = Props(new KorroServerActor)
-}
-
-private [server] class KorroServerActor extends Actor with NoReceiveActor {
-
-  private val config = context.system.settings.config
-
-  config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    context.actorOf(HttpServerActor.props(name, config.getConfig(s"korro.server.$name")), name)
+trait NoReceiveActor { this: Actor =>
+  override def receive: Receive = {
+    case _ => ()
   }
 }

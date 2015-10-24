@@ -17,9 +17,10 @@
 package io.cafebabe.korro.client
 
 import io.cafebabe.korro.client.actor.HttpClientActor
+import io.cafebabe.korro.util.akka.NoReceiveActor
 import io.cafebabe.korro.util.config.wrapped
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
+import akka.actor.{Actor, Props}
 
 import java.util.Collections.emptySet
 
@@ -31,24 +32,14 @@ import scala.collection.JavaConversions._
  * @author Vladimir Konstantinov
  */
 object KorroClientActor {
-
-  val name = "korro-client"
-  val path = s"/user/$name"
-
-  def create(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props(new KorroClientActor), name)
+  val props: Props = Props(new KorroClientActor)
 }
 
-class KorroClientActor extends Actor {
+private [client] class KorroClientActor extends Actor with NoReceiveActor {
 
   private val config = context.system.settings.config
 
-  override def preStart(): Unit = {
-    config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
-      HttpClientActor.create(name, config.getConfig(s"korro.client.$name"))
-    }
-  }
-
-  override def receive = {
-    case _ => ()
+  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
+    context.actorOf(HttpClientActor.props(name, config.getConfig(s"korro.client.$name")), name)
   }
 }

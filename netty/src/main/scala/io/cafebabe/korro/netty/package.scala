@@ -16,7 +16,9 @@
  */
 package io.cafebabe.korro
 
-import io.netty.channel.{ChannelFuture, ChannelFutureListener}
+import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * TODO: Add description.
@@ -26,8 +28,15 @@ import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 package object netty {
 
   implicit class ChannelFutureExt(future: ChannelFuture) {
+
     def foreach(f: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
-      override def operationComplete(cf: ChannelFuture): Unit = f(cf)
+      override def operationComplete(future: ChannelFuture): Unit = f(future)
+    })
+
+    def onComplete(f: Try[Channel] => Unit): Unit = future.addListener(new ChannelFutureListener {
+      override def operationComplete(future: ChannelFuture): Unit = {
+        if (future.isSuccess) f(Success(future.channel)) else f(Failure(future.cause))
+      }
     })
   }
 }

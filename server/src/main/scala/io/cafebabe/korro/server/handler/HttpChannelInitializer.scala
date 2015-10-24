@@ -16,6 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
+import io.cafebabe.korro.netty.handler.LoggingChannelHandler
 import io.cafebabe.korro.util.config.wrapped
 import io.cafebabe.korro.util.log.Logger
 
