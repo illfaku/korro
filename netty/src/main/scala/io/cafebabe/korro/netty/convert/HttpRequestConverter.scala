@@ -28,12 +28,12 @@ import io.netty.handler.codec.http._
  */
 object HttpRequestConverter {
 
-  def fromNetty(request: FullHttpRequest, pathPrefix: String): Either[ConversionFailure, HttpRequest] = {
+  def fromNetty(request: FullHttpRequest): Either[ConversionFailure, HttpRequest] = {
     for {
       content <- HttpContentConverter.fromNetty(request.content, request.headers).right
     } yield HttpRequest(
       request.getMethod.name,
-      new QueryStringDecoder(request.getUri).path.substring(pathPrefix.length),
+      new QueryStringDecoder(request.getUri).path,
       QueryParamsConverter.fromNetty(request),
       content,
       HttpHeadersConverter.fromNetty(request.headers)

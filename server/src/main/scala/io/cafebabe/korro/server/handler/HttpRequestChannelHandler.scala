@@ -43,7 +43,7 @@ class HttpRequestChannelHandler(config: Config)(implicit context: ActorContext) 
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case RoutedHttpRequest(req, route) =>
-      HttpRequestConverter.fromNetty(req, route.path) match {
+      HttpRequestConverter.fromNetty(req) match {
         case Right(request) =>
           val sender = HttpResponseSender.create(ctx, requestTimeout)
           context.actorSelection(route.actor).tell(request, sender)
