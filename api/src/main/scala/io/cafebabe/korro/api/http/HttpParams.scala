@@ -16,8 +16,11 @@
  */
 package io.cafebabe.korro.api.http
 
+import java.text.DateFormat
+import java.time.{ZonedDateTime, OffsetDateTime, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
+import java.util.Date
 
 import scala.util.{Failure, Success, Try}
 
@@ -106,6 +109,11 @@ object HttpParams {
 
     val asBoolean: HttpParamsExtraction[Boolean] = new GenericExtraction(_.toBoolean)
 
+    def asDate(format: DateFormat): HttpParamsExtraction[Date] = new GenericExtraction(format.parse)
     def asTemporalAccessor(format: DateTimeFormatter): HttpParamsExtraction[TemporalAccessor] = new GenericExtraction(format.parse)
+
+    val asIsoLocalDateTime: HttpParamsExtraction[LocalDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
+    val asIsoOffsetDateTime: HttpParamsExtraction[OffsetDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
+    val asIsoZonedDateTime: HttpParamsExtraction[ZonedDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
   }
 }
