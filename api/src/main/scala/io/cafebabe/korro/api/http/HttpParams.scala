@@ -23,7 +23,7 @@ import java.time.temporal.TemporalAccessor
 import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
 import java.util.Date
 
-import scala.concurrent.duration.{FiniteDuration, Duration}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
  * TODO: Add description.
@@ -90,28 +90,28 @@ object HttpParams {
       override def apply(v: (String, String)): Either[Failure, String] = Right(v._2)
     }
 
-    val asLong: HttpParamsExtraction[Long] = asString.map(_.toLong)
-    val asInt: HttpParamsExtraction[Int] = asLong.map(_.toInt)
-    val asShort: HttpParamsExtraction[Short] = asLong.map(_.toShort)
-    val asByte: HttpParamsExtraction[Byte] = asLong.map(_.toByte)
-    val asBigInt: HttpParamsExtraction[BigInt] = asString.map(BigInt(_))
+    val asLong = asString.map(_.toLong)
+    val asInt = asLong.map(_.toInt)
+    val asShort = asLong.map(_.toShort)
+    val asByte = asLong.map(_.toByte)
+    val asBigInt = asString.map(BigInt(_))
 
-    val asDouble: HttpParamsExtraction[Double] = asString.map(_.toDouble)
-    val asFloat: HttpParamsExtraction[Float] = asDouble.map(_.toFloat)
-    val asBigDecimal: HttpParamsExtraction[BigDecimal] = asString.map(BigDecimal(_))
+    val asDouble = asString.map(_.toDouble)
+    val asFloat = asDouble.map(_.toFloat)
+    val asBigDecimal = asString.map(BigDecimal(_))
 
-    val asBoolean: HttpParamsExtraction[Boolean] = asString.map(_.toBoolean)
+    val asBoolean = asString.map(_.toBoolean)
 
-    def asDate(format: DateFormat): HttpParamsExtraction[Date] = asString.map(format.parse)
-    def asTemporalAccessor(format: DateTimeFormatter): HttpParamsExtraction[TemporalAccessor] = asString.map(format.parse)
+    def asDate(format: DateFormat) = asString.map(format.parse)
+    def asTemporalAccessor(format: DateTimeFormatter) = asString.map(format.parse)
 
-    val asIsoLocalDateTime: HttpParamsExtraction[LocalDateTime] = asTemporalAccessor(ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
-    val asIsoOffsetDateTime: HttpParamsExtraction[OffsetDateTime] = asTemporalAccessor(ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
-    val asIsoZonedDateTime: HttpParamsExtraction[ZonedDateTime] = asTemporalAccessor(ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
+    val asIsoLocalDateTime = asTemporalAccessor(ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
+    val asIsoOffsetDateTime = asTemporalAccessor(ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
+    val asIsoZonedDateTime = asTemporalAccessor(ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
 
-    val asIsoDuration: HttpParamsExtraction[java.time.Duration] = asString.map(java.time.Duration.parse)
+    val asIsoDuration = asString.map(java.time.Duration.parse)
 
-    val asDuration: HttpParamsExtraction[Duration] = asString.map(Duration.create)
-    val asFiniteDuration: HttpParamsExtraction[FiniteDuration] = asDuration.map(d => FiniteDuration(d.length, d.unit))
+    val asDuration = asString.map(Duration.create)
+    val asFiniteDuration = asDuration.map(d => FiniteDuration(d.length, d.unit))
   }
 }
