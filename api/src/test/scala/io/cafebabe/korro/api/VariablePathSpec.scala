@@ -41,4 +41,9 @@ class VariablePathSpec extends FlatSpec with Matchers {
     object TestVariablePath extends VariablePath("/test/{}/path/{}")
     TestVariablePath.unapplySeq("/test/param/path") should be (None)
   }
+
+  it should "extract nothing if path is null" in {
+    object TestVariablePath extends VariablePath("/test/{}/path/{}")
+    TestVariablePath.unapplySeq(null) should be (None)
+  }
 }

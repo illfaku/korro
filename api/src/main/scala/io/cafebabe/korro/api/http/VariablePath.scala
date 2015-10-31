@@ -26,14 +26,14 @@ package io.cafebabe.korro.api.http
  *     case Get(PetInfo(category, pet), params, content, headers) => ???
  *   }
  * }}}
- * Internally each occurrence of '{}' is replaced with '(\w+)'
+ * Internally each occurrence of '{}' is replaced with '([&#94;/]+)'
  * and pattern compiles to regular expression.
  *
  * @author Vladimir Konstantinov
  */
 abstract class VariablePath(pattern: String) {
 
-  private val regex = pattern.replace("{}", """(\w+)""").r
+  private val regex = pattern.replace("{}", """([^/]+)""").r
 
   def unapplySeq(path: String): Option[List[String]] = regex.unapplySeq(path)
 }
