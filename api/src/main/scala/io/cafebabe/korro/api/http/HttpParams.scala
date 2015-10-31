@@ -17,12 +17,13 @@
 package io.cafebabe.korro.api.http
 
 import java.text.DateFormat
-import java.time.{ZonedDateTime, OffsetDateTime, LocalDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatter.{ISO_LOCAL_DATE_TIME, ISO_OFFSET_DATE_TIME, ISO_ZONED_DATE_TIME}
 import java.time.temporal.TemporalAccessor
+import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
 import java.util.Date
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.duration.{FiniteDuration, Duration}
 
 /**
  * TODO: Add description.
@@ -85,35 +86,32 @@ object HttpParams {
       }
     }
 
-    class GenericExtraction[V](f: (String) => V) extends HttpParamsExtraction[V] {
-      override def apply(v: (String, String)): Either[Failure, V] = {
-        val (name, value) = v
-        Try(f(value)) match {
-          case Success(result) => Right(result)
-          case Failure(cause) => Left(Malformed(name, value, cause))
-        }
-      }
+    val asString: HttpParamsExtraction[String] = new HttpParamsExtraction[String] {
+      override def apply(v: (String, String)): Either[Failure, String] = Right(v._2)
     }
 
-    val asString: HttpParamsExtraction[String] = new GenericExtraction(_.toString)
-
-    val asLong: HttpParamsExtraction[Long] = new GenericExtraction(_.toLong)
+    val asLong: HttpParamsExtraction[Long] = asString.map(_.toLong)
     val asInt: HttpParamsExtraction[Int] = asLong.map(_.toInt)
     val asShort: HttpParamsExtraction[Short] = asLong.map(_.toShort)
     val asByte: HttpParamsExtraction[Byte] = asLong.map(_.toByte)
-    val asBigInt: HttpParamsExtraction[BigInt] = new GenericExtraction(BigInt(_))
+    val asBigInt: HttpParamsExtraction[BigInt] = asString.map(BigInt(_))
 
-    val asDouble: HttpParamsExtraction[Double] = new GenericExtraction(_.toDouble)
+    val asDouble: HttpParamsExtraction[Double] = asString.map(_.toDouble)
     val asFloat: HttpParamsExtraction[Float] = asDouble.map(_.toFloat)
-    val asBigDecimal: HttpParamsExtraction[BigDecimal] = new GenericExtraction(BigDecimal(_))
+    val asBigDecimal: HttpParamsExtraction[BigDecimal] = asString.map(BigDecimal(_))
 
-    val asBoolean: HttpParamsExtraction[Boolean] = new GenericExtraction(_.toBoolean)
+    val asBoolean: HttpParamsExtraction[Boolean] = asString.map(_.toBoolean)
 
-    def asDate(format: DateFormat): HttpParamsExtraction[Date] = new GenericExtraction(format.parse)
-    def asTemporalAccessor(format: DateTimeFormatter): HttpParamsExtraction[TemporalAccessor] = new GenericExtraction(format.parse)
+    def asDate(format: DateFormat): HttpParamsExtraction[Date] = asString.map(format.parse)
+    def asTemporalAccessor(format: DateTimeFormatter): HttpParamsExtraction[TemporalAccessor] = asString.map(format.parse)
 
-    val asIsoLocalDateTime: HttpParamsExtraction[LocalDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
-    val asIsoOffsetDateTime: HttpParamsExtraction[OffsetDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
-    val asIsoZonedDateTime: HttpParamsExtraction[ZonedDateTime] = asTemporalAccessor(DateTimeFormatter.ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
+    val asIsoLocalDateTime: HttpParamsExtraction[LocalDateTime] = asTemporalAccessor(ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
+    val asIsoOffsetDateTime: HttpParamsExtraction[OffsetDateTime] = asTemporalAccessor(ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
+    val asIsoZonedDateTime: HttpParamsExtraction[ZonedDateTime] = asTemporalAccessor(ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
+
+    val asIsoDuration: HttpParamsExtraction[java.time.Duration] = asString.map(java.time.Duration.parse)
+
+    val asDuration: HttpParamsExtraction[Duration] = asString.map(Duration.create)
+    val asFiniteDuration: HttpParamsExtraction[FiniteDuration] = asDuration.map(d => FiniteDuration(d.length, d.unit))
   }
 }
