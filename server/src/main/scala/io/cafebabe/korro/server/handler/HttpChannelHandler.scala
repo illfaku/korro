@@ -20,6 +20,7 @@ import io.cafebabe.korro.api.http.HttpResponse
 import io.cafebabe.korro.api.http.HttpStatus._
 import io.cafebabe.korro.api.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
+import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
 import akka.pattern.ask
@@ -27,7 +28,6 @@ import akka.util.Timeout
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http._
-import org.slf4j.LoggerFactory
 
 import java.net.URI
 
@@ -40,9 +40,7 @@ import scala.util.{Failure, Success}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
-
-  private val log = LoggerFactory.getLogger(getClass)
+class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter with Logging {
 
   import context.dispatcher
   implicit val timeout = Timeout(5 seconds)
@@ -57,7 +55,7 @@ class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundH
         case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
         case Success(None) => sendResponse(ctx, req, NotFound())
         case Failure(error) =>
-          log.error("Error while trying to get route.", error)
+          log.error(error, "Error while trying to get route.")
           sendResponse(ctx, req, ServerError())
       }
     case req: FullHttpRequest => sendResponse(ctx, req, BadRequest())
@@ -66,6 +64,6 @@ class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundH
 
   private def sendResponse(ctx: ChannelHandlerContext, req: FullHttpRequest, res: HttpResponse): Unit = {
     req.release()
-    ctx.writeAndFlush(res)
+    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
   }
 }

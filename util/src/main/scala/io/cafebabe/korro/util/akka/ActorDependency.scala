@@ -19,7 +19,6 @@ package io.cafebabe.korro.util.akka
 import akka.actor._
 
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 /**
  * TODO: Add description.

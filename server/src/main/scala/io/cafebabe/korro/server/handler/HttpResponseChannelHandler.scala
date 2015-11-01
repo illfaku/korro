@@ -17,11 +17,11 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.netty.{FileStreamNettyContent, DefaultNettyContent}
-import io.cafebabe.korro.netty.convert.{HttpContentConverter, HttpHeadersConverter, HttpResponseConverter}
+import io.cafebabe.korro.netty.convert.{HttpContentConverter, HttpHeadersConverter}
+import io.cafebabe.korro.netty.{DefaultNettyContent, FileStreamNettyContent}
 
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{DefaultFileRegion, ChannelPromise, ChannelOutboundHandlerAdapter, ChannelHandlerContext}
+import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageEncoder
 import io.netty.handler.codec.http._
 

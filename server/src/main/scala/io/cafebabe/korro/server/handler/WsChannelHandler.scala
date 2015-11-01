@@ -20,9 +20,9 @@ import io.cafebabe.korro.api.ws._
 import io.cafebabe.korro.netty.ByteBufUtils.toBytes
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.server.actor.WsMessageSender
-import io.cafebabe.korro.util.log.Logger
+import io.cafebabe.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorRef, ActorSelection, PoisonPill}
+import akka.actor.{ActorContext, ActorRef, ActorSelection}
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 
@@ -32,9 +32,7 @@ import io.netty.handler.codec.http.websocketx._
  * @author Vladimir Konstantinov
  */
 class WsChannelHandler(host: String, actor: String)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[WebSocketFrame] {
-
-  private val log = Logger(getClass)
+  extends SimpleChannelInboundHandler[WebSocketFrame] with Logging {
 
   private var receiver: ActorSelection = null
 

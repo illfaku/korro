@@ -16,21 +16,14 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.util.log.Logging
+import io.cafebabe.korro.api.route.WsRoute
+import io.cafebabe.korro.netty.NettyRequestHolder
 
-import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerAdapter, ChannelHandlerContext}
+import io.netty.handler.codec.http.FullHttpRequest
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-@Sharable
-class LastChannelHandler extends ChannelHandlerAdapter with Logging {
-
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    log.error(cause, "Uncaught error at the end of pipeline. Closing channel...")
-    ctx.close()
-  }
-}
+case class RoutedWsHandshake(req: FullHttpRequest, route: WsRoute) extends NettyRequestHolder

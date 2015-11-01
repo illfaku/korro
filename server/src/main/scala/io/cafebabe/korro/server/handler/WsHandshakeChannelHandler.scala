@@ -16,10 +16,9 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.util.config.wrapped
-import io.cafebabe.korro.util.log.Logger
+import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
 import com.typesafe.config.Config
@@ -36,21 +35,17 @@ import java.net.{InetSocketAddress, URI}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
-
-  private val log = Logger(getClass)
+class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext)
+  extends SimpleChannelInboundHandler[RoutedWsHandshake] with Logging {
 
   private val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
   private val compression = config.findBoolean("WebSocket.compression").getOrElse(false)
 
-  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
-    case m: RoutedWsHandshake =>
-      newHandshaker(m.req) match {
-        case Some(handshaker) => handshake(handshaker, ctx, m)
-        case None => WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel)
-      }
-      m.req.release()
-    case _ => ctx.fireChannelRead(msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: RoutedWsHandshake): Unit = {
+    newHandshaker(msg.req) match {
+      case Some(handshaker) => handshake(handshaker, ctx, msg)
+      case None => WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
+    }
   }
 
   private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
@@ -72,7 +67,7 @@ class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) 
         if (compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
         pipeline.addAfter("logging", "ws", new WsChannelHandler(host, msg.route.actor))
       } else {
-        log.error("Error during handshake.", future.cause)
+        log.error(future.cause, "Error during handshake.")
         future.channel.close()
       }
     }
@@ -87,5 +82,3 @@ class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext) 
     }
   }
 }
-
-case class RoutedWsHandshake(req: FullHttpRequest, route: WsRoute)

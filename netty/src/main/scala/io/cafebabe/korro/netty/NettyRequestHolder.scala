@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.handler
+package io.cafebabe.korro.netty
 
-import io.cafebabe.korro.util.log.Logging
-
-import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerAdapter, ChannelHandlerContext}
+import io.netty.handler.codec.http.FullHttpRequest
+import io.netty.util.ReferenceCounted
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-@Sharable
-class LastChannelHandler extends ChannelHandlerAdapter with Logging {
+trait NettyRequestHolder extends ReferenceCounted {
 
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    log.error(cause, "Uncaught error at the end of pipeline. Closing channel...")
-    ctx.close()
-  }
+  def req: FullHttpRequest
+
+  override def refCnt: Int = req.refCnt
+  override def retain(): ReferenceCounted = req.retain()
+  override def retain(increment: Int): ReferenceCounted = req.retain(increment)
+  override def release(): Boolean = req.release()
+  override def release(decrement: Int): Boolean = req.release(decrement)
 }

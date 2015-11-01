@@ -20,7 +20,7 @@ import io.cafebabe.korro.api.http.HttpResponse
 import io.cafebabe.korro.api.http.HttpStatus._
 
 import akka.actor._
-import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -55,7 +55,7 @@ class HttpResponseSender(ctx: ChannelHandlerContext, timeout: FiniteDuration) ex
   }
 
   private def send(res: HttpResponse): Unit = {
-    ctx.writeAndFlush(res)
+    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
     context.stop(self)
   }
 }

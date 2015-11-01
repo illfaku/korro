@@ -18,9 +18,8 @@ package io.cafebabe.korro.util.config
 
 import com.typesafe.config._
 
-import java.net.{URL, URI}
+import java.net.{URI, URL}
 import java.util
-import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -50,7 +49,7 @@ class WrappedConfig(config: Config) {
 
   def findDuration(path: String): Option[Duration] = findString(path).map(Duration.apply)
   def findFiniteDuration(path: String): Option[FiniteDuration] = {
-    findDuration(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+    findDuration(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.length, duration.unit))
   }
 
   def findURL(path: String): Option[URL] = findString(path) flatMap { url => Try(new URL(url)).toOption }
@@ -79,7 +78,7 @@ class WrappedConfig(config: Config) {
 
   def findDurationList(path: String): Iterable[Duration] = findStringList(path).map(Duration.apply)
   def findFiniteDurationList(path: String): Iterable[FiniteDuration] = {
-    findDurationList(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS))
+    findDurationList(path).filter(_.isFinite()).map(duration => FiniteDuration(duration.length, duration.unit))
   }
 
   // Internal

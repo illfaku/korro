@@ -16,9 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.HttpContent._
 import io.cafebabe.korro.api.http.HttpStatus.BadRequest
-import io.cafebabe.korro.api.route.HttpRoute
 import io.cafebabe.korro.netty.convert.{ConversionFailure, HttpRequestConverter}
 import io.cafebabe.korro.server.actor.HttpResponseSender
 import io.cafebabe.korro.util.config.wrapped
@@ -26,8 +24,7 @@ import io.cafebabe.korro.util.config.wrapped
 import akka.actor.ActorContext
 import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
-import io.netty.handler.codec.http.FullHttpRequest
+import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 
 import scala.concurrent.duration._
 
@@ -37,22 +34,18 @@ import scala.concurrent.duration._
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpRequestChannelHandler(config: Config)(implicit context: ActorContext) extends ChannelInboundHandlerAdapter {
+class HttpRequestChannelHandler(config: Config)(implicit context: ActorContext)
+  extends SimpleChannelInboundHandler[RoutedHttpRequest] {
 
   private val requestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
 
-  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
-    case RoutedHttpRequest(req, route) =>
-      HttpRequestConverter.fromNetty(req) match {
-        case Right(request) =>
-          val sender = HttpResponseSender.create(ctx, requestTimeout)
-          context.actorSelection(route.actor).tell(request, sender)
-        case Left(fail: ConversionFailure) =>
-          ctx.writeAndFlush(BadRequest(fail.toString))
-      }
-      req.release()
-    case _ => ctx.fireChannelRead(msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: RoutedHttpRequest): Unit = {
+    HttpRequestConverter.fromNetty(msg.req) match {
+      case Right(request) =>
+        implicit val sender = HttpResponseSender.create(ctx, requestTimeout)
+        context.actorSelection(msg.route.actor) ! request
+      case Left(fail: ConversionFailure) =>
+        ctx.writeAndFlush(BadRequest(fail.toString)).addListener(ChannelFutureListener.CLOSE)
+    }
   }
 }
-
-case class RoutedHttpRequest(req: FullHttpRequest, route: HttpRoute)
