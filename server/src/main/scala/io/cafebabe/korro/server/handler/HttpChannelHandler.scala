@@ -25,6 +25,7 @@ import io.cafebabe.korro.util.log.Logging
 import akka.actor.ActorContext
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http._
@@ -40,30 +41,44 @@ import scala.util.{Failure, Success}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(implicit context: ActorContext) extends ChannelInboundHandlerAdapter with Logging {
+class HttpChannelHandler(config: Config)(implicit context: ActorContext)
+  extends ChannelInboundHandlerAdapter with Logging {
 
   import context.dispatcher
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(2 seconds)
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
+
     case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
+
       val path = new URI(req.getUri).getPath
+
       (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
-        case Success(Some(route: HttpRoute)) => ctx.fireChannelRead(RoutedHttpRequest(req, route))
-        case Success(Some(route: WsRoute)) => ctx.fireChannelRead(RoutedWsHandshake(req, route))
-        case Success(None) => sendResponse(ctx, req, NotFound())
+
+        case Success(Some(route: HttpRoute)) =>
+          ctx.pipeline.addAfter(ctx.name, "http-request", new HttpRequestChannelHandler(config, route))
+          ctx.fireChannelRead(req)
+
+        case Success(Some(route: WsRoute)) =>
+          ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config, route))
+          ctx.fireChannelRead(req)
+
+        case Success(None) =>
+          req.release()
+          ctx.writeAndFlush(NotFound()).addListener(ChannelFutureListener.CLOSE)
+
         case Failure(error) =>
           log.error(error, "Error while trying to get route.")
-          sendResponse(ctx, req, ServerError())
+          req.release()
+          ctx.writeAndFlush(ServerError()).addListener(ChannelFutureListener.CLOSE)
       }
-    case req: FullHttpRequest => sendResponse(ctx, req, BadRequest())
-    case _ => ctx.fireChannelRead(msg)
-  }
 
-  private def sendResponse(ctx: ChannelHandlerContext, req: FullHttpRequest, res: HttpResponse): Unit = {
-    req.release()
-    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
+    case req: FullHttpRequest =>
+      req.release()
+      ctx.writeAndFlush(BadRequest()).addListener(ChannelFutureListener.CLOSE)
+
+    case _ => ctx.fireChannelRead(msg)
   }
 }

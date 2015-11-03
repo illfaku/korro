@@ -16,13 +16,13 @@
  */
 package io.cafebabe.korro.server.handler
 
+import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.util.config.wrapped
 import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
 import com.typesafe.config.Config
-import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
@@ -34,16 +34,15 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
-@Sharable
-class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[RoutedWsHandshake] with Logging {
+class WsHandshakeChannelHandler(config: Config, route: WsRoute)(implicit context: ActorContext)
+  extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
   private val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
   private val compression = config.findBoolean("WebSocket.compression").getOrElse(false)
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: RoutedWsHandshake): Unit = {
-    newHandshaker(msg.req) match {
-      case Some(handshaker) => handshake(handshaker, ctx, msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
+    newHandshaker(msg) match {
+      case Some(handshaker) => handshake(handshaker, ctx.channel, msg)
       case None => WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel).addListener(ChannelFutureListener.CLOSE)
     }
   }
@@ -54,29 +53,27 @@ class WsHandshakeChannelHandler(config: Config)(implicit context: ActorContext)
     Option(factory.newHandshaker(req))
   }
 
-  private def handshake(handshaker: WebSocketServerHandshaker, ctx: ChannelHandlerContext, msg: RoutedWsHandshake): Unit = {
-    val host = extractHost(ctx.channel, msg.req)
-    handshaker.handshake(ctx.channel, msg.req) foreach { future =>
+  private def handshake(handshaker: WebSocketServerHandshaker, channel: Channel, req: FullHttpRequest): Unit = {
+    val host = extractHost(channel, req)
+    handshaker.handshake(channel, req) foreach { future =>
       if (future.isSuccess) {
-        val pipeline = ctx.channel.pipeline
-        pipeline.remove("http-decompressor")
+        val pipeline = channel.pipeline
         pipeline.remove("http-response")
         pipeline.remove("http")
-        pipeline.remove("http-request")
-        pipeline.remove("ws-handshake")
+        pipeline.remove(this)
         if (compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
-        pipeline.addAfter("logging", "ws", new WsChannelHandler(host, msg.route.actor))
+        pipeline.addAfter("logging", "ws", new WsChannelHandler(host, route.actor))
       } else {
         log.error(future.cause, "Error during handshake.")
-        future.channel.close()
+        channel.close()
       }
     }
   }
 
-  private def extractHost(ch: Channel, req: FullHttpRequest): String = {
-    val host = req.headers().get("X-Real-IP")
-    if (host != null && host.trim.nonEmpty) host
-    else ch.remoteAddress match {
+  private def extractHost(channel: Channel, req: FullHttpRequest): String = {
+    val host = req.headers.get("X-Real-IP")
+    if (host != null) host
+    else channel.remoteAddress match {
       case address: InetSocketAddress => address.getHostString
       case _ => "UNKNOWN"
     }

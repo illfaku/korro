@@ -37,30 +37,18 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
   private val compressionLevel = config.findInt("HTTP.compression")
 
   private val httpResHandler = new HttpResponseChannelHandler
-  private val httpHandler = new HttpChannelHandler
-  private val httpReqHandler = new HttpRequestChannelHandler(config)
-  private val wsHandshakeHandler = new WsHandshakeChannelHandler(config)
+  private val httpHandler = new HttpChannelHandler(config)
   private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
   private val lastHandler = new LastChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
-
-    pipeline.addLast("http-req-decoder", new HttpRequestDecoder)
+    pipeline.addLast("http-codec", new HttpServerCodec)
     pipeline.addLast("http-aggregator", new HttpObjectAggregator(maxContentLength))
-    pipeline.addLast("http-decompressor", new HttpContentDecompressor)
-
-    pipeline.addLast("http-res-encoder", new HttpResponseEncoder)
     compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
-
     pipeline.addLast("logging", loggingHandler)
-
     pipeline.addLast("http-response", httpResHandler)
-
     pipeline.addLast("http", httpHandler)
-    pipeline.addLast("http-request", httpReqHandler)
-    pipeline.addLast("ws-handshake", wsHandshakeHandler)
-
     pipeline.addLast("last", lastHandler)
   }
 }
