@@ -18,9 +18,10 @@ package io.cafebabe.korro.api.http
 
 import org.json4s.JValue
 
-import java.io.File
 import java.nio.charset.Charset
-import java.nio.file.{Paths, Path}
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
+import java.nio.file.{Files, Path}
 
 /**
  * TODO: Add description.
@@ -55,12 +56,30 @@ case class FileStreamHttpContent(path: Path, pos: Long = 0) extends HttpContent
   *
   * @author Vladimir Konstantinov
   */
-trait RawHttpContent extends HttpContent {
+sealed trait RawHttpContent extends HttpContent {
   def contentType: String
-  def string(charset: Charset = Charset.defaultCharset): String
   def bytes: Array[Byte]
+  def string(charset: Charset = Charset.defaultCharset): String = new String(bytes, charset)
   def save(path: Path): Unit
-  def release(): Unit
+}
+
+/**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
+case class MemoryRawHttpContent(contentType: String, bytes: Array[Byte]) extends RawHttpContent {
+  override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+}
+
+/**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
+case class FileRawHttpContent(contentType: String, file: Path) extends RawHttpContent {
+  override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
+  override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
 }
 
 /**
@@ -78,6 +97,4 @@ case object EmptyHttpContent extends HttpContent
 object HttpContent {
   implicit def string2content(text: CharSequence): HttpContent = TextHttpContent(text)
   implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
-  implicit def file2content(file: File): HttpContent = FileStreamHttpContent(Paths.get(file.toURI))
-  implicit def path2content(path: Path): HttpContent = FileStreamHttpContent(path)
 }
