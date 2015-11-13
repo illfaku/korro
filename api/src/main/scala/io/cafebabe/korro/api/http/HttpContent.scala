@@ -51,6 +51,19 @@ case class JsonHttpContent(json: JValue, charset: Charset = Charset.defaultChars
 case class FileStreamHttpContent(path: Path, pos: Long = 0) extends HttpContent
 
 /**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
+trait RawHttpContent extends HttpContent {
+  def contentType: String
+  def string(charset: Charset = Charset.defaultCharset): String
+  def bytes: Array[Byte]
+  def save(path: Path): Unit
+  def release(): Unit
+}
+
+/**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
