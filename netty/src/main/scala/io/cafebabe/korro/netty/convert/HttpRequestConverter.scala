@@ -53,7 +53,8 @@ object HttpRequestConverter {
         result.headers.add(HttpHeaders.Names.CONTENT_LENGTH, content.contentLength)
         result.headers.add(HttpHeaders.Names.CONTENT_TYPE, content.contentType)
         result
-      case content: FileStreamNettyContent => ???
+      case content: FileStreamNettyContent =>
+        throw new UnsupportedOperationException(s"Unsupported conversion from ${content.getClass}.")
     }
   }
 }
