@@ -16,20 +16,20 @@
  */
 package io.cafebabe.korro.netty.convert
 
+import java.nio.charset.Charset
+
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.netty.ByteBufUtils._
 import io.cafebabe.korro.netty.{DefaultNettyContent, FileStreamNettyContent, NettyContent}
+import io.cafebabe.korro.util.log.Logging
 import io.cafebabe.korro.util.protocol.http.ContentType
 import io.cafebabe.korro.util.protocol.http.MimeType.Names._
-
 import io.netty.buffer.ByteBuf
 import io.netty.handler.codec.http.HttpConstants.DEFAULT_CHARSET
 import io.netty.handler.codec.http.HttpHeaders
 import io.netty.handler.codec.http.HttpHeaders.Names._
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parse
-
-import java.nio.charset.Charset
 
 import scala.util.{Failure, Success, Try}
 
@@ -38,7 +38,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @author Vladimir Konstantinov
  */
-object HttpContentConverter {
+object HttpContentConverter extends Logging {
 
   def fromNetty(content: ByteBuf, headers: HttpHeaders): Either[ConversionFailure, HttpContent] = {
     contentType(headers) match {
@@ -90,5 +90,6 @@ object HttpContentConverter {
       new DefaultNettyContent(emptyByteBuf, ContentType(TextPlain))
     case FileStreamHttpContent(path, pos) =>
       new FileStreamNettyContent(path, pos)
+    case _ => throw new UnsupportedOperationException(s"Unsupported conversion from ${content.getClass}.")
   }
 }

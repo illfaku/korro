@@ -81,12 +81,12 @@ object OsgiSettings {
 
   lazy val netty = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("io.cafebabe.korro.netty.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro-Netty Utilities")
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Netty Utilities")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("io.cafebabe.korro.util.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Utilities")
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Common Utilities")
   )
 }
 
