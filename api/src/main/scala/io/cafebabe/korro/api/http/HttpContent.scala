@@ -16,6 +16,8 @@
  */
 package io.cafebabe.korro.api.http
 
+import io.cafebabe.korro.util.protocol.http.MimeType
+
 import org.json4s.JValue
 
 import java.nio.charset.Charset
@@ -56,7 +58,7 @@ case class FileStreamHttpContent(path: Path, pos: Long = 0) extends HttpContent
   *
   * @author Vladimir Konstantinov
   */
-sealed trait RawHttpContent extends HttpContent {
+sealed trait RawHttpContent {
   def contentType: String
   def bytes: Array[Byte]
   def string(charset: Charset = Charset.defaultCharset): String = new String(bytes, charset)
@@ -97,4 +99,11 @@ case object EmptyHttpContent extends HttpContent
 object HttpContent {
   implicit def string2content(text: CharSequence): HttpContent = TextHttpContent(text)
   implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
+
+  object Text {
+    def apply(text: CharSequence, charset: Charset = Charset.defaultCharset): RawHttpContent = {
+      //MemoryRawHttpContent(MimeType.Names.)
+      ???
+    }
+  }
 }

@@ -29,6 +29,7 @@ object HttpBuild extends Build {
   lazy val api = Project(
     id = "korro-api",
     base = file("api"),
+    dependencies = Seq(util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.api ++ Dependencies.api
   )
 
