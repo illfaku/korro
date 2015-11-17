@@ -16,6 +16,10 @@
  */
 package io.cafebabe.korro.util.protocol.http
 
+import java.nio.charset.Charset
+
+import scala.util.Try
+
 /**
  * TODO: Add description.
  *
@@ -23,11 +27,25 @@ package io.cafebabe.korro.util.protocol.http
  */
 object ContentType {
 
+  val DefaultCharset = Charset.forName("UTF-8")
+
   private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
 
-  def apply(mime: String, charset: String = "utf-8"): String = s"$mime; charset=${charset.toLowerCase}"
+  def apply(mime: String): ContentType = apply(mime, DefaultCharset)
 
-  def unapply(contentType: String): Option[(String, Option[String])] = {
-    regex.unapplySeq(contentType).map(l => l.head -> l.drop(1).headOption)
+  def apply(mime: String, charset: String): ContentType = apply(mime, Charset.forName(charset))
+
+  def apply(mime: String, charset: Charset): ContentType = new ContentType(mime, charset)
+
+  def unapply(contentType: String): Option[ContentType] = regex.unapplySeq(contentType) map { l =>
+    val mime = l.head
+    val charset = l.drop(1).headOption.flatMap(toCharset).getOrElse(DefaultCharset)
+    ContentType(mime, charset)
   }
+
+  private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption
+}
+
+class ContentType(val mime: String, val charset: Charset) {
+  override val toString = s"$mime; charset=${charset.name.toLowerCase}"
 }

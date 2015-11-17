@@ -16,9 +16,14 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.korro.util.protocol.http.MimeType
+import io.cafebabe.korro.util.protocol.http.ContentType
+import io.cafebabe.korro.util.protocol.http.ContentType.DefaultCharset
+import io.cafebabe.korro.util.protocol.http.MimeType.Mapping.getMimeType
+import io.cafebabe.korro.util.protocol.http.MimeType.Names.{OctetStream, TextPlain}
 
 import org.json4s.JValue
+import org.json4s.native.JsonMethods.{compact, render}
+import org.json4s.native.JsonParser.parseOpt
 
 import java.nio.charset.Charset
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
@@ -26,42 +31,15 @@ import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
 import java.nio.file.{Files, Path}
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-sealed trait HttpContent
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class TextHttpContent(text: CharSequence, charset: Charset = Charset.defaultCharset) extends HttpContent
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class JsonHttpContent(json: JValue, charset: Charset = Charset.defaultCharset) extends HttpContent
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-case class FileStreamHttpContent(path: Path, pos: Long = 0) extends HttpContent
-
-/**
   * TODO: Add description.
   *
   * @author Vladimir Konstantinov
   */
-sealed trait RawHttpContent {
-  def contentType: String
+sealed trait HttpContent {
+  def contentType: ContentType
+  def length: Long
   def bytes: Array[Byte]
-  def string(charset: Charset = Charset.defaultCharset): String = new String(bytes, charset)
+  def string: String = new String(bytes, contentType.charset)
   def save(path: Path): Unit
 }
 
@@ -70,7 +48,8 @@ sealed trait RawHttpContent {
   *
   * @author Vladimir Konstantinov
   */
-case class MemoryRawHttpContent(contentType: String, bytes: Array[Byte]) extends RawHttpContent {
+class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
+  override val length: Long = bytes.length
   override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
 }
 
@@ -79,7 +58,7 @@ case class MemoryRawHttpContent(contentType: String, bytes: Array[Byte]) extends
   *
   * @author Vladimir Konstantinov
   */
-case class FileRawHttpContent(contentType: String, file: Path) extends RawHttpContent {
+class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long, val pos: Long) extends HttpContent {
   override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
   override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
 }
@@ -89,21 +68,31 @@ case class FileRawHttpContent(contentType: String, file: Path) extends RawHttpCo
  *
  * @author Vladimir Konstantinov
  */
-case object EmptyHttpContent extends HttpContent
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 object HttpContent {
-  implicit def string2content(text: CharSequence): HttpContent = TextHttpContent(text)
-  implicit def jValue2content(json: JValue): HttpContent = JsonHttpContent(json)
+
+  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, ContentType(TextPlain))
+
+  def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
+
+  def file(path: Path): HttpContent = file(path, 0)
+  def file(path: Path, pos: Long): HttpContent = {
+    file(path, ContentType(getMimeType(path).getOrElse(OctetStream)), Files.size(path), pos)
+  }
+  def file(path: Path, contentType: ContentType, length: Long): HttpContent = file(path, contentType, length, 0)
+  def file(path: Path, contentType: ContentType, length: Long, pos: Long): HttpContent = {
+    new FileHttpContent(path, contentType, length, pos)
+  }
+
 
   object Text {
-    def apply(text: CharSequence, charset: Charset = Charset.defaultCharset): RawHttpContent = {
-      //MemoryRawHttpContent(MimeType.Names.)
-      ???
+    def apply(text: CharSequence, charset: Charset = DefaultCharset): HttpContent = {
+      new MemoryHttpContent(text.toString.getBytes(charset), ContentType(TextPlain, charset.name))
     }
+    def unapply(msg: HttpMessage): Option[String] = if (msg.content.length > 0) Some(msg.content.string) else None
+  }
+
+  object Json {
+    def apply(json: JValue, charset: Charset = DefaultCharset): HttpContent = Text(compact(render(json)), charset)
+    def unapply(msg: HttpMessage): Option[JValue] = Text.unapply(msg).flatMap(parseOpt)
   }
 }

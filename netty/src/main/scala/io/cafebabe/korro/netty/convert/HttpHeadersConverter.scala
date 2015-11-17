@@ -16,9 +16,10 @@
  */
 package io.cafebabe.korro.netty.convert
 
+import io.cafebabe.korro.api.http.HttpMessage
 import io.cafebabe.korro.api.http.HttpParams.HttpParams
 
-import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders => NettyHttpHeaders}
+import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpHeaders}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -30,7 +31,7 @@ import scala.collection.mutable
  */
 object HttpHeadersConverter {
 
-  def fromNetty(headers: NettyHttpHeaders): HttpParams = {
+  def fromNetty(headers: HttpHeaders): HttpParams = {
     val result = mutable.Map.empty[String, List[String]]
     for (header <- headers) {
       val key = header.getKey
@@ -40,12 +41,16 @@ object HttpHeadersConverter {
     result.toMap
   }
 
-  def toNetty(headers: HttpParams): NettyHttpHeaders = {
+  def toNetty(msg: HttpMessage): HttpHeaders = {
     val result = new DefaultHttpHeaders
-    headers foreach { case (name, values) =>
+    msg.headers foreach { case (name, values) =>
       values foreach { value =>
         result.add(name, value)
       }
+    }
+    if (msg.content.length > 0) {
+      result.add(HttpHeaders.Names.CONTENT_LENGTH, msg.content.length.toString)
+      result.add(HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
     }
     result
   }

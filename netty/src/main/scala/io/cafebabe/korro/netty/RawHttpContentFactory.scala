@@ -45,7 +45,7 @@ class RawHttpContentFactory(minSize: Long, tempDir: Path, tempFileTtl: FiniteDur
     curSize = curSize + bufSize
   }
 
-  def build(contentType: String): RawHttpContent = {
+  def build(contentType: String): HttpContent = {
     if (file != null) {
       FileRawHttpContent(contentType, file)
     } else if (composite != null) {

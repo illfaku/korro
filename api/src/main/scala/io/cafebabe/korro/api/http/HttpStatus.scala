@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.korro.api.http.HttpParams.HttpParams
+import io.cafebabe.korro.api.http.HttpParams._
 
 /**
  * TODO: Add description.
@@ -38,18 +38,15 @@ object HttpStatus {
  */
 sealed abstract class HttpStatus(val code: Int) {
 
-  def apply(content: HttpContent = EmptyHttpContent, headers: HttpParams = Map.empty): HttpResponse = {
-    HttpResponse(code, content, headers)
+  def apply(
+    content: HttpContent = HttpContent.empty,
+    headers: HttpParams = HttpParams.empty
+  ): HttpResponse = {
+    new HttpResponse(code, content, headers)
   }
 
-  def unapply(res: HttpResponse): Option[(Any, HttpParams)] = {
-    if (code == res.status) {
-      val content = res.content match {
-        case TextHttpContent(text, _) => text.toString
-        case JsonHttpContent(json, _) => json
-        case _ => res.content
-      }
-      Some(content, res.headers)
-    } else None
+  def unapply(res: HttpResponse): Option[HttpResponse] = {
+    if (code == res.status) Some(res)
+    else None
   }
 }
