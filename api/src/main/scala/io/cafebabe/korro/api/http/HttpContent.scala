@@ -19,7 +19,7 @@ package io.cafebabe.korro.api.http
 import io.cafebabe.korro.util.protocol.http.ContentType
 import io.cafebabe.korro.util.protocol.http.ContentType.DefaultCharset
 import io.cafebabe.korro.util.protocol.http.MimeType.Mapping.getMimeType
-import io.cafebabe.korro.util.protocol.http.MimeType.Names.{OctetStream, TextPlain}
+import io.cafebabe.korro.util.protocol.http.MimeType.Names.{OctetStream, TextPlain, ApplicationJson}
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}
@@ -86,13 +86,15 @@ object HttpContent {
 
   object Text {
     def apply(text: CharSequence, charset: Charset = DefaultCharset): HttpContent = {
-      new MemoryHttpContent(text.toString.getBytes(charset), ContentType(TextPlain, charset.name))
+      memory(text.toString.getBytes(charset), ContentType(TextPlain, charset))
     }
     def unapply(msg: HttpMessage): Option[String] = if (msg.content.length > 0) Some(msg.content.string) else None
   }
 
   object Json {
-    def apply(json: JValue, charset: Charset = DefaultCharset): HttpContent = Text(compact(render(json)), charset)
+    def apply(json: JValue, charset: Charset = DefaultCharset): HttpContent = {
+      memory(compact(render(json)).getBytes(charset), ContentType(ApplicationJson, charset))
+    }
     def unapply(msg: HttpMessage): Option[JValue] = Text.unapply(msg).flatMap(parseOpt)
   }
 }

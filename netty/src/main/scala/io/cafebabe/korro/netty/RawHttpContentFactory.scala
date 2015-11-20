@@ -1,8 +1,5 @@
 package io.cafebabe.korro.netty
 
-import io.cafebabe.korro.api.http._
-import io.cafebabe.korro.netty.ByteBufUtils.toBytes
-
 import akka.actor._
 import io.netty.buffer.{ByteBuf, CompositeByteBuf, Unpooled}
 
@@ -45,17 +42,17 @@ class RawHttpContentFactory(minSize: Long, tempDir: Path, tempFileTtl: FiniteDur
     curSize = curSize + bufSize
   }
 
-  def build(contentType: String): HttpContent = {
-    if (file != null) {
-      FileRawHttpContent(contentType, file)
-    } else if (composite != null) {
-      val bytes = toBytes(composite)
-      composite.release()
-      MemoryRawHttpContent(contentType, bytes)
-    } else {
-      MemoryRawHttpContent(contentType, Array.empty)
-    }
-  }
+//  def build(contentType: String): HttpContent = {
+//    if (file != null) {
+//      FileRawHttpContent(contentType, file)
+//    } else if (composite != null) {
+//      val bytes = toBytes(composite)
+//      composite.release()
+//      MemoryRawHttpContent(contentType, bytes)
+//    } else {
+//      MemoryRawHttpContent(contentType, Array.empty)
+//    }
+//  }
 }
 
 class TempFileActor(file: Path, ttl: FiniteDuration) extends Actor with ActorLogging {

@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015  Vladimir Konstantinov, Yuriy Gintsyak
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package io.cafebabe.korro.api.http
 
 import io.cafebabe.korro.api.http.HttpParams.HttpParams
@@ -7,9 +23,9 @@ import io.cafebabe.korro.api.http.HttpParams.HttpParams
   *
   * @author Vladimir Konstantinov
   */
-trait HttpMessage {
-  def content: HttpContent
+sealed trait HttpMessage {
   def headers: HttpParams
+  def content: HttpContent
 }
 
 /**
@@ -23,21 +39,11 @@ trait HttpMessage {
   *
   * @author Vladimir Konstantinov
   */
-class HttpRequest(
-  val method: String,
-  val path: String,
-  val parameters: HttpParams,
-  val content: HttpContent,
-  val headers: HttpParams
-) extends HttpMessage
+case class HttpRequest(method: String, path: String, parameters: HttpParams, headers: HttpParams, content: HttpContent) extends HttpMessage
 
 /**
   * HTTP response with status code, content and headers.
   *
   * @author Vladimir Konstantinov
   */
-class HttpResponse(
-  val status: Int,
-  val content: HttpContent,
-  val headers: HttpParams
-) extends HttpMessage
+case class HttpResponse(status: Int, headers: HttpParams, content: HttpContent) extends HttpMessage

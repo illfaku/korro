@@ -64,7 +64,7 @@ sealed abstract class HttpMethod(val name: String) {
     content: HttpContent = HttpContent.empty,
     headers: HttpParams = HttpParams.empty
   ): HttpRequest = {
-    new HttpRequest(name, path, parameters, content, headers)
+    new HttpRequest(name, path, parameters, headers, content)
   }
 
   def unapply(req: HttpRequest): Option[(String, HttpRequest)] = {

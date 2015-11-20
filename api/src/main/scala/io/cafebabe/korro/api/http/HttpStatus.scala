@@ -42,7 +42,7 @@ sealed abstract class HttpStatus(val code: Int) {
     content: HttpContent = HttpContent.empty,
     headers: HttpParams = HttpParams.empty
   ): HttpResponse = {
-    new HttpResponse(code, content, headers)
+    new HttpResponse(code, headers, content)
   }
 
   def unapply(res: HttpResponse): Option[HttpResponse] = {

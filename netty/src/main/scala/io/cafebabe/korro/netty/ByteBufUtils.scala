@@ -18,8 +18,6 @@ package io.cafebabe.korro.netty
 
 import io.netty.buffer.{ByteBuf, Unpooled}
 
-import java.nio.charset.Charset
-
 /**
  * TODO: Add description.
  *
@@ -38,8 +36,6 @@ object ByteBufUtils {
   }
 
   implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
-
-  def toByteBuf(text: CharSequence, charset: Charset): ByteBuf = text.toString.getBytes(charset)
 
   def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }

@@ -31,21 +31,17 @@ object ContentType {
 
   private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
 
-  def apply(mime: String): ContentType = apply(mime, DefaultCharset)
-
-  def apply(mime: String, charset: String): ContentType = apply(mime, Charset.forName(charset))
-
-  def apply(mime: String, charset: Charset): ContentType = new ContentType(mime, charset)
-
-  def unapply(contentType: String): Option[ContentType] = regex.unapplySeq(contentType) map { l =>
-    val mime = l.head
-    val charset = l.drop(1).headOption.flatMap(toCharset).getOrElse(DefaultCharset)
-    ContentType(mime, charset)
+  def parse(header: String): ContentType = {
+    regex.unapplySeq(header) map { l =>
+      val mime = l.head
+      val charset = l.drop(1).headOption.flatMap(toCharset).getOrElse(DefaultCharset)
+      ContentType(mime, charset)
+    } getOrElse ContentType(MimeType.Names.OctetStream, DefaultCharset)
   }
 
   private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption
 }
 
-class ContentType(val mime: String, val charset: Charset) {
-  override val toString = s"$mime; charset=${charset.name.toLowerCase}"
+case class ContentType(mime: String, charset: Charset = ContentType.DefaultCharset) {
+  lazy val asHeader = s"$mime; charset=${charset.name.toLowerCase}"
 }
