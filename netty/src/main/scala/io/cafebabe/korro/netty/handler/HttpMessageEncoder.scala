@@ -57,7 +57,7 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
   private def encodeContent(content: HttpContent): AnyRef = content match {
     case c: MemoryHttpContent => new netty.DefaultHttpContent(c.bytes)
-    case c: FileHttpContent => new DefaultFileRegion(c.file.toFile, c.pos, c.length - c.pos)
+    case c: FileHttpContent => new DefaultFileRegion(c.file.toFile, 0, c.length)
   }
 
   private def prepareUri(path: String, parameters: HttpParams): String = {

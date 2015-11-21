@@ -58,7 +58,7 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) ex
   *
   * @author Vladimir Konstantinov
   */
-class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long, val pos: Long) extends HttpContent {
+class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long) extends HttpContent {
   override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
   override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
 }
@@ -74,13 +74,11 @@ object HttpContent {
 
   def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
 
-  def file(path: Path): HttpContent = file(path, 0)
-  def file(path: Path, pos: Long): HttpContent = {
-    file(path, ContentType(getMimeType(path).getOrElse(OctetStream)), Files.size(path), pos)
+  def file(path: Path): HttpContent = {
+    file(path, ContentType(getMimeType(path).getOrElse(OctetStream)), Files.size(path))
   }
-  def file(path: Path, contentType: ContentType, length: Long): HttpContent = file(path, contentType, length, 0)
-  def file(path: Path, contentType: ContentType, length: Long, pos: Long): HttpContent = {
-    new FileHttpContent(path, contentType, length, pos)
+  def file(path: Path, contentType: ContentType, length: Long): HttpContent = {
+    new FileHttpContent(path, contentType, length)
   }
 
 
