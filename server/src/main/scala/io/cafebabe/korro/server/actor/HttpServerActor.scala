@@ -54,8 +54,6 @@ class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging with 
 
       channel = bootstrap.bind(config.port).sync().channel
 
-      HttpRouterActor.create(config.config)
-
       log.info("Started Korro HTTP server \"{}\" on port {}.", config.name, config.port)
     } catch {
       case e: Throwable =>

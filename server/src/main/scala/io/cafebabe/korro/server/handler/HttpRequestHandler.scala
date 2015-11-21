@@ -17,11 +17,10 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.http.HttpRequest
-import io.cafebabe.korro.api.route.HttpRoute
 import io.cafebabe.korro.server.actor.HttpResponseSender
 import io.cafebabe.korro.server.config.HttpConfig
 
-import akka.actor.ActorContext
+import akka.actor.{ActorContext, ActorPath}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 /**
@@ -29,11 +28,11 @@ import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
  *
  * @author Vladimir Konstantinov
  */
-class HttpRequestChannelHandler(config: HttpConfig, route: HttpRoute)(implicit context: ActorContext)
+class HttpRequestHandler(config: HttpConfig, route: ActorPath)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
     implicit val sender = HttpResponseSender.create(ctx, config.requestTimeout)
-    context.actorSelection(route.actor) ! msg
+    context.actorSelection(route) ! msg
   }
 }

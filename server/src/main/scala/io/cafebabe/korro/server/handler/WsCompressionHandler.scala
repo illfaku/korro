@@ -38,7 +38,7 @@ import scala.util.Try
  *
  * @author Vladimir Konstantinov
  */
-class WsCompressionChannelHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
+class WsCompressionHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
 
   private val log = Logger(getClass)
 

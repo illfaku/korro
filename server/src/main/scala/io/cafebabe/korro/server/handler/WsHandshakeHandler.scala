@@ -16,12 +16,11 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.server.config.WsConfig
 import io.cafebabe.korro.util.log.Logging
 
-import akka.actor.ActorContext
+import akka.actor.{ActorContext, ActorPath}
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
@@ -33,7 +32,7 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
-class WsHandshakeChannelHandler(config: WsConfig, route: WsRoute)(implicit context: ActorContext)
+class WsHandshakeHandler(config: WsConfig, route: ActorPath)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
@@ -58,8 +57,8 @@ class WsHandshakeChannelHandler(config: WsConfig, route: WsRoute)(implicit conte
         pipeline.remove("korro-encoder")
         pipeline.remove("korro-decoder")
         pipeline.remove(this)
-        if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
-        pipeline.addAfter("logging", "ws", new WsChannelHandler(host, route.actor))
+        if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionHandler)
+        pipeline.addAfter("logging", "ws", new WsChannelHandler(host, route))
       } else {
         log.error(future.cause, "Error during handshake.")
         channel.close()

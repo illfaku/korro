@@ -27,7 +27,7 @@ import com.typesafe.config.Config
  */
 class KorroConfig(val name: String, fullConfig: Config) {
 
-  val config = fullConfig.getConfig(s"korro.server.$name") // TODO: make private
+  private val config = fullConfig.getConfig(s"korro.server.$name")
 
   val port = config.findInt("port").getOrElse(8080)
   val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)

@@ -22,7 +22,7 @@ import io.cafebabe.korro.netty.ChannelFutureExt
 import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorRef, ActorSelection}
+import akka.actor.{ActorContext, ActorPath, ActorRef, ActorSelection}
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 
@@ -31,7 +31,7 @@ import io.netty.handler.codec.http.websocketx._
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, actor: String)(implicit context: ActorContext)
+class WsChannelHandler(host: String, actor: ActorPath)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[WebSocketFrame] with Logging {
 
   private var receiver: ActorSelection = null

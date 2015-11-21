@@ -16,22 +16,13 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.route.{HttpRoute, Route, WsRoute}
-import io.cafebabe.korro.server.actor.HttpRouterActor
 import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
-import akka.pattern.ask
-import akka.util.Timeout
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
-
-import java.net.URI
-
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 /**
  * TODO: Add description.
@@ -42,32 +33,32 @@ import scala.util.{Failure, Success}
 class HttpChannelHandler(config: KorroConfig)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
-  import context.dispatcher
-  implicit val timeout = Timeout(2 seconds)
+  private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-
-    val path = new URI(msg.getUri).getPath
-
-    (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
-
-      case Success(Some(route: HttpRoute)) =>
-        ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestChannelHandler(config.http, route))
-        ctx.fireChannelRead(msg)
-
-      case Success(Some(route: WsRoute)) =>
-        ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config.ws, route))
-        ctx.fireChannelRead(msg)
-
-      case Success(None) => sendResponse(ctx, HttpResponseStatus.NOT_FOUND)
-
-      case Failure(error) =>
-        log.error(error, "Error while trying to get route.")
-        sendResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR)
-    }
+    if (isHandshake(msg)) doHandshake(ctx, msg) else doRequest(ctx, msg)
   }
 
-  private def sendResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
-    ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)).addListener(ChannelFutureListener.CLOSE)
+  private def isHandshake(msg: HttpRequest): Boolean = {
+    msg.headers.contains(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.UPGRADE, true) &&
+    msg.headers.contains(HttpHeaders.Names.UPGRADE, HttpHeaders.Values.WEBSOCKET, true)
+  }
+
+  private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.http.routes(msg) match {
+    case Some(route) =>
+      ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestHandler(config.http, route))
+      ctx.fireChannelRead(msg)
+    case None => notFound(ctx)
+  }
+
+  private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.ws.routes(msg) match {
+    case Some(route) =>
+      ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeHandler(config.ws, route))
+      ctx.fireChannelRead(msg)
+    case None => notFound(ctx)
+  }
+
+  private def notFound(ctx: ChannelHandlerContext): Unit = {
+    ctx.writeAndFlush(NotFound.retain()).addListener(ChannelFutureListener.CLOSE)
   }
 }
