@@ -31,7 +31,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
  * @author Vladimir Konstantinov
  */
 object HttpParams {
-
+  // TODO: let HttpParams contain map, not to be it
   type HttpParams = Map[String, List[String]]
 
 

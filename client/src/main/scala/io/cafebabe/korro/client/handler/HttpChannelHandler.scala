@@ -16,14 +16,12 @@
  */
 package io.cafebabe.korro.client.handler
 
-import io.cafebabe.korro.api.http.HttpRequest
+import io.cafebabe.korro.api.http.{HttpRequest, HttpResponse}
 import io.cafebabe.korro.netty.ChannelFutureExt
-import io.cafebabe.korro.netty.convert.HttpRequestConverter.toNetty
-import io.cafebabe.korro.netty.convert.HttpResponseConverter.fromNetty
 
 import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
-import io.netty.handler.codec.http.{FullHttpResponse, HttpHeaders}
+import io.netty.handler.codec.http.HttpHeaders
 
 import java.net.URL
 
@@ -33,12 +31,10 @@ import java.net.URL
  * @author Vladimir Konstantinov
  */
 class HttpChannelHandler(url: URL, req: HttpRequest, sender: ActorRef)
-  extends SimpleChannelInboundHandler[FullHttpResponse] {
+  extends SimpleChannelInboundHandler[HttpResponse] {
 
   override def channelActive(ctx: ChannelHandlerContext): Unit = {
-    val request = toNetty(req)
-    request.headers().add(HttpHeaders.Names.HOST, url.getHost)
-
+    val request = req.copy(headers = req.headers + (HttpHeaders.Names.HOST -> List(url.getHost)))
     ctx.writeAndFlush(request) foreach { future =>
       if (!future.isSuccess) {
         sender ! Status.Failure(future.cause)
@@ -47,11 +43,8 @@ class HttpChannelHandler(url: URL, req: HttpRequest, sender: ActorRef)
     }
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
-    fromNetty(msg) match {
-      case Right(res) => sender ! Status.Success(res)
-      case Left(fail) => sender ! Status.Failure(new Exception(s"Conversion failure. $fail"))
-    }
+  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpResponse): Unit = {
+    sender ! Status.Success(msg)
     ctx.close()
   }
 

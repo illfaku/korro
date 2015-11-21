@@ -16,8 +16,6 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.HttpResponse
-import io.cafebabe.korro.api.http.HttpStatus._
 import io.cafebabe.korro.api.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
 import io.cafebabe.korro.util.log.Logging
@@ -27,7 +25,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel._
+import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 
 import java.net.URI
@@ -42,43 +40,34 @@ import scala.util.{Failure, Success}
  */
 @Sharable
 class HttpChannelHandler(config: Config)(implicit context: ActorContext)
-  extends ChannelInboundHandlerAdapter with Logging {
+  extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
   import context.dispatcher
   implicit val timeout = Timeout(2 seconds)
 
-  override def channelReadComplete(ctx: ChannelHandlerContext): Unit = ctx.flush()
+  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
 
-  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
+    val path = new URI(msg.getUri).getPath
 
-    case req: FullHttpRequest if req.getDecoderResult.isSuccess =>
+    (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
 
-      val path = new URI(req.getUri).getPath
+      case Success(Some(route: HttpRoute)) =>
+        ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestChannelHandler(config, route))
+        ctx.fireChannelRead(msg)
 
-      (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
+      case Success(Some(route: WsRoute)) =>
+        ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config, route))
+        ctx.fireChannelRead(msg)
 
-        case Success(Some(route: HttpRoute)) =>
-          ctx.pipeline.addAfter(ctx.name, "http-request", new HttpRequestChannelHandler(config, route))
-          ctx.fireChannelRead(req)
+      case Success(None) => sendResponse(ctx, HttpResponseStatus.NOT_FOUND)
 
-        case Success(Some(route: WsRoute)) =>
-          ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config, route))
-          ctx.fireChannelRead(req)
+      case Failure(error) =>
+        log.error(error, "Error while trying to get route.")
+        sendResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR)
+    }
+  }
 
-        case Success(None) =>
-          req.release()
-          ctx.writeAndFlush(NotFound()).addListener(ChannelFutureListener.CLOSE)
-
-        case Failure(error) =>
-          log.error(error, "Error while trying to get route.")
-          req.release()
-          ctx.writeAndFlush(ServerError()).addListener(ChannelFutureListener.CLOSE)
-      }
-
-    case req: FullHttpRequest =>
-      req.release()
-      ctx.writeAndFlush(BadRequest()).addListener(ChannelFutureListener.CLOSE)
-
-    case _ => ctx.fireChannelRead(msg)
+  private def sendResponse(ctx: ChannelHandlerContext, status: HttpResponseStatus): Unit = {
+    ctx.writeAndFlush(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)).addListener(ChannelFutureListener.CLOSE)
   }
 }

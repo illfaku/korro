@@ -37,7 +37,7 @@ import scala.collection.mutable
   *
   * @author Vladimir Konstantinov
   */
-class HttpMessageDecoder extends MessageToMessageDecoder[netty.HttpObject] {
+class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder[netty.HttpObject] {
 
   private var message: HttpMessage = null
 

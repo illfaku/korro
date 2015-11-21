@@ -58,8 +58,9 @@ class WsHandshakeChannelHandler(config: Config, route: WsRoute)(implicit context
     handshaker.handshake(channel, req) foreach { future =>
       if (future.isSuccess) {
         val pipeline = channel.pipeline
-        pipeline.remove("http-response")
         pipeline.remove("http")
+        pipeline.remove("korro-encoder")
+        pipeline.remove("korro-decoder")
         pipeline.remove(this)
         if (compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
         pipeline.addAfter("logging", "ws", new WsChannelHandler(host, route.actor))

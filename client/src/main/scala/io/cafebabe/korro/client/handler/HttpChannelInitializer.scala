@@ -17,7 +17,7 @@
 package io.cafebabe.korro.client.handler
 
 import io.cafebabe.korro.api.http.HttpRequest
-import io.cafebabe.korro.netty.handler.LoggingChannelHandler
+import io.cafebabe.korro.netty.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
 import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorRef
@@ -38,6 +38,7 @@ import java.net.URL
 class HttpChannelInitializer(config: Config, url: URL, req: HttpRequest, sender: ActorRef)
   extends ChannelInitializer[SocketChannel] {
 
+  private val korroEncoder = new HttpMessageEncoder
   private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
 
   override def initChannel(ch: SocketChannel): Unit = {
@@ -50,8 +51,9 @@ class HttpChannelInitializer(config: Config, url: URL, req: HttpRequest, sender:
     }
 
     pipeline.addLast("http-codec", new HttpClientCodec)
-    pipeline.addLast("http-aggregate", new HttpObjectAggregator(1048576))
     pipeline.addLast("logging", loggingHandler)
+    pipeline.addLast("korro-encoder", korroEncoder)
+    pipeline.addLast("korro-decoder", new HttpMessageDecoder(65536L))
     pipeline.addLast("http", new HttpChannelHandler(url, req, sender))
   }
 }

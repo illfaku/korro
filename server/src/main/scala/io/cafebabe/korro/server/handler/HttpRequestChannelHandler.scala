@@ -16,16 +16,14 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.api.http.HttpStatus.BadRequest
+import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.api.route.HttpRoute
-import io.cafebabe.korro.netty.convert.{ConversionFailure, HttpRequestConverter}
 import io.cafebabe.korro.server.actor.HttpResponseSender
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.ActorContext
 import com.typesafe.config.Config
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
-import io.netty.handler.codec.http.FullHttpRequest
+import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 import scala.concurrent.duration._
 
@@ -35,17 +33,12 @@ import scala.concurrent.duration._
  * @author Vladimir Konstantinov
  */
 class HttpRequestChannelHandler(config: Config, route: HttpRoute)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[FullHttpRequest] {
+  extends SimpleChannelInboundHandler[HttpRequest] {
 
   private val requestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
-    HttpRequestConverter.fromNetty(msg) match {
-      case Right(request) =>
-        implicit val sender = HttpResponseSender.create(ctx, requestTimeout)
-        context.actorSelection(route.actor) ! request
-      case Left(fail: ConversionFailure) =>
-        ctx.writeAndFlush(BadRequest(fail.toString)).addListener(ChannelFutureListener.CLOSE)
-    }
+  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    implicit val sender = HttpResponseSender.create(ctx, requestTimeout)
+    context.actorSelection(route.actor) ! msg
   }
 }
