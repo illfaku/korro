@@ -17,11 +17,10 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.netty.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
-import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorContext
-import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http._
@@ -31,10 +30,7 @@ import io.netty.handler.codec.http._
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: Config)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
-
-  private val maxContentLength = config.findBytes("HTTP.maxContentLength").getOrElse(65536L)
-  private val compressionLevel = config.findInt("HTTP.compression")
+class HttpChannelInitializer(config: KorroConfig)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
   private val korroEncoder = new HttpMessageEncoder
   private val httpHandler = new HttpChannelHandler(config)
@@ -44,11 +40,11 @@ class HttpChannelInitializer(config: Config)(implicit context: ActorContext) ext
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
     pipeline.addLast("http-codec", new HttpServerCodec)
-    compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
+    config.http.compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
     pipeline.addLast("logging", loggingHandler)
     pipeline.addLast("http", httpHandler)
     pipeline.addLast("korro-encoder", korroEncoder)
-    pipeline.addLast("korro-decoder", new HttpMessageDecoder(maxContentLength))
+    pipeline.addLast("korro-decoder", new HttpMessageDecoder(config.http.maxContentLength))
     pipeline.addLast("last", lastHandler)
   }
 }

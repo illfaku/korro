@@ -18,11 +18,10 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.route.WsRoute
 import io.cafebabe.korro.netty.ChannelFutureExt
-import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.server.config.WsConfig
 import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
-import com.typesafe.config.Config
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
@@ -34,11 +33,8 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
-class WsHandshakeChannelHandler(config: Config, route: WsRoute)(implicit context: ActorContext)
+class WsHandshakeChannelHandler(config: WsConfig, route: WsRoute)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
-
-  private val maxFramePayloadLength = config.findBytes("WebSocket.maxFramePayloadLength").getOrElse(65536L).toInt
-  private val compression = config.findBoolean("WebSocket.compression").getOrElse(false)
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
     newHandshaker(msg) match {
@@ -49,7 +45,7 @@ class WsHandshakeChannelHandler(config: Config, route: WsRoute)(implicit context
 
   private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
     val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
-    val factory = new WebSocketServerHandshakerFactory(location, null, true, maxFramePayloadLength)
+    val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
     Option(factory.newHandshaker(req))
   }
 
@@ -62,7 +58,7 @@ class WsHandshakeChannelHandler(config: Config, route: WsRoute)(implicit context
         pipeline.remove("korro-encoder")
         pipeline.remove("korro-decoder")
         pipeline.remove(this)
-        if (compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
+        if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionChannelHandler)
         pipeline.addAfter("logging", "ws", new WsChannelHandler(host, route.actor))
       } else {
         log.error(future.cause, "Error during handshake.")

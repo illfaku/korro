@@ -16,13 +16,12 @@
  */
 package io.cafebabe.korro.server.actor
 
+import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.server.handler.HttpChannelInitializer
 import io.cafebabe.korro.util.akka.NoReceiveActor
 import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
-import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor._
-import com.typesafe.config.Config
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -34,13 +33,10 @@ import io.netty.channel.{Channel, EventLoopGroup}
  * @author Vladimir Konstantinov
  */
 object HttpServerActor {
-  def props(name: String, config: Config): Props = Props(new HttpServerActor(name, config))
+  def props(config: KorroConfig): Props = Props(new HttpServerActor(config))
 }
 
-class HttpServerActor(name: String, config: Config) extends Actor with ActorLogging with NoReceiveActor {
-
-  private val port = config.findInt("port").getOrElse(8080)
-  private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
+class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging with NoReceiveActor {
 
   private var bossGroup: EventLoopGroup = null
   private var workerGroup: EventLoopGroup = null
@@ -48,22 +44,22 @@ class HttpServerActor(name: String, config: Config) extends Actor with ActorLogg
 
   override def preStart(): Unit = {
     try {
-      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-$name-boss"))
-      workerGroup = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-server-$name-worker"))
+      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-${config.name}-boss"))
+      workerGroup = new NioEventLoopGroup(config.workerGroupSize, new IncrementalThreadFactory(s"korro-server-${config.name}-worker"))
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
         .childHandler(new HttpChannelInitializer(config))
 
-      channel = bootstrap.bind(port).sync().channel
+      channel = bootstrap.bind(config.port).sync().channel
 
-      HttpRouterActor.create(config)
+      HttpRouterActor.create(config.config)
 
-      log.info("Started Korro HTTP server \"{}\" on port {}.", name, port)
+      log.info("Started Korro HTTP server \"{}\" on port {}.", config.name, config.port)
     } catch {
       case e: Throwable =>
-        log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", name, port)
+        log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", config.name, config.port)
         context.stop(self)
     }
   }

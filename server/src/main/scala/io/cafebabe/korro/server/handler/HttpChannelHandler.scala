@@ -18,12 +18,12 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.route.{HttpRoute, Route, WsRoute}
 import io.cafebabe.korro.server.actor.HttpRouterActor
+import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorContext
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.Config
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
@@ -39,7 +39,7 @@ import scala.util.{Failure, Success}
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(config: Config)(implicit context: ActorContext)
+class HttpChannelHandler(config: KorroConfig)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
   import context.dispatcher
@@ -52,11 +52,11 @@ class HttpChannelHandler(config: Config)(implicit context: ActorContext)
     (context.actorSelection(HttpRouterActor.name) ? path).mapTo[Option[Route]] onComplete {
 
       case Success(Some(route: HttpRoute)) =>
-        ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestChannelHandler(config, route))
+        ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestChannelHandler(config.http, route))
         ctx.fireChannelRead(msg)
 
       case Success(Some(route: WsRoute)) =>
-        ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config, route))
+        ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeChannelHandler(config.ws, route))
         ctx.fireChannelRead(msg)
 
       case Success(None) => sendResponse(ctx, HttpResponseStatus.NOT_FOUND)

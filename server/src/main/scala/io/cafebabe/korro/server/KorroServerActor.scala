@@ -17,6 +17,7 @@
 package io.cafebabe.korro.server
 
 import io.cafebabe.korro.server.actor.HttpServerActor
+import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.akka.NoReceiveActor
 import io.cafebabe.korro.util.config.wrapped
 
@@ -40,6 +41,6 @@ private [server] class KorroServerActor extends Actor with NoReceiveActor {
   private val config = context.system.settings.config
 
   config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    context.actorOf(HttpServerActor.props(name, config.getConfig(s"korro.server.$name")), name)
+    context.actorOf(HttpServerActor.props(new KorroConfig(name, config)), name)
   }
 }

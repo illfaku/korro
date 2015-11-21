@@ -19,26 +19,21 @@ package io.cafebabe.korro.server.handler
 import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.api.route.HttpRoute
 import io.cafebabe.korro.server.actor.HttpResponseSender
-import io.cafebabe.korro.util.config.wrapped
+import io.cafebabe.korro.server.config.HttpConfig
 
 import akka.actor.ActorContext
-import com.typesafe.config.Config
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
-
-import scala.concurrent.duration._
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpRequestChannelHandler(config: Config, route: HttpRoute)(implicit context: ActorContext)
+class HttpRequestChannelHandler(config: HttpConfig, route: HttpRoute)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] {
 
-  private val requestTimeout = config.findFiniteDuration("HTTP.requestTimeout").getOrElse(60 seconds)
-
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    implicit val sender = HttpResponseSender.create(ctx, requestTimeout)
+    implicit val sender = HttpResponseSender.create(ctx, config.requestTimeout)
     context.actorSelection(route.actor) ! msg
   }
 }
