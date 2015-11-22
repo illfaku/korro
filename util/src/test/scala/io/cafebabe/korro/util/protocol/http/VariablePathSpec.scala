@@ -14,14 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.api
+package io.cafebabe.korro.util.protocol.http
 
-import io.cafebabe.korro.api.http.VariablePath
-
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
- * Collection of tests for [[io.cafebabe.korro.api.http.VariablePath]].
+ * Collection of tests for [[io.cafebabe.korro.util.protocol.http.VariablePath VariablePath]].
  *
  * @author Vladimir Konstantinov
  */

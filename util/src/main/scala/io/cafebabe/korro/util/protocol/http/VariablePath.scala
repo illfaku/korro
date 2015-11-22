@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.api.http
+package io.cafebabe.korro.util.protocol.http
 
 /**
  * Extractor for variables in URI path.
