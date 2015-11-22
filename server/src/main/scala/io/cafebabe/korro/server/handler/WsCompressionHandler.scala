@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.netty.ByteBufUtils.toByteBuf
+import io.cafebabe.korro.internal.ByteBufUtils.toByteBuf
 import io.cafebabe.korro.util.io.{unzipString, zipString}
 import io.cafebabe.korro.util.log.Logger
 

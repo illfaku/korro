@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.netty.handler
+package io.cafebabe.korro.internal.handler
 
 import io.cafebabe.korro.api.http._
-import io.cafebabe.korro.netty.ByteBufUtils.toByteBuf
+import io.cafebabe.korro.internal.ByteBufUtils.toByteBuf
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}

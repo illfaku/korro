@@ -17,7 +17,7 @@
 package io.cafebabe.korro.client.handler
 
 import io.cafebabe.korro.api.http.HttpRequest
-import io.cafebabe.korro.netty.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
+import io.cafebabe.korro.internal.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
 import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorRef

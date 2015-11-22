@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.server.config.WsConfig
 import io.cafebabe.korro.util.log.Logging
 

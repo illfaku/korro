@@ -24,7 +24,7 @@ object HttpBuild extends Build {
     id = "korro",
     base = file("."),
     settings = basicSettings
-  ) aggregate (api, server, client, util, netty)
+  ) aggregate (api, server, client, util, internal)
 
   lazy val api = Project(
     id = "korro-api",
@@ -36,22 +36,22 @@ object HttpBuild extends Build {
   lazy val server = Project(
     id = "korro-server",
     base = file("server"),
-    dependencies = Seq(api, netty, util),
+    dependencies = Seq(api, internal, util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.server ++ Dependencies.server
   )
 
   lazy val client = Project(
     id = "korro-client",
     base = file("client"),
-    dependencies = Seq(api, netty, util),
+    dependencies = Seq(api, internal, util),
     settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.client ++ Dependencies.client
   )
 
-  lazy val netty = Project(
-    id = "korro-netty",
-    base = file("netty"),
+  lazy val internal = Project(
+    id = "korro-internal",
+    base = file("internal"),
     dependencies = Seq(api, util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.netty ++ Dependencies.netty
+    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.internal ++ Dependencies.internal
   )
 
   lazy val util = Project(
@@ -80,9 +80,9 @@ object OsgiSettings {
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Client")
   )
 
-  lazy val netty = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.netty.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Netty Utilities")
+  lazy val internal = SbtOsgi.osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.internal.*"),
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Internal Utilities")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
@@ -107,7 +107,7 @@ object Dependencies {
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
 
-  lazy val netty = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s, akka)
+  lazy val internal = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s, akka)
 
   lazy val util = deps(akka, typesafeConfig, json4s, slf4j, scalatest)
 

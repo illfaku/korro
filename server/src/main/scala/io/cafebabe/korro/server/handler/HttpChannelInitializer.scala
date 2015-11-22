@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.netty.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
+import io.cafebabe.korro.internal.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
 import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logger
 

@@ -18,7 +18,7 @@ package io.cafebabe.korro.client.actor
 
 import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.client.handler.HttpChannelInitializer
-import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.util.concurrent.IncrementalThreadFactory
 import io.cafebabe.korro.util.config.wrapped
 

@@ -17,7 +17,7 @@
 package io.cafebabe.korro.client.handler
 
 import io.cafebabe.korro.api.http.{HttpRequest, HttpResponse}
-import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.internal.ChannelFutureExt
 
 import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}

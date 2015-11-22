@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.netty.handler
+package io.cafebabe.korro.internal.handler
 
 import io.cafebabe.korro.util.log.Logger.Logger
 

@@ -25,7 +25,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @author Vladimir Konstantinov
  */
-package object netty {
+package object internal {
 
   implicit class ChannelFutureExt(future: ChannelFuture) {
 

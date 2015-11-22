@@ -17,8 +17,8 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.ws._
-import io.cafebabe.korro.netty.ByteBufUtils.toBytes
-import io.cafebabe.korro.netty.ChannelFutureExt
+import io.cafebabe.korro.internal.ByteBufUtils.toBytes
+import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.util.log.Logging
 
