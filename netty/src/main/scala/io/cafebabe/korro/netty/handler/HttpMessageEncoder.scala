@@ -16,7 +16,6 @@
  */
 package io.cafebabe.korro.netty.handler
 
-import io.cafebabe.korro.api.http.HttpParams.HttpParams
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.netty.ByteBufUtils.toByteBuf
 
@@ -27,10 +26,10 @@ import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 import java.util
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 @Sharable
 class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
@@ -62,12 +61,12 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
   private def prepareUri(path: String, parameters: HttpParams): String = {
     val encoder = new netty.QueryStringEncoder(path)
-    parameters foreach { case (name, values) => values.foreach(encoder.addParam(name, _)) }
+    parameters.entries foreach { case (name, value) => encoder.addParam(name, value) }
     encoder.toString
   }
 
   private def setHeaders(nettyMsg: netty.HttpMessage, msg: HttpMessage): Unit = {
-    msg.headers foreach { case (name, values) => values.foreach(netty.HttpHeaders.addHeader(nettyMsg, name, _)) }
+    msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(nettyMsg, name, value) }
     if (msg.content.length > 0) {
       netty.HttpHeaders.setContentLength(nettyMsg, msg.content.length)
       netty.HttpHeaders.addHeader(nettyMsg, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.asHeader)

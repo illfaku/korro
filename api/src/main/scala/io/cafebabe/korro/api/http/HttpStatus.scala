@@ -16,8 +16,6 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.korro.api.http.HttpParams._
-
 /**
  * TODO: Add description.
  *

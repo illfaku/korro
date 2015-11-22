@@ -19,9 +19,8 @@ package io.cafebabe.korro.api.http
 import java.text.DateFormat
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.{ISO_LOCAL_DATE_TIME, ISO_OFFSET_DATE_TIME, ISO_ZONED_DATE_TIME}
-import java.time.temporal.TemporalAccessor
 import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
-import java.util.Date
+import java.util.NoSuchElementException
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -31,51 +30,24 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
  * @author Vladimir Konstantinov
  */
 object HttpParams {
-  // TODO: let HttpParams contain map, not to be it
-  type HttpParams = Map[String, List[String]]
 
+  val empty: HttpParams = new HttpParams(Nil)
 
-  val empty: HttpParams = Map.empty
-
-  def apply(headers: (String, Any)*): HttpParams = headers.groupBy(_._1).mapValues(_.map(_._2.toString).toList)
-
-
-  implicit class Extractor(params: HttpParams) {
-
-    def mandatory[V](name: String)(f: Extractions.HttpParamsExtraction[V]): Either[Failure, V] = {
-      one(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
-    }
-
-    def optional[V](name: String)(f: Extractions.HttpParamsExtraction[V]): Either[Failure, Option[V]] = {
-      one(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
-    }
-
-    private def one(name: String): Option[(String, String)] = params.get(name).flatMap(_.headOption).map(name -> _)
-
-    private implicit val ord = Ordering.String.on[(String, List[String])](_._1)
-    def asString: String = {
-      params.toList.sorted.foldLeft(new StringBuilder) { (b, e) =>
-        b.append(e._1).append("=")
-        e._2.sorted.addString(b, ",").append(";")
-      } toString()
-    }
-  }
-
-
-  sealed trait Failure
-  case class Absent(name: String) extends Failure {
-    override lazy val toString = s"Missing parameter: $name."
-  }
-  case class Malformed(name: String, value: String, cause: Throwable) extends Failure {
-    override lazy val toString = s"Invalid parameter: $name=$value. Cause: ${cause.getMessage}"
-  }
-
+  def apply(entries: (String, Any)*): HttpParams = new HttpParams(entries.map(e => e._1 -> e._2.toString))
 
   object Extractions {
 
-    trait HttpParamsExtraction[V] extends (((String, String)) => Either[Failure, V]) { self =>
-      def map[U](f: V => U): HttpParamsExtraction[U] = new HttpParamsExtraction[U] {
-        override def apply(v: (String, String)): Either[Failure, U] = {
+    sealed trait ExtractionFailure
+    case class Absent(name: String) extends ExtractionFailure {
+      override lazy val toString = s"Missing parameter: $name."
+    }
+    case class Malformed(name: String, value: String, cause: Throwable) extends ExtractionFailure {
+      override lazy val toString = s"Invalid parameter: $name=$value. Cause: ${cause.getMessage}"
+    }
+
+    trait Extraction[V] extends (((String, String)) => Either[ExtractionFailure, V]) { self =>
+      def map[U](f: V => U): Extraction[U] = new Extraction[U] {
+        override def apply(v: (String, String)): Either[ExtractionFailure, U] = {
           val (name, value) = v
           try {
             self.apply(v).right.map(f)
@@ -86,8 +58,8 @@ object HttpParams {
       }
     }
 
-    val asString: HttpParamsExtraction[String] = new HttpParamsExtraction[String] {
-      override def apply(v: (String, String)): Either[Failure, String] = Right(v._2)
+    val asString: Extraction[String] = new Extraction[String] {
+      override def apply(v: (String, String)): Either[ExtractionFailure, String] = Right(v._2)
     }
 
     val asLong = asString.map(_.toLong)
@@ -114,4 +86,36 @@ object HttpParams {
     val asDuration = asString.map(Duration.create)
     val asFiniteDuration = asDuration.map(d => FiniteDuration(d.length, d.unit))
   }
+}
+
+/**
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+class HttpParams(val entries: Iterable[(String, String)]) {
+
+  def +(entry: (String, Any)): HttpParams = ++(HttpParams(entry))
+
+  def ++(that: HttpParams): HttpParams = new HttpParams(entries ++ that.entries)
+
+
+  def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
+
+  def get(name: String): Option[String] = all(name).headOption
+
+  def all(name: String): Iterable[String] = entries.filter(_._1 == name).map(_._2)
+
+
+  import HttpParams.Extractions._
+
+  def mandatory[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, V] = {
+    entry(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
+  }
+
+  def optional[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, Option[V]] = {
+    entry(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
+  }
+
+  private def entry(name: String): Option[(String, String)] = entries.find(_._1 == name)
 }

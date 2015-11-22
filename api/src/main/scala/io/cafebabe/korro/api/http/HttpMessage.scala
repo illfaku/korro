@@ -16,34 +16,32 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.korro.api.http.HttpParams.HttpParams
-
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 sealed trait HttpMessage {
   def headers: HttpParams
   def content: HttpContent
 }
 
 /**
-  * HTTP request representation. It contains:
-  * <ul>
-  *   <li>method
-  *   <li>path without prefix
-  *   <li>query parameters from uri or body (if Content-Type is application/x-www-form-urlencoded)
-  *   <li>content (body)
-  *   <li>headers
-  *
-  * @author Vladimir Konstantinov
-  */
+ * HTTP request representation. It contains:
+ * <ul>
+ *   <li>method
+ *   <li>path without prefix
+ *   <li>query parameters from uri or body (if Content-Type is application/x-www-form-urlencoded)
+ *   <li>content (body)
+ *   <li>headers
+ *
+ * @author Vladimir Konstantinov
+ */
 case class HttpRequest(method: String, path: String, parameters: HttpParams, headers: HttpParams, content: HttpContent) extends HttpMessage
 
 /**
-  * HTTP response with status code, content and headers.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * HTTP response with status code, content and headers.
+ *
+ * @author Vladimir Konstantinov
+ */
 case class HttpResponse(status: Int, headers: HttpParams, content: HttpContent) extends HttpMessage

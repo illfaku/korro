@@ -24,7 +24,7 @@ import akka.actor.ActorRef
 import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.http.{HttpClientCodec, HttpObjectAggregator}
+import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 

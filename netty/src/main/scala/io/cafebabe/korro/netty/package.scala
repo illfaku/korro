@@ -38,5 +38,7 @@ package object netty {
         if (future.isSuccess) f(Success(future.channel)) else f(Failure(future.cause))
       }
     })
+
+    def closeChannel(): Unit = future.addListener(ChannelFutureListener.CLOSE)
   }
 }

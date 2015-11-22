@@ -34,7 +34,7 @@ class HttpChannelHandler(url: URL, req: HttpRequest, sender: ActorRef)
   extends SimpleChannelInboundHandler[HttpResponse] {
 
   override def channelActive(ctx: ChannelHandlerContext): Unit = {
-    val request = req.copy(headers = req.headers + (HttpHeaders.Names.HOST -> List(url.getHost)))
+    val request = req.copy(headers = req.headers + (HttpHeaders.Names.HOST -> url.getHost))
     ctx.writeAndFlush(request) foreach { future =>
       if (!future.isSuccess) {
         sender ! Status.Failure(future.cause)

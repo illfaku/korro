@@ -16,7 +16,6 @@
  */
 package io.cafebabe.korro.netty.handler
 
-import io.cafebabe.korro.api.http.HttpParams.HttpParams
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.netty.ByteBufUtils.toBytes
 import io.cafebabe.korro.util.protocol.http.ContentType
@@ -30,7 +29,6 @@ import java.nio.charset.Charset
 import java.util
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable
 
 /**
   * TODO: Add description.
@@ -74,8 +72,8 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
   private def decodeRequest(msg: netty.HttpRequest, out: util.List[AnyRef]): Unit = {
     val decoder = new netty.QueryStringDecoder(msg.getUri)
     val path = decoder.path
-    val params = decoder.parameters.toMap.mapValues(_.toList)
-    message = HttpRequest(msg.getMethod.name, path, params, decodeHeaders(msg.headers), HttpContent.empty)
+    val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
+    message = HttpRequest(msg.getMethod.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty)
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
@@ -84,13 +82,8 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
-    val result = mutable.Map.empty[String, List[String]]
-    for (header <- headers) {
-      val key = header.getKey
-      val list = result.getOrElse(key, List.empty)
-      result += key -> (header.getValue :: list)
-    }
-    result.toMap
+    val result = for (header <- headers) yield header.getKey -> header.getValue
+    HttpParams(result.toSeq: _*)
   }
 
   private def decodeContent(cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
@@ -103,7 +96,7 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
       message = message match {
         case m: HttpRequest =>
           contentType match {
-            case ContentType(FormUrlEncoded, charset) => m.copy(parameters = decodeParametersFromBody(charset))
+            case ContentType(FormUrlEncoded, charset) => m.copy(parameters = m.parameters ++ decodeParametersFromBody(charset))
             case _ => m.copy(content = HttpContent.memory(byteCache, contentType))
           }
         case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))
@@ -114,9 +107,9 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
   }
 
   private def decodeParametersFromBody(charset: Charset): HttpParams = {
-    val params = byteCache.toString(charset)
-    val decoder = new netty.QueryStringDecoder(params, false)
-    decoder.parameters.toMap.mapValues(_.toList)
+    val decoder = new netty.QueryStringDecoder(byteCache.toString(charset), false)
+    val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
+    HttpParams(params.toSeq: _*)
   }
 
   private def reset(): Unit = {
