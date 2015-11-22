@@ -16,10 +16,9 @@
  */
 package io.cafebabe.korro.api.http
 
-import io.cafebabe.korro.util.protocol.http.ContentType
-import io.cafebabe.korro.util.protocol.http.ContentType.DefaultCharset
-import io.cafebabe.korro.util.protocol.http.MimeType.Mapping.getMimeType
-import io.cafebabe.korro.util.protocol.http.MimeType.Names.{OctetStream, TextPlain, ApplicationJson}
+import io.cafebabe.korro.api.http.ContentType.DefaultCharset
+import io.cafebabe.korro.api.http.ContentType.Names.{ApplicationJson, OctetStream, TextPlain}
+import io.cafebabe.korro.util.protocol.http.MimeTypeMapping.getMimeType
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}

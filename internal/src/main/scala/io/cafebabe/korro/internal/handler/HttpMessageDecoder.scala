@@ -16,10 +16,9 @@
  */
 package io.cafebabe.korro.internal.handler
 
+import io.cafebabe.korro.api.http.ContentType.Names.FormUrlEncoded
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.internal.ByteBufUtils.toBytes
-import io.cafebabe.korro.util.protocol.http.ContentType
-import io.cafebabe.korro.util.protocol.http.MimeType.Names.FormUrlEncoded
 
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext

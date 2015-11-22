@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.util.protocol.http
+package io.cafebabe.korro.api.http
 
 import java.nio.charset.Charset
 
@@ -27,6 +27,13 @@ import scala.util.Try
  */
 object ContentType {
 
+  object Names {
+    val TextPlain = "text/plain"
+    val ApplicationJson = "application/json"
+    val FormUrlEncoded = "application/x-www-form-urlencoded"
+    val OctetStream = "application/octet-stream"
+  }
+
   val DefaultCharset = Charset.forName("UTF-8")
 
   private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
@@ -36,7 +43,7 @@ object ContentType {
       val mime = l.head
       val charset = l.drop(1).headOption.flatMap(toCharset).getOrElse(DefaultCharset)
       ContentType(mime, charset)
-    } getOrElse ContentType(MimeType.Names.OctetStream, DefaultCharset)
+    } getOrElse ContentType(Names.OctetStream, DefaultCharset)
   }
 
   private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption
