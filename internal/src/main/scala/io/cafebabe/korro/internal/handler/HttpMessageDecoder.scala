@@ -40,7 +40,7 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
 
   private var contentType: ContentType = null
 
-  private var byteCache = Unpooled.compositeBuffer
+  private val byteCache = Unpooled.compositeBuffer
 
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
     if (msg.getDecoderResult.isFailure) {
@@ -48,15 +48,9 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
     } else {
       msg match {
         case m: netty.HttpMessage =>
-          if (message != null) {
-            throw new IllegalStateException("Another Netty's HttpMessage when previous is not completed yet.")
-          }
+          if (message != null) reset()
           decodeMessage(m, out)
-        case m: netty.HttpContent =>
-          if (message == null) {
-            throw new IllegalStateException("Received Netty's HttpContent w/o receiving HttpMessage first.")
-          }
-          decodeContent(m, out)
+        case m: netty.HttpContent => if (message != null) decodeContent(m, out)
         case _ => throw new IllegalStateException(s"Unknown Netty's HttpObject: ${msg.getClass}.")
       }
     }
@@ -114,7 +108,6 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
   private def reset(): Unit = {
     message = null
     contentType = null
-    byteCache.release()
-    byteCache = Unpooled.compositeBuffer
+    byteCache.clear()
   }
 }
