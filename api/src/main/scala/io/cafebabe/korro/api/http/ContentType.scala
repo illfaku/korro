@@ -41,9 +41,9 @@ object ContentType {
   def parse(header: String): ContentType = {
     regex.unapplySeq(header) map { l =>
       val mime = l.head
-      val charset = l.drop(1).headOption.flatMap(toCharset).getOrElse(DefaultCharset)
+      val charset = l.drop(1).headOption.flatMap(toCharset)
       ContentType(mime, charset)
-    } getOrElse ContentType(Names.OctetStream, DefaultCharset)
+    } getOrElse ContentType(Names.OctetStream)
   }
 
   private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption

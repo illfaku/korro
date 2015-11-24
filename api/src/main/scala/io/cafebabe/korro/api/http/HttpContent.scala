@@ -76,6 +76,9 @@ object HttpContent {
   def file(path: Path): HttpContent = {
     file(path, ContentType(getMimeType(path).getOrElse(OctetStream)), Files.size(path))
   }
+  def file(path: Path, contentType: ContentType): HttpContent = {
+    file(path, contentType, Files.size(path))
+  }
   def file(path: Path, contentType: ContentType, length: Long): HttpContent = {
     new FileHttpContent(path, contentType, length)
   }
