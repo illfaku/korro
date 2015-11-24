@@ -28,10 +28,10 @@ import java.util.regex.Pattern
 import scala.util.Try
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 object RoutesConfig extends Logging {
   def apply(configs: Iterable[Config]): RoutesConfig = {
     val routes = for {
@@ -42,6 +42,11 @@ object RoutesConfig extends Logging {
   }
 }
 
+/**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
 class RoutesConfig(routes: List[RouteConfig]) {
   def apply(req: HttpRequest): Option[ActorPath] = {
     def find(tail: List[RouteConfig]): Option[ActorPath] = tail match {
@@ -52,14 +57,20 @@ class RoutesConfig(routes: List[RouteConfig]) {
   }
 }
 
+/**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
 private class RouteConfig(val actor: ActorPath, config: Config) {
+
+  private val path: Option[String] = config.findString("path")
 
   private val uriPattern: Option[Pattern] = config.findString("uri-pattern").map(Pattern.compile)
 
-  def test(req: HttpRequest): Boolean = testUri(req.getUri)
+  def test(req: HttpRequest): Boolean = testPath(req.getUri) && testUri(req.getUri)
 
-  private def testUri(uri: String): Boolean = uriPattern match {
-    case Some(pattern) => pattern.matcher(uri).matches()
-    case None => true
-  }
+  private def testPath(uri: String): Boolean = path.map(uri.startsWith).getOrElse(true)
+
+  private def testUri(uri: String): Boolean = uriPattern.map(_.matcher(uri).matches).getOrElse(true)
 }
