@@ -47,8 +47,15 @@ object ContentType {
   }
 
   private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption
+
+  def apply(mime: String): ContentType = apply(mime, None)
+
+  def apply(mime: String, charset: Charset): ContentType = apply(mime, Some(charset))
 }
 
-case class ContentType(mime: String, charset: Charset = ContentType.DefaultCharset) {
-  lazy val asHeader = s"$mime; charset=${charset.name.toLowerCase}"
+case class ContentType(mime: String, charset: Option[Charset]) {
+  lazy val asHeader = charset match {
+    case Some(ch) => s"$mime; charset=${ch.name.toLowerCase}"
+    case None => mime
+  }
 }

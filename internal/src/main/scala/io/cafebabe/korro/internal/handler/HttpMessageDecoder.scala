@@ -16,6 +16,7 @@
  */
 package io.cafebabe.korro.internal.handler
 
+import io.cafebabe.korro.api.http.ContentType.DefaultCharset
 import io.cafebabe.korro.api.http.ContentType.Names.FormUrlEncoded
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.internal.ByteBufUtils.toBytes
@@ -89,7 +90,8 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
       message = message match {
         case m: HttpRequest =>
           contentType match {
-            case ContentType(FormUrlEncoded, charset) => m.copy(parameters = m.parameters ++ decodeParametersFromBody(charset))
+            case ContentType(FormUrlEncoded, charset) =>
+              m.copy(parameters = m.parameters ++ decodeParametersFromBody(charset.getOrElse(DefaultCharset)))
             case _ => m.copy(content = HttpContent.memory(byteCache, contentType))
           }
         case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))

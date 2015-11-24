@@ -38,7 +38,7 @@ sealed trait HttpContent {
   def contentType: ContentType
   def length: Long
   def bytes: Array[Byte]
-  def string: String = new String(bytes, contentType.charset)
+  def string: String = new String(bytes, contentType.charset.getOrElse(DefaultCharset))
   def save(path: Path): Unit
 }
 
@@ -69,7 +69,7 @@ class FileHttpContent(val file: Path, val contentType: ContentType, val length: 
  */
 object HttpContent {
 
-  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, ContentType(TextPlain))
+  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, ContentType(OctetStream))
 
   def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
 
