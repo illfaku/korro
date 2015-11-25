@@ -58,12 +58,12 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
   }
 
   private def decodeMessage(msg: netty.HttpMessage, out: util.List[AnyRef]): Unit = msg match {
-    case m: netty.HttpRequest => decodeRequest(m, out)
-    case m: netty.HttpResponse => decodeResponse(m, out)
+    case m: netty.HttpRequest => decodeRequest(m)
+    case m: netty.HttpResponse => decodeResponse(m)
     case _ => throw new IllegalStateException(s"Unknown Netty's HttpMessage: ${msg.getClass}.")
   }
 
-  private def decodeRequest(msg: netty.HttpRequest, out: util.List[AnyRef]): Unit = {
+  private def decodeRequest(msg: netty.HttpRequest): Unit = {
     val decoder = new netty.QueryStringDecoder(msg.getUri)
     val path = decoder.path
     val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
@@ -71,8 +71,9 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
-  private def decodeResponse(msg: netty.HttpResponse, out: util.List[AnyRef]): Unit = {
+  private def decodeResponse(msg: netty.HttpResponse): Unit = {
     message = HttpResponse(msg.getStatus.code, decodeHeaders(msg.headers), HttpContent.empty)
+    contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
