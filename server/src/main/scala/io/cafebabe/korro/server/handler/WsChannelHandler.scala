@@ -31,7 +31,7 @@ import io.netty.handler.codec.http.websocketx._
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, actor: ActorPath)(implicit context: ActorContext)
+class WsChannelHandler(host: String, actor: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[WebSocketFrame] with Logging {
 
   private var receiver: ActorSelection = null

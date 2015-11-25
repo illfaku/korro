@@ -34,10 +34,7 @@ import scala.util.Try
  */
 object RoutesConfig extends Logging {
   def apply(configs: Iterable[Config]): RoutesConfig = {
-    val routes = for {
-      route <- configs if route.hasPath("actor")
-      actor <- Try(ActorPath.fromString(route.getString("actor"))).toOption
-    } yield new RouteConfig(actor, route)
+    val routes = configs.filter(_.hasPath("actor")).map(new RouteConfig(_))
     new RoutesConfig(routes.toList)
   }
 }
@@ -48,8 +45,8 @@ object RoutesConfig extends Logging {
   * @author Vladimir Konstantinov
   */
 class RoutesConfig(routes: List[RouteConfig]) {
-  def apply(req: HttpRequest): Option[ActorPath] = {
-    def find(tail: List[RouteConfig]): Option[ActorPath] = tail match {
+  def apply(req: HttpRequest): Option[String] = {
+    def find(tail: List[RouteConfig]): Option[String] = tail match {
       case x :: xs => if (x.test(req)) Some(x.actor) else find(xs)
       case Nil => None
     }
@@ -62,7 +59,9 @@ class RoutesConfig(routes: List[RouteConfig]) {
   *
   * @author Vladimir Konstantinov
   */
-private class RouteConfig(val actor: ActorPath, config: Config) {
+private class RouteConfig(config: Config) {
+
+  val actor = config.getString("actor")
 
   private val path: Option[String] = config.findString("path")
 

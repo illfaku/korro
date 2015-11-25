@@ -28,7 +28,7 @@ import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
  *
  * @author Vladimir Konstantinov
  */
-class HttpRequestHandler(config: HttpConfig, route: ActorPath)(implicit context: ActorContext)
+class HttpRequestHandler(config: HttpConfig, route: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {

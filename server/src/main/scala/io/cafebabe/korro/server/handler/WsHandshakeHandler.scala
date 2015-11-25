@@ -32,7 +32,7 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
-class WsHandshakeHandler(config: WsConfig, route: ActorPath)(implicit context: ActorContext)
+class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
