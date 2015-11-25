@@ -82,7 +82,7 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
 
   private def decodeContent(cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
     byteCache.addComponent(cnt.content.retain())
-    byteCache.writerIndex(byteCache.writerIndex + cnt.content.readableBytes)
+    byteCache.writerIndex(byteCache.writerIndex() + cnt.content.readableBytes)
     if (cnt.isInstanceOf[netty.LastHttpContent]) composeMessage(out)
   }
 
