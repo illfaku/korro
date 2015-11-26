@@ -21,7 +21,7 @@ import io.cafebabe.korro.util.log.Logging
 
 import akka.actor.ActorPath
 import com.typesafe.config.Config
-import io.netty.handler.codec.http.HttpRequest
+import io.netty.handler.codec.http.{HttpMethod, HttpRequest}
 
 import java.util.regex.Pattern
 
@@ -63,11 +63,15 @@ private class RouteConfig(config: Config) {
 
   val actor = config.getString("actor")
 
+  private val method: Option[String] = config.findString("method")
+
   private val path: Option[String] = config.findString("path")
 
   private val uriPattern: Option[Pattern] = config.findString("uri-pattern").map(Pattern.compile)
 
-  def test(req: HttpRequest): Boolean = testPath(req.getUri) && testUri(req.getUri)
+  def test(req: HttpRequest): Boolean = testMethod(req.getMethod) && testPath(req.getUri) && testUri(req.getUri)
+
+  private def testMethod(m: HttpMethod): Boolean = method.map(_ equalsIgnoreCase m.name).getOrElse(true)
 
   private def testPath(uri: String): Boolean = path.map(uri.startsWith).getOrElse(true)
 
