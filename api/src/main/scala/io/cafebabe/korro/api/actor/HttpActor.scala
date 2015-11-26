@@ -29,11 +29,19 @@ trait HttpActor extends Actor {
 
   type HttpReceive = PartialFunction[HttpRequest, Unit]
 
-  override final def receive = {
+  override def receive = {
     case req: HttpRequest => receiveHttp.applyOrElse(req, notFound)
   }
 
-  def receiveHttp: HttpReceive
+  override def unhandled(message: Any): Unit = message match {
+    case req: HttpRequest => sender ! HttpStatus.NotFound()
+    case _ => super.unhandled(message)
+  }
+
+  @deprecated("this is not really convenient, just override 'receive' as usual", "0.2.5")
+  def receiveHttp: HttpReceive = {
+    case msg => unhandled(msg)
+  }
 
   private def notFound(req: HttpRequest): Unit = sender ! HttpStatus.NotFound()
 }
