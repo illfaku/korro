@@ -25,6 +25,6 @@ import akka.actor.Actor
  */
 trait NoReceiveActor { this: Actor =>
   override def receive: Receive = {
-    case _ => ()
+    case msg => unhandled(msg)
   }
 }
