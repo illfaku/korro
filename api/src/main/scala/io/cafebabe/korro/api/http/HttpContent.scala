@@ -17,23 +17,24 @@
 package io.cafebabe.korro.api.http
 
 import io.cafebabe.korro.api.http.ContentType.DefaultCharset
-import io.cafebabe.korro.api.http.ContentType.Names.{ApplicationJson, OctetStream, TextPlain}
+import io.cafebabe.korro.api.http.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
 import io.cafebabe.korro.util.protocol.http.MimeTypeMapping.getMimeType
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parseOpt
 
+import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
 import java.nio.file.{Files, Path}
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 sealed trait HttpContent {
   def contentType: ContentType
   def length: Long
@@ -43,20 +44,20 @@ sealed trait HttpContent {
 }
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
   override val length: Long = bytes.length
   override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
 }
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long) extends HttpContent {
   override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
   override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
@@ -81,6 +82,13 @@ object HttpContent {
   }
   def file(path: Path, contentType: ContentType, length: Long): HttpContent = {
     new FileHttpContent(path, contentType, length)
+  }
+
+  def form(entries: (String, Any)*): HttpContent = {
+    val encoded = entries map {
+      case (name, value) => URLEncoder.encode(name, "UTF-8") + "=" + URLEncoder.encode(value.toString, "UTF-8")
+    } mkString "&"
+    memory(encoded.getBytes(DefaultCharset), ContentType(FormUrlEncoded))
   }
 
 
