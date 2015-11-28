@@ -22,25 +22,30 @@ import io.cafebabe.korro.util.akka.NoReceiveActor
 import io.cafebabe.korro.util.config.wrapped
 
 import akka.actor.{Actor, Props}
+import com.typesafe.config.Config
 
 import java.util.Collections.emptySet
 
 import scala.collection.JavaConversions._
 
 /**
- * TODO: Add description.
+ * The main actor that starts all configured http servers as its child actors.
  *
  * @author Vladimir Konstantinov
  */
 object KorroServerActor {
-  val props: Props = Props(new KorroServerActor)
+
+  @deprecated("specify config explicitly", "0.2.5")
+  val props: Props = Props(new KorroServerActor(null))
+
+  def props(config: Config): Props = Props(new KorroServerActor(config))
 }
 
-private [server] class KorroServerActor extends Actor with NoReceiveActor {
+private [server] class KorroServerActor(config: Config) extends Actor with NoReceiveActor {
 
-  private val config = context.system.settings.config
+  private val cfg = Option(config).getOrElse(context.system.settings.config)
 
-  config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    context.actorOf(HttpServerActor.props(new KorroConfig(name, config)), name)
+  cfg.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
+    context.actorOf(HttpServerActor.props(new KorroConfig(name, cfg)), name)
   }
 }
