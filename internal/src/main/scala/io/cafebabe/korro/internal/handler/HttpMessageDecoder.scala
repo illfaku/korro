@@ -20,22 +20,34 @@ import io.cafebabe.korro.api.http.ContentType.DefaultCharset
 import io.cafebabe.korro.api.http.ContentType.Names.FormUrlEncoded
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.internal.ByteBufUtils.toBytes
+import io.cafebabe.korro.util.log.Logging
 
 import io.netty.buffer.Unpooled
-import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 
 import java.nio.charset.Charset
 import java.util
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
-class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder[netty.HttpObject] {
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
+class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.HttpObject] with Logging {
+
+  private val BadRequest = new netty.DefaultFullHttpResponse(
+    netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.BAD_REQUEST
+  )
+
+  private val TooBigContent = new netty.DefaultFullHttpResponse(
+    netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.BAD_REQUEST,
+    Unpooled.copiedBuffer(s"Content length is too big. Limit is $maxSize bytes.", DefaultCharset)
+  )
+
 
   private var message: HttpMessage = null
 
@@ -43,17 +55,22 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
 
   private val byteCache = Unpooled.compositeBuffer
 
+
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
     if (msg.getDecoderResult.isFailure) {
-      throw new IllegalStateException("Failed to decode inbound message.", msg.getDecoderResult.cause)
-    } else {
-      msg match {
-        case m: netty.HttpMessage =>
-          if (message != null) reset()
-          decodeMessage(m, out)
-        case m: netty.HttpContent => if (message != null) decodeContent(m, out)
-        case _ => throw new IllegalStateException(s"Unknown Netty's HttpObject: ${msg.getClass}.")
-      }
+      ctx.writeAndFlush(BadRequest.retain()).addListener(ChannelFutureListener.CLOSE)
+      log.error(msg.getDecoderResult.cause, "Failed to decode inbound message.")
+    } else msg match {
+
+      case m: netty.HttpMessage =>
+        if (message != null) reset()
+        val size = getContentLength(m)
+        if (size > maxSize) ctx.writeAndFlush(TooBigContent.retain()).addListener(ChannelFutureListener.CLOSE)
+        else decodeMessage(m, out)
+
+      case m: netty.HttpContent => if (message != null) decodeContent(ctx, m, out)
+
+      case _ => throw new IllegalStateException(s"Unknown Netty's HttpObject: ${msg.getClass}.")
     }
   }
 
@@ -67,7 +84,9 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
     val decoder = new netty.QueryStringDecoder(msg.getUri)
     val path = decoder.path
     val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
-    message = HttpRequest(msg.getMethod.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty)
+    message = HttpRequest(
+      msg.getMethod.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
+    )
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
@@ -81,14 +100,19 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
     HttpParams(result.toSeq: _*)
   }
 
-  private def decodeContent(cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
-    byteCache.addComponent(cnt.content.retain())
-    byteCache.writerIndex(byteCache.writerIndex() + cnt.content.readableBytes)
-    if (cnt.isInstanceOf[netty.LastHttpContent]) composeMessage(out)
+  private def decodeContent(ctx: ChannelHandlerContext, cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
+    if (byteCache.readableBytes + cnt.content.readableBytes > maxSize) {
+      ctx.writeAndFlush(TooBigContent.retain()).addListener(ChannelFutureListener.CLOSE)
+      reset()
+    } else {
+      byteCache.addComponent(cnt.content.retain())
+      byteCache.writerIndex(byteCache.writerIndex() + cnt.content.readableBytes)
+      if (cnt.isInstanceOf[netty.LastHttpContent]) composeMessage(out)
+    }
   }
 
   private def composeMessage(out: util.List[AnyRef]): Unit = {
-    if (byteCache.readableBytes > 0) {
+    if (byteCache.isReadable) {
       message = message match {
         case m: HttpRequest =>
           contentType match {
@@ -107,6 +131,10 @@ class HttpMessageDecoder(maxContentLength: Long) extends MessageToMessageDecoder
     val decoder = new netty.QueryStringDecoder(byteCache.toString(charset), false)
     val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
     HttpParams(params.toSeq: _*)
+  }
+
+  private def getContentLength(msg: netty.HttpMessage): Long = {
+    Option(msg.headers.get(netty.HttpHeaders.Names.CONTENT_LENGTH)).flatMap(l => Try(l.toLong).toOption).getOrElse(0L)
   }
 
   private def reset(): Unit = {
