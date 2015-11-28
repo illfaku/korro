@@ -29,6 +29,7 @@ import scala.concurrent.duration._
  */
 sealed trait HttpConfig {
   def maxContentLength: Long
+  def minContentLength: Long
   def compressionLevel: Option[Int]
   def requestTimeout: FiniteDuration
   def routes: RoutesConfig
@@ -36,6 +37,7 @@ sealed trait HttpConfig {
 
 class StandardHttpConfig(config: Config) extends HttpConfig {
   override val maxContentLength: Long = config.findBytes("maxContentLength").getOrElse(DefaultHttpConfig.maxContentLength)
+  override val minContentLength: Long = config.findBytes("minContentLength").getOrElse(maxContentLength)
   override val compressionLevel: Option[Int] = config.findInt("compression")
   override val requestTimeout: FiniteDuration = config.findFiniteDuration("requestTimeout").getOrElse(DefaultHttpConfig.requestTimeout)
   override val routes: RoutesConfig = RoutesConfig(config.findConfigList("routes"))
@@ -43,6 +45,7 @@ class StandardHttpConfig(config: Config) extends HttpConfig {
 
 object DefaultHttpConfig extends HttpConfig {
   override val maxContentLength: Long = 65536L
+  override val minContentLength: Long = maxContentLength
   override val compressionLevel: Option[Int] = None
   override val requestTimeout: FiniteDuration = 60 seconds
   override val routes: RoutesConfig = RoutesConfig(Nil)
