@@ -16,15 +16,23 @@
  */
 package io.cafebabe.korro.api.actor
 
-import io.cafebabe.korro.api.http.HttpRequest
-import io.cafebabe.korro.api.http.HttpStatus.NotFound
+import io.cafebabe.korro.api.http.{HttpRequest, HttpStatus}
 
 import akka.actor.{Actor, ActorRef}
 
 import scala.collection.mutable
 
 /**
- * TODO: Add description.
+ * Actor for handling `HttpRequest` messages just like `HttpActor` but with routing functionality.
+ *
+ * <p>Send `HttpRouter.SetRoute(ActorRef, RouteMatcher)` to it to set your actor as handler of matched requests.
+ * Send `HttpRouter.UnsetRoute(ActorRef)` to remove your actor from handlers list.
+ *
+ * <p>If this actor will not process `HttpRequest` itself in `receive` method then it will try to find handler-actor
+ * that matches this request and forward request to it, otherwise it will send `HttpStatus.NotFound()` to the sender.
+ *
+ * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
+ * `super.unhandled`.
  *
  * @author Vladimir Konstantinov
  */
@@ -37,14 +45,28 @@ trait HttpRouter extends Actor {
     case HttpRouter.UnsetRoute(actor) => routes -= actor
     case req: HttpRequest => routes.find(_._2(req)) match {
       case Some((actor, _)) => actor forward req
-      case None => sender ! NotFound()
+      case None => sender ! HttpStatus.NotFound()
     }
     case _ => super.unhandled(message)
   }
 }
 
+/**
+ * Companion object for `HttpRouter` trait.
+ */
 object HttpRouter {
+
+  /**
+   * Message for router actor to set your actor as handler of matched requests.
+   * @param actor actor reference of your handler-actor
+   * @param matcher matcher to test requests against
+   */
   case class SetRoute(actor: ActorRef, matcher: RouteMatcher)
+
+  /**
+    * Message for router actor to remove your actor from handlers list.
+    * @param actor actor reference of your handler-actor
+    */
   case class UnsetRoute(actor: ActorRef)
 }
 
@@ -71,6 +93,11 @@ trait RouteMatcher { self =>
   }
 }
 
+/**
+  * TODO: Add description.
+  *
+  * @author Vladimir Konstantinov
+  */
 object RouteMatcher {
 
   def apply(test: HttpRequest => Boolean): RouteMatcher = new RouteMatcher {
@@ -80,5 +107,5 @@ object RouteMatcher {
   def MethodIs(method: String) = apply(_.method equalsIgnoreCase method)
   def PathIs(path: String) = apply(_.path == path)
   def PathStartsWith(prefix: String) = apply(_.path startsWith prefix)
-  def HasHeaderValue(name: String, value: String) = apply(_.headers.all(name).exists(_ == value))
+  def HasHeaderValue(name: String, value: String) = apply(_.headers.all(name).exists(_ equalsIgnoreCase value))
 }

@@ -21,7 +21,11 @@ import io.cafebabe.korro.api.http.{HttpRequest, HttpStatus}
 import akka.actor.Actor
 
 /**
- * TODO: Add description.
+ * Actor for handling `HttpRequest` messages.
+ * It will return `HttpStatus.NotFound()` to sender if request unhandled.
+ *
+ * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
+ * `super.unhandled`.
  *
  * @author Vladimir Konstantinov
  */
@@ -30,12 +34,7 @@ trait HttpActor extends Actor {
   type HttpReceive = PartialFunction[HttpRequest, Unit]
 
   override def receive = {
-    case req: HttpRequest => receiveHttp.applyOrElse(req, notFound)
-  }
-
-  override def unhandled(message: Any): Unit = message match {
-    case req: HttpRequest => sender ! HttpStatus.NotFound()
-    case _ => super.unhandled(message)
+    case req: HttpRequest => receiveHttp.applyOrElse(req, unhandled)
   }
 
   @deprecated("this is not really convenient, just override 'receive' as usual", "0.2.5")
@@ -43,5 +42,8 @@ trait HttpActor extends Actor {
     case msg => unhandled(msg)
   }
 
-  private def notFound(req: HttpRequest): Unit = sender ! HttpStatus.NotFound()
+  override def unhandled(message: Any): Unit = message match {
+    case req: HttpRequest => sender ! HttpStatus.NotFound()
+    case _ => super.unhandled(message)
+  }
 }
