@@ -16,6 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
+import io.cafebabe.korro.internal.handler.HttpMessageCodec
 import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logging
 
@@ -46,7 +47,13 @@ class HttpChannelHandler(config: KorroConfig)(implicit context: ActorContext)
 
   private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.http.routes(msg) match {
     case Some(route) =>
-      ctx.pipeline.addAfter("korro-decoder", "http-request", new HttpRequestHandler(config.http, route))
+      if (ctx.pipeline.get("http-codec") == null) {
+        ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(config.http.maxContentLength))
+      }
+      if (ctx.pipeline.get("http-request") != null) {
+        ctx.pipeline.remove("http-request")
+      }
+      ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, route))
       ctx.fireChannelRead(msg)
     case None => notFound(ctx)
   }

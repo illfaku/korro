@@ -16,15 +16,10 @@
  */
 package io.cafebabe.korro.server.actor
 
-import io.cafebabe.korro.api.ws.{PingWsMessage, BinaryWsMessage, TextWsMessage}
-import io.cafebabe.korro.internal.ByteBufUtils
-import ByteBufUtils.toByteBuf
+import io.cafebabe.korro.api.ws._
 
-import akka.actor.{ActorRef, ActorRefFactory, Actor, Props}
-import io.netty.channel.{ChannelHandlerContext, Channel, ChannelFuture, ChannelFutureListener}
-import io.netty.handler.codec.http.websocketx._
-
-import java.util.concurrent.atomic.AtomicLong
+import akka.actor._
+import io.netty.channel.{ChannelFuture, ChannelHandlerContext}
 
 /**
  * TODO: Add description.
@@ -33,11 +28,11 @@ import java.util.concurrent.atomic.AtomicLong
  */
 object WsMessageSender {
 
-  private val counter = new AtomicLong
-
   def create(ctx: ChannelHandlerContext)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new WsMessageSender(ctx)), "ws-sender-" + counter.incrementAndGet())
+    factory.actorOf(Props(new WsMessageSender(ctx)))
   }
+
+  case class Inbound[T <: WsMessage](msg: T)
 }
 
 /**
@@ -45,15 +40,22 @@ object WsMessageSender {
  *
  * @author Vladimir Konstantinov
  */
-class WsMessageSender(ctx: ChannelHandlerContext) extends Actor {
+class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
+
+  import WsMessageSender.Inbound
 
   override def receive = {
-    case PingWsMessage => send(new PingWebSocketFrame())
-    case TextWsMessage(text) => send(new TextWebSocketFrame(text))
-    case BinaryWsMessage(bytes) => send(new BinaryWebSocketFrame(toByteBuf(bytes)))
+    case msg: WsMessage => send(msg)
+    case _: Inbound[_] => stash()
+    case SetRecipient(ref) =>
+      unstashAll()
+      context become {
+        case msg: WsMessage => send(msg)
+        case Inbound(msg) => ref ! msg
+      }
   }
 
-  override def postStop(): Unit = send(new CloseWebSocketFrame(1001, null)).addListener(ChannelFutureListener.CLOSE)
+  override def postStop(): Unit = ctx.close()
 
-  private def send(frame: WebSocketFrame): ChannelFuture = ctx.writeAndFlush(frame)
+  private def send(msg: WsMessage): ChannelFuture = ctx.writeAndFlush(msg)
 }

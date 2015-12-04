@@ -33,7 +33,9 @@ import io.netty.channel.{Channel, EventLoopGroup}
  * @author Vladimir Konstantinov
  */
 object HttpServerActor {
-  def props(config: KorroConfig): Props = Props(new HttpServerActor(config))
+  def create(config: KorroConfig)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props(new HttpServerActor(config)), config.name)
+  }
 }
 
 class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging with NoReceiveActor {

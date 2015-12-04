@@ -16,7 +16,7 @@
  */
 package io.cafebabe.korro.server.handler
 
-import io.cafebabe.korro.internal.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
+import io.cafebabe.korro.internal.handler.{HttpMessageCodec, LoggingChannelHandler}
 import io.cafebabe.korro.server.config.KorroConfig
 import io.cafebabe.korro.util.log.Logger
 
@@ -32,19 +32,16 @@ import io.netty.handler.codec.http._
  */
 class HttpChannelInitializer(config: KorroConfig)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
-  private val korroEncoder = new HttpMessageEncoder
   private val httpHandler = new HttpChannelHandler(config)
   private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
   private val lastHandler = new LastChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {
     val pipeline = ch.pipeline
-    pipeline.addLast("http-codec", new HttpServerCodec)
+    pipeline.addLast("netty-codec", new HttpServerCodec)
     config.http.compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
     pipeline.addLast("logging", loggingHandler)
     pipeline.addLast("http", httpHandler)
-    pipeline.addLast("korro-encoder", korroEncoder)
-    pipeline.addLast("korro-decoder", new HttpMessageDecoder(config.http.maxContentLength))
     pipeline.addLast("last", lastHandler)
   }
 }

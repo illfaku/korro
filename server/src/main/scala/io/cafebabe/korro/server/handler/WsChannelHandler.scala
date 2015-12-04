@@ -17,55 +17,29 @@
 package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.api.ws._
-import io.cafebabe.korro.internal.ByteBufUtils.toBytes
-import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.server.actor.WsMessageSender
+import io.cafebabe.korro.server.actor.WsMessageSender.Inbound
 import io.cafebabe.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorPath, ActorRef, ActorSelection}
+import akka.actor.{ActorContext, ActorRef}
 import io.netty.channel._
-import io.netty.handler.codec.http.websocketx._
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, actor: String)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[WebSocketFrame] with Logging {
-
-  private var receiver: ActorSelection = null
+class WsChannelHandler(host: String, route: String)(implicit context: ActorContext)
+  extends SimpleChannelInboundHandler[WsMessage] with Logging {
 
   private var sender: ActorRef = null
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-    receiver = context.actorSelection(actor)
     sender = WsMessageSender.create(ctx)
-    receiver.tell(new ConnectWsMessage(host), sender)
+    context.actorSelection(route) ! ConnectWsMessage(host)
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WebSocketFrame): Unit = msg match {
-    case frame: CloseWebSocketFrame =>
-      ctx.writeAndFlush(frame.retain()) foreach { future =>
-        future.channel.close()
-        finish()
-      }
-    case frame: PingWebSocketFrame =>
-      ctx.writeAndFlush(new PongWebSocketFrame(frame.content.retain()))
-    case frame: PongWebSocketFrame =>
-      receiver.tell(PongWsMessage, sender)
-    case frame: BinaryWebSocketFrame =>
-      receiver.tell(new BinaryWsMessage(frame.content), sender)
-    case frame: TextWebSocketFrame =>
-      receiver.tell(new TextWsMessage(frame.text), sender)
-    case frame =>
-      log.debug(s"Unknown frame from host $host: $frame.")
-  }
+  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender ! Inbound(msg)
 
-  override def channelInactive(ctx: ChannelHandlerContext): Unit = finish()
-
-  private def finish(): Unit = {
-    receiver.tell(DisconnectWsMessage, sender)
-    context.stop(sender)
-  }
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = sender ! Inbound(DisconnectWsMessage)
 }

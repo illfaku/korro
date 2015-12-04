@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.server.handler
+package io.cafebabe.korro.internal.handler
 
 import io.cafebabe.korro.internal.ByteBufUtils.toByteBuf
 import io.cafebabe.korro.util.io.{unzipString, zipString}
-import io.cafebabe.korro.util.log.Logger
+import io.cafebabe.korro.util.log.{Logging, Logger}
 
 import io.netty.buffer.ByteBufInputStream
+import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame, WebSocketFrame}
@@ -31,16 +32,15 @@ import scala.util.Try
 
 /**
  * Simple implementation of compression/decompression of WebSocket frames.
- * <br><br>
- * Ideally it should be done using Compression Extensions for WebSocket
+ *
+ * <p>Ideally it should be done using Compression Extensions for WebSocket
  * (https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-27).
  * It is implemented in Netti 5.0 but not in 4.0.
  *
  * @author Vladimir Konstantinov
  */
-class WsCompressionHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] {
-
-  private val log = Logger(getClass)
+@Sharable
+class WsCompressionHandler extends MessageToMessageCodec[WebSocketFrame, WebSocketFrame] with Logging {
 
   override def encode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
     case f: TextWebSocketFrame =>

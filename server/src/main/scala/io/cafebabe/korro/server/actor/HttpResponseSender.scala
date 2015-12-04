@@ -22,8 +22,6 @@ import io.cafebabe.korro.api.http.HttpStatus._
 import akka.actor._
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 
-import java.util.concurrent.atomic.AtomicLong
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -32,11 +30,8 @@ import scala.concurrent.duration.FiniteDuration
  * @author Vladimir Konstantinov
  */
 object HttpResponseSender {
-
-  private val counter = new AtomicLong
-
   def create(ctx: ChannelHandlerContext, timeout: FiniteDuration)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpResponseSender(ctx, timeout)), "http-sender-" + counter.incrementAndGet())
+    factory.actorOf(Props(new HttpResponseSender(ctx, timeout)))
   }
 }
 

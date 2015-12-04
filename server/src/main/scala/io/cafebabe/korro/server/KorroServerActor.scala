@@ -46,6 +46,6 @@ private [server] class KorroServerActor(config: Config) extends Actor with NoRec
   private val cfg = Option(config).getOrElse(context.system.settings.config)
 
   cfg.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    context.actorOf(HttpServerActor.props(new KorroConfig(name, cfg.getConfig(s"korro.server.$name"))), name)
+    HttpServerActor.create(new KorroConfig(name, cfg.getConfig(s"korro.server.$name")))
   }
 }
