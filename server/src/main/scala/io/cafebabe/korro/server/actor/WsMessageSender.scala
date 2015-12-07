@@ -17,6 +17,7 @@
 package io.cafebabe.korro.server.actor
 
 import io.cafebabe.korro.api.ws._
+import io.cafebabe.korro.internal.ChannelFutureExt
 
 import akka.actor._
 import io.netty.channel.{ChannelFuture, ChannelHandlerContext}
@@ -46,16 +47,21 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
 
   override def receive = {
     case msg: WsMessage => send(msg)
+    case Inbound(DisconnectWsMessage) => context.stop(self)
     case _: Inbound[_] => stash()
     case SetRecipient(ref) =>
       unstashAll()
       context become {
         case msg: WsMessage => send(msg)
+        case Inbound(DisconnectWsMessage) => context.stop(self)
         case Inbound(msg) => ref ! msg
       }
   }
 
-  override def postStop(): Unit = ctx.close()
+  override def postStop(): Unit = {
+    send(DisconnectWsMessage).closeChannel()
+    super.postStop()
+  }
 
   private def send(msg: WsMessage): ChannelFuture = ctx.writeAndFlush(msg)
 }

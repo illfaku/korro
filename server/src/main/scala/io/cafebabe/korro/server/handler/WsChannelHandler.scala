@@ -39,7 +39,10 @@ class WsChannelHandler(host: String, route: String)(implicit context: ActorConte
     context.actorSelection(route) ! ConnectWsMessage(host)
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender ! Inbound(msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = msg match {
+    case PingWsMessage => ctx.writeAndFlush(PongWsMessage)
+    case _ => sender ! Inbound(msg)
+  }
 
   override def channelInactive(ctx: ChannelHandlerContext): Unit = sender ! Inbound(DisconnectWsMessage)
 }
