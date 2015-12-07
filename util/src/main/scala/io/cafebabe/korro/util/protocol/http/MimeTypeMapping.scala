@@ -16,9 +16,12 @@
  */
 package io.cafebabe.korro.util.protocol.http
 
-import io.cafebabe.korro.util.log.Logger
+import io.cafebabe.korro.util.lang.Loan.loan
+import io.cafebabe.korro.util.log.Logging
 
-import java.nio.file.{Files, Path, Paths}
+import java.io.{BufferedReader, InputStreamReader}
+import java.nio.file.Path
+import java.util.stream.Collectors
 
 import scala.collection.JavaConversions._
 
@@ -27,17 +30,19 @@ import scala.collection.JavaConversions._
  *
  * @author Vladimir Konstantinov
  */
-object MimeTypeMapping {
-
-  private val log = Logger(getClass)
+object MimeTypeMapping extends Logging {
 
   private lazy val mime2Ext: Map[String, List[String]] = {
     try {
-      val lines = Files.readAllLines(Paths.get(getClass.getClassLoader.getResource("/mime.types").toURI))
-      lines.map(_.split(" ", 2)).map(l => l(0) -> l(1).split(" ").toList).toMap
+      loan (getClass.getClassLoader.getResource("/mime.types").openStream()) to { in =>
+        val reader = new BufferedReader(new InputStreamReader(in))
+        reader.lines.collect(Collectors.toList[String]).toStream
+          .map(_.split(" ", 2)).filter(_.length == 2)
+          .map(l => l(0) -> l(1).split(" ").toList).toMap
+      }
     } catch {
       case e: Throwable =>
-        log.error("Failed to load mime types.")
+        log.error(e, "Failed to load mime types.")
         Map.empty
     }
   }
