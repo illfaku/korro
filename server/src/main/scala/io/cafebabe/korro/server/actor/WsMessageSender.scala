@@ -46,16 +46,18 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
   import WsMessageSender.Inbound
 
   override def receive = {
-    case msg: WsMessage => send(msg)
-    case Inbound(DisconnectWsMessage) => context.stop(self)
-    case _: Inbound[_] => stash()
     case SetRecipient(ref) =>
       unstashAll()
       context become {
-        case msg: WsMessage => send(msg)
         case Inbound(DisconnectWsMessage) => context.stop(self)
+        case DisconnectWsMessage => context.stop(self)
         case Inbound(msg) => ref ! msg
+        case msg => send(msg)
       }
+    case Inbound(DisconnectWsMessage) => context.stop(self)
+    case DisconnectWsMessage => context.stop(self)
+    case _: Inbound[_] => stash()
+    case msg => send(msg)
   }
 
   override def postStop(): Unit = {
@@ -63,5 +65,5 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
     super.postStop()
   }
 
-  private def send(msg: WsMessage): ChannelFuture = ctx.writeAndFlush(msg)
+  private def send(msg: Any): ChannelFuture = ctx.writeAndFlush(msg)
 }

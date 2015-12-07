@@ -14,27 +14,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.util.protocol.jsonrpc
-
-import org.json4s.JValue
+package io.cafebabe.korro.api.ws
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-trait JsonRpcMessage {
-  def toJson: JValue
-}
-
-object JsonRpcMessage {
-
-  implicit def toJson(msg: JsonRpcMessage): JValue = msg.toJson
-
-  def from(json: JValue): Option[JsonRpcMessage] = {
-    JsonRpcError.from(json) orElse
-      JsonRpcNotification.from(json) orElse
-      JsonRpcRequest.from(json) orElse
-      JsonRpcResult.from(json)
-  }
+trait WsProtocol {
+  def decode(msg: WsMessage): Option[Any]
+  def encode(msg: Any): Option[WsMessage]
 }

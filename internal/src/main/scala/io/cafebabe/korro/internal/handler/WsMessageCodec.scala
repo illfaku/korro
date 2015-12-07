@@ -20,6 +20,7 @@ import io.cafebabe.korro.api.ws._
 import io.cafebabe.korro.internal.ByteBufUtils.{toByteBuf, toBytes}
 import io.cafebabe.korro.util.log.Logging
 
+import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
@@ -36,7 +37,9 @@ import java.util
 class WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
 
   override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: util.List[AnyRef]): Unit = msg match {
-    case ConnectWsMessage(_) => throw new IllegalStateException("ConnectWsMessage should not be sent to client.")
+    case ConnectWsMessage(_) =>
+      log.warning("Unable to convert ConnectWsMessage to any WebSocketFrame.")
+      out add Unpooled.EMPTY_BUFFER
     case DisconnectWsMessage => out add new CloseWebSocketFrame
     case PingWsMessage => out add new PingWebSocketFrame
     case PongWsMessage => out add new PongWebSocketFrame

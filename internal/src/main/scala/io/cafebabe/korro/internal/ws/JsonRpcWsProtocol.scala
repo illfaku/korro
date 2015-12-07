@@ -14,27 +14,29 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.cafebabe.korro.util.protocol.jsonrpc
+package io.cafebabe.korro.internal.ws
 
-import org.json4s.JValue
+import io.cafebabe.korro.api.ws.{WsProtocol, TextWsMessage, WsMessage}
+import io.cafebabe.korro.util.protocol.jsonrpc.JsonRpcMessage
+
+import org.json4s.native.JsonParser.parseOpt
+import org.json4s.native.JsonMethods.{render, compact}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-trait JsonRpcMessage {
-  def toJson: JValue
-}
+object JsonRpcWsProtocol extends WsProtocol {
 
-object JsonRpcMessage {
+  override def decode(msg: WsMessage): Option[Any] = msg match {
+    case TextWsMessage(text) => parseOpt(text).flatMap(JsonRpcMessage.from) orElse Some(msg)
+    case _ => Some(msg)
+  }
 
-  implicit def toJson(msg: JsonRpcMessage): JValue = msg.toJson
-
-  def from(json: JValue): Option[JsonRpcMessage] = {
-    JsonRpcError.from(json) orElse
-      JsonRpcNotification.from(json) orElse
-      JsonRpcRequest.from(json) orElse
-      JsonRpcResult.from(json)
+  override def encode(msg: Any): Option[WsMessage] = msg match {
+    case jr: JsonRpcMessage => Some(TextWsMessage(compact(render(jr))))
+    case m: WsMessage => Some(m)
+    case _ => None
   }
 }
