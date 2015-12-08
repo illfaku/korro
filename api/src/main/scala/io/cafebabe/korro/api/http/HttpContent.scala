@@ -51,6 +51,8 @@ sealed trait HttpContent {
 class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
   override val length: Long = bytes.length
   override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+
+  override lazy val toString: String = s"MemoryHttpContent(contentType=$contentType, length=$length)"
 }
 
 /**
@@ -61,6 +63,8 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) ex
 class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long) extends HttpContent {
   override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
   override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
+
+  override lazy val toString: String = s"FileHttpContent(contentType=$contentType, length=$length, path=$file)"
 }
 
 /**
