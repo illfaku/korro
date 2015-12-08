@@ -23,6 +23,7 @@ import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
 import java.util.NoSuchElementException
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.control.NoStackTrace
 
 /**
  * TODO: Add description.
@@ -37,7 +38,7 @@ object HttpParams {
 
   object Extractions {
 
-    sealed trait ExtractionFailure
+    sealed abstract class ExtractionFailure extends Throwable with NoStackTrace
     case class Absent(name: String) extends ExtractionFailure {
       override lazy val toString = s"Missing parameter: $name."
     }
