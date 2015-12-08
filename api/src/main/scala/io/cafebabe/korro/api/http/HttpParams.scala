@@ -119,4 +119,6 @@ class HttpParams(val entries: Iterable[(String, String)]) {
   }
 
   private def entry(name: String): Option[(String, String)] = entries.find(_._1 == name)
+
+  override def toString: String = entries.mkString("HttpParams(", ", ", ")")
 }
