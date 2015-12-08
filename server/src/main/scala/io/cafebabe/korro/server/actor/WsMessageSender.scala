@@ -33,7 +33,7 @@ object WsMessageSender {
     factory.actorOf(Props(new WsMessageSender(ctx)))
   }
 
-  case class Inbound[T <: WsMessage](msg: T)
+  case class Inbound(msg: Any)
 }
 
 /**
@@ -56,7 +56,7 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
       }
     case Inbound(DisconnectWsMessage) => context.stop(self)
     case DisconnectWsMessage => context.stop(self)
-    case _: Inbound[_] => stash()
+    case _: Inbound => stash()
     case msg => send(msg)
   }
 

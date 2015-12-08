@@ -18,6 +18,7 @@ package io.cafebabe.korro.server.handler
 
 import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.internal.handler.{WsCompressionHandler, WsMessageCodec}
+import io.cafebabe.korro.internal.ws.WsProtocolHandler
 import io.cafebabe.korro.server.config.WsConfig
 import io.cafebabe.korro.util.log.Logging
 
@@ -57,7 +58,8 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
         pipeline.remove(this)
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionHandler)
         pipeline.addAfter("logging", "ws-codec", new WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
+        config.protocol.map(new WsProtocolHandler(_)).foreach(pipeline.addAfter("ws-codec", "protocol", _))
+        pipeline.addBefore("last", "ws", new WsChannelHandler(extractHost(channel, req), route))
       } else {
         log.error(future.cause, "Error during handshake.")
         channel.close()

@@ -30,7 +30,7 @@ import io.netty.channel._
  * @author Vladimir Konstantinov
  */
 class WsChannelHandler(host: String, route: String)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[WsMessage] with Logging {
+  extends ChannelInboundHandlerAdapter with Logging {
 
   private var sender: ActorRef = null
 
@@ -39,7 +39,7 @@ class WsChannelHandler(host: String, route: String)(implicit context: ActorConte
     context.actorSelection(route) ! ConnectWsMessage(host)
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = msg match {
+  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
     case PingWsMessage => ctx.writeAndFlush(PongWsMessage)
     case _ => sender ! Inbound(msg)
   }
