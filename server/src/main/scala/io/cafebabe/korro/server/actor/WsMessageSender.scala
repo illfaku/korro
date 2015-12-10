@@ -22,6 +22,8 @@ import io.cafebabe.korro.internal.ChannelFutureExt
 import akka.actor._
 import io.netty.channel.{ChannelFuture, ChannelHandlerContext}
 
+import scala.concurrent.duration._
+
 /**
  * TODO: Add description.
  *
@@ -33,7 +35,7 @@ object WsMessageSender {
     factory.actorOf(Props(new WsMessageSender(ctx)))
   }
 
-  case class Inbound(msg: Any)
+  case class Inbound[T <: WsMessage](msg: T)
 }
 
 /**
@@ -41,26 +43,40 @@ object WsMessageSender {
  *
  * @author Vladimir Konstantinov
  */
-class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash {
+class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with ActorLogging {
+
+  import context.dispatcher
+
+  var setRecipientTimeout: Cancellable = null
+
+  override def preStart(): Unit = {
+    setRecipientTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
+    super.preStart()
+  }
 
   import WsMessageSender.Inbound
 
   override def receive = {
+
+    case ReceiveTimeout =>
+      log.error("Command SetRecipient was not received in 5 seconds. Closing connection...")
+      context.stop(self)
+
+    case Inbound(_) => stash()
+
     case SetRecipient(ref) =>
+      setRecipientTimeout.cancel()
       unstashAll()
       context become {
         case Inbound(DisconnectWsMessage) => context.stop(self)
         case DisconnectWsMessage => context.stop(self)
         case Inbound(msg) => ref ! msg
-        case msg => send(msg)
+        case msg: WsMessage => send(msg)
       }
-    case Inbound(DisconnectWsMessage) => context.stop(self)
-    case DisconnectWsMessage => context.stop(self)
-    case _: Inbound => stash()
-    case msg => send(msg)
   }
 
   override def postStop(): Unit = {
+    setRecipientTimeout.cancel()
     send(DisconnectWsMessage).closeChannel()
     super.postStop()
   }

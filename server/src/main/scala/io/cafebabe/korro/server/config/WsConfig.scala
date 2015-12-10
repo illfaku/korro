@@ -16,13 +16,9 @@
  */
 package io.cafebabe.korro.server.config
 
-import io.cafebabe.korro.api.ws.WsProtocol
-import io.cafebabe.korro.internal.ws.JsonRpcWsProtocol
 import io.cafebabe.korro.util.config.wrapped
 
 import com.typesafe.config.Config
-
-import scala.util.Try
 
 /**
  * TODO: Add description.
@@ -32,23 +28,17 @@ import scala.util.Try
 trait WsConfig {
   def maxFramePayloadLength: Int
   def compression: Boolean
-  def protocol: Option[WsProtocol]
   def routes: RoutesConfig
 }
 
 class StandardWsConfig(config: Config) extends WsConfig {
   override val maxFramePayloadLength: Int = config.findBytes("maxFramePayloadLength").map(_.toInt).getOrElse(DefaultWsConfig.maxFramePayloadLength)
   override val compression: Boolean = config.findBoolean("compression").getOrElse(DefaultWsConfig.compression)
-  override val protocol: Option[WsProtocol] = config.findString("protocol") flatMap {
-    case "json-rpc" => Some(JsonRpcWsProtocol)
-    case className => Try(Class.forName(className)).filter(classOf[WsProtocol].isAssignableFrom).map(_.newInstance.asInstanceOf[WsProtocol]).toOption
-  }
   override val routes: RoutesConfig = RoutesConfig(config.findConfigList("routes"))
 }
 
 object DefaultWsConfig extends WsConfig {
   override val maxFramePayloadLength: Int = 65536
   override val compression: Boolean = false
-  override val protocol: Option[WsProtocol] = None
   override val routes: RoutesConfig = RoutesConfig(Nil)
 }
