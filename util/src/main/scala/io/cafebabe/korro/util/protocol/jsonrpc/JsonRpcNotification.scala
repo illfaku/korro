@@ -23,7 +23,7 @@ import org.json4s._
  *
  * @author Vladimir Konstantinov
  */
-case class JsonRpcNotification(method: String, params: JValue) extends JsonRpcMessage {
+case class JsonRpcNotification(method: String, params: JValue, version: String = "1.0") extends JsonRpcMessage {
 
   override val toJson = JObject(
     ("method", JString(method)),
@@ -43,7 +43,11 @@ object JsonRpcNotification {
       (for {
         ("method", JString(method)) <- fields
         ("params", params) <- fields
-      } yield JsonRpcNotification(method, params)).headOption
+      } yield JsonRpcNotification(method, params, findVersion(fields))).headOption
     case _ => None
+  }
+
+  private def findVersion(fields: List[(String, JValue)]): String = {
+    (for (("version", JString(version)) <- fields) yield version).headOption.getOrElse("1.0")
   }
 }

@@ -23,7 +23,7 @@ import org.json4s._
  *
  * @author Vladimir Konstantinov
  */
-case class JsonRpcRequest(method: String, params: JValue, id: Int) extends JsonRpcMessage {
+case class JsonRpcRequest(method: String, params: JValue, id: Int, version: String = "1.0") extends JsonRpcMessage {
 
   override val toJson = JObject(
     ("method", JString(method)),
@@ -45,7 +45,11 @@ object JsonRpcRequest {
         ("method", JString(method)) <- fields
         ("params", params) <- fields
         ("id", JInt(id)) <- fields
-      } yield JsonRpcRequest(method, params, id.toInt)).headOption
+      } yield JsonRpcRequest(method, params, id.toInt, findVersion(fields))).headOption
     case _ => None
+  }
+
+  private def findVersion(fields: List[(String, JValue)]): String = {
+    (for (("version", JString(version)) <- fields) yield version).headOption.getOrElse("1.0")
   }
 }
