@@ -32,9 +32,6 @@ object JsonRpcMessage {
   implicit def toJson(msg: JsonRpcMessage): JValue = msg.toJson
 
   def from(json: JValue): Option[JsonRpcMessage] = {
-    JsonRpcError.from(json) orElse
-      JsonRpcNotification.from(json) orElse
-      JsonRpcRequest.from(json) orElse
-      JsonRpcResult.from(json)
+    JsonRpcError.from(json) orElse JsonRpcRequest.from(json) orElse JsonRpcResult.from(json)
   }
 }
