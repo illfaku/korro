@@ -6,7 +6,7 @@ object HttpBuild extends Build {
 
   lazy val basicSettings = Seq(
     organization := "io.cafebabe.korro",
-    version := "0.2.7-SNAPSHOT",
+    version := "0.2.7",
     scalaVersion := Dependency.V.Scala
   )
 
