@@ -23,14 +23,15 @@ import org.json4s._
  *
  * @author Vladimir Konstantinov
  */
-case class JsonRpcError(code: Int, message: String, id: Int) extends JsonRpcMessage {
+case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) extends JsonRpcMessage {
 
   override val toJson = JObject(
-    ("error", JObject(
-      ("code", JInt(code)),
-      ("message", JString(message))
-    )),
-    ("id", JInt(id))
+    List(
+      ("error", JObject(
+        ("code", JInt(code)),
+        ("message", JString(message))
+      ))
+    ) ++ id.map("id" -> JInt(_))
   )
 }
 
@@ -41,20 +42,23 @@ case class JsonRpcError(code: Int, message: String, id: Int) extends JsonRpcMess
  */
 object JsonRpcError {
 
-  def parseError(message: String, id: Int): JsonRpcError = apply(-32700, message, id)
-  def invalidRequest(message: String, id: Int): JsonRpcError = apply(-32600, message, id)
-  def methodNotFound(message: String, id: Int): JsonRpcError = apply(-32601, message, id)
-  def invalidParams(message: String, id: Int): JsonRpcError = apply(-32602, message, id)
-  def internalError(message: String, id: Int): JsonRpcError = apply(-32603, message, id)
+  def parseError(message: String, id: Option[Int] = None): JsonRpcError = apply(-32700, message, id)
+  def invalidRequest(message: String, id: Option[Int] = None): JsonRpcError = apply(-32600, message, id)
+  def methodNotFound(message: String, id: Option[Int] = None): JsonRpcError = apply(-32601, message, id)
+  def invalidParams(message: String, id: Option[Int] = None): JsonRpcError = apply(-32602, message, id)
+  def internalError(message: String, id: Option[Int] = None): JsonRpcError = apply(-32603, message, id)
 
   def from(json: JValue): Option[JsonRpcError] = json match {
     case JObject(fields) =>
       (for {
-        ("id", JInt(id)) <- fields
         ("error", JObject(error)) <- fields
         ("code", JInt(code)) <- error
         ("message", JString(message)) <- error
-      } yield JsonRpcError(code.toInt, message, id.toInt)).headOption
+      } yield JsonRpcError(code.toInt, message, findId(fields))).headOption
     case _ => None
+  }
+
+  private def findId(fields: List[(String, JValue)]): Option[Int] = {
+    (for (("id", JInt(id)) <- fields) yield id.toInt).headOption
   }
 }

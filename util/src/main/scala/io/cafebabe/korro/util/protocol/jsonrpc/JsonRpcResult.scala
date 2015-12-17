@@ -23,11 +23,12 @@ import org.json4s._
  *
  * @author Vladimir Konstantinov
  */
-case class JsonRpcResult(result: JValue, id: Int) extends JsonRpcMessage {
+case class JsonRpcResult(result: JValue, id: Option[Int] = None) extends JsonRpcMessage {
 
   override val toJson = JObject(
-    ("result", result),
-    ("id", JInt(id))
+    List(
+      ("result", result)
+    ) ++ id.map("id" -> JInt(_))
   )
 }
 
@@ -42,8 +43,11 @@ object JsonRpcResult {
     case JObject(fields) =>
       (for {
         ("result", result) <- fields
-        ("id", JInt(id)) <- fields
-      } yield JsonRpcResult(result, id.toInt)).headOption
+      } yield JsonRpcResult(result, findId(fields))).headOption
     case _ => None
+  }
+
+  private def findId(fields: List[(String, JValue)]): Option[Int] = {
+    (for (("id", JInt(id)) <- fields) yield id.toInt).headOption
   }
 }

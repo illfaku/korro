@@ -55,6 +55,6 @@ object JsonRpcRequest {
   }
 
   private def findId(fields: List[(String, JValue)]): Option[Int] = {
-    (for (("version", JInt(version)) <- fields) yield version.toInt).headOption
+    (for (("id", JInt(id)) <- fields) yield id.toInt).headOption
   }
 }
