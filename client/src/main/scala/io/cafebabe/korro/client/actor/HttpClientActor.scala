@@ -51,7 +51,7 @@ class HttpClientActor(name: String, config: Config) extends Actor with ActorLogg
 
   override def preStart(): Unit = {
     group = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-client-$name"))
-    log.info("Started HTTP client \"{}\" with URL: {}.", name, urlOption)
+    log.info("Started Korro HTTP client \"{}\" with URL: {}.", name, urlOption)
   }
 
   override def postStop(): Unit = {

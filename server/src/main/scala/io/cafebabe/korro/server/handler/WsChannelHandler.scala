@@ -36,7 +36,7 @@ class WsChannelHandler(host: String, route: String)(implicit context: ActorConte
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     sender = WsMessageSender.create(ctx)
-    context.actorSelection(route) ! ConnectWsMessage(host)
+    context.actorSelection(route).tell(ConnectWsMessage(host), sender)
   }
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = msg match {
