@@ -42,11 +42,19 @@ case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) exte
  */
 object JsonRpcError {
 
-  def parseError(message: String, id: Option[Int] = None): JsonRpcError = apply(-32700, message, id)
-  def invalidRequest(message: String, id: Option[Int] = None): JsonRpcError = apply(-32600, message, id)
-  def methodNotFound(message: String, id: Option[Int] = None): JsonRpcError = apply(-32601, message, id)
-  def invalidParams(message: String, id: Option[Int] = None): JsonRpcError = apply(-32602, message, id)
-  def internalError(message: String, id: Option[Int] = None): JsonRpcError = apply(-32603, message, id)
+  object Codes {
+    val ParseError = -32700
+    val InvalidRequest = -32600
+    val MethodNotFound = -32601
+    val InvalidParams = -32602
+    val InternalError = -32603
+  }
+
+  def parseError(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.ParseError, message, id)
+  def invalidRequest(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InvalidRequest, message, id)
+  def methodNotFound(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.MethodNotFound, message, id)
+  def invalidParams(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InvalidParams, message, id)
+  def internalError(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InternalError, message, id)
 
   def from(json: JValue): Option[JsonRpcError] = json match {
     case JObject(fields) =>
