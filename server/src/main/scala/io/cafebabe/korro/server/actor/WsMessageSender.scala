@@ -68,8 +68,8 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
       setRecipientTimeout.cancel()
       unstashAll()
       context become {
-        case Inbound(DisconnectWsMessage) => context.stop(self)
-        case DisconnectWsMessage => context.stop(self)
+        case Inbound(DisconnectWsMessage) => self ! PoisonPill
+        case DisconnectWsMessage => self ! PoisonPill
         case Inbound(msg) => ref ! msg
         case msg: WsMessage => send(msg)
       }
