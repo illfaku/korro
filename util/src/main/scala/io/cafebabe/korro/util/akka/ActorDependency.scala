@@ -18,6 +18,7 @@ package io.cafebabe.korro.util.akka
 
 import akka.actor._
 
+import scala.collection.mutable
 import scala.concurrent.duration._
 
 /**
@@ -30,42 +31,53 @@ trait ActorDependency extends Actor {
   import context.dispatcher
   private val scheduler = context.system.scheduler
 
-  private var sel: Option[ActorSelection] = None
-  private var op: Option[(ActorRef => Unit)] = None
+  private val deps = mutable.Set.empty[DependencyInfo]
 
-  private var dep: Option[ActorRef] = None
-
-  private var task: Option[Cancellable] = None
-
-  def dependency(path: String)(whenResolved: ActorRef => Unit): Unit = {
-    sel = Option(path).map(context.actorSelection)
-    op = Option(whenResolved)
-    scheduleIdentification()
+  def dependency(path: String)(whenResolved: ActorRef => Unit = null): Unit = {
+    val sel = context.actorSelection(path)
+    val op = Option(whenResolved)
+    val task = scheduleIdentification(sel)
+    deps += DependencyInfo(sel, op, task, None)
   }
 
-  private def scheduleIdentification(): Unit = {
-    task = sel map { selection => scheduler.schedule(Duration.Zero, 2 seconds)(selection ! Identify('dep)) }
+  private def scheduleIdentification(selection: ActorSelection): Cancellable = {
+    scheduler.schedule(Duration.Zero, 2 seconds)(selection ! Identify(selection))
   }
 
   override def unhandled(message: Any): Unit = message match {
-    case ActorIdentity('dep, Some(ref)) if dep.isEmpty =>
-      task.foreach(_.cancel())
-      dep = Some(ref)
-      context watch ref
-      op.foreach(_(ref))
-    case Terminated(actor) if dep contains actor =>
-      dep = None
-      scheduleIdentification()
+    case ActorIdentity(id, r @ Some(ref)) =>
+      deps find (d => d.ref.isEmpty && d.sel == id) foreach { dep =>
+        dep.task.cancel()
+        context watch ref
+        dep.op foreach (_(ref))
+        deps += dep.copy(ref = r)
+      }
+    case Terminated(actor) =>
+      deps find (_.ref.contains(actor)) foreach { dep =>
+        scheduleIdentification(dep.sel)
+        deps += dep.copy(ref = None)
+      }
     case _ => super.unhandled(message)
   }
 
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    dep foreach context.unwatch
-    super.preRestart(reason, message)
-  }
-
   override def postStop(): Unit = {
-    task.foreach(_.cancel())
+    deps foreach { dep =>
+      dep.task.cancel()
+      dep.ref foreach context.unwatch
+    }
+    deps.clear()
     super.postStop()
+  }
+}
+
+private [akka] case class DependencyInfo(
+  sel: ActorSelection, op: Option[(ActorRef => Unit)], task: Cancellable, ref: Option[ActorRef]
+) {
+
+  override def hashCode(): Int = sel.hashCode
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    case that: DependencyInfo => this.sel.equals(that.sel)
+    case _ => false
   }
 }
