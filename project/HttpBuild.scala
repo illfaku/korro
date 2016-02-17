@@ -122,20 +122,20 @@ object Dependency {
     val Netty = "4.0.32.Final"
   }
 
-  val cafebabeUtil = "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT" % "provided"
+  val cafebabeUtil = "io.cafebabe" %% "util" % "0.0.1-SNAPSHOT"
 
-  val akka = "com.typesafe.akka" %% "akka-actor" % V.Akka % "provided"
+  val akka = "com.typesafe.akka" %% "akka-actor" % V.Akka
 
-  val typesafeConfig = "com.typesafe" % "config" % "1.3.0" % "provided"
-  val json4s = "org.json4s" %% "json4s-native" % "3.2.11" % "provided"
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.12" % "provided"
+  val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
+  val json4s = "org.json4s" %% "json4s-native" % "3.2.11"
+  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.12"
 
-  val nettyCommon = "io.netty" % "netty-common" % V.Netty % "provided"
-  val nettyBuffer = "io.netty" % "netty-buffer" % V.Netty % "provided"
-  val nettyTransport = "io.netty" % "netty-transport" % V.Netty % "provided"
-  val nettyHandler = "io.netty" % "netty-handler" % V.Netty % "provided"
-  val nettyCodec = "io.netty" % "netty-codec" % V.Netty % "provided"
-  val nettyHttp = "io.netty" % "netty-codec-http" % V.Netty % "provided"
+  val nettyCommon = "io.netty" % "netty-common" % V.Netty
+  val nettyBuffer = "io.netty" % "netty-buffer" % V.Netty
+  val nettyTransport = "io.netty" % "netty-transport" % V.Netty
+  val nettyHandler = "io.netty" % "netty-handler" % V.Netty
+  val nettyCodec = "io.netty" % "netty-codec" % V.Netty
+  val nettyHttp = "io.netty" % "netty-codec-http" % V.Netty
 
   val scalatest = "org.scalatest" %% "scalatest" % "2.2.5" % "test"
 }
