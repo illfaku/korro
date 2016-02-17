@@ -56,10 +56,7 @@ object ContentType {
 case class ContentType(mime: String, charset: Option[Charset]) {
 
   @deprecated("use toString method", "0.2.6")
-  lazy val asHeader = charset match {
-    case Some(ch) => s"$mime; charset=${ch.name.toLowerCase}"
-    case None => mime
-  }
+  lazy val asHeader = toString
 
-  override lazy val toString: String = asHeader
+  override lazy val toString = charset.map(ch => s"$mime; charset=${ch.name.toLowerCase}").getOrElse(mime)
 }

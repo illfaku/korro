@@ -69,7 +69,7 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(nettyMsg, name, value) }
     if (msg.content.length > 0) {
       netty.HttpHeaders.setContentLength(nettyMsg, msg.content.length)
-      netty.HttpHeaders.addHeader(nettyMsg, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.asHeader)
+      netty.HttpHeaders.addHeader(nettyMsg, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
     }
   }
 }
