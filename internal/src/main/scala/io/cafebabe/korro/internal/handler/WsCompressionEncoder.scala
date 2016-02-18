@@ -46,8 +46,8 @@ class WsCompressionEncoder extends MessageToMessageEncoder[WebSocketFrame] with 
       Try(zipString(f.text)).map(toByteBuf).map(new BinaryWebSocketFrame(_)) recover {
         case e: Throwable =>
           log.debug("Failed to compress Text WebSocket frame. Cause: {}", e.getMessage)
-          f
+          f.retain()
       } foreach out.add
-    case _ => out add msg
+    case _ => out add msg.retain()
   }
 }

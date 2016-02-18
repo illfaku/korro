@@ -46,8 +46,8 @@ class WsCompressionDecoder extends MessageToMessageDecoder[WebSocketFrame] with 
       Try(unzipString(new ByteBufInputStream(f.content))).map(new TextWebSocketFrame(_)) recover {
         case e: Throwable =>
           log.debug("Failed to decompress Binary WebSocket frame. Cause: {}", e.getMessage)
-          f
+          f.retain()
       } foreach out.add
-    case _ => out add msg
+    case _ => out add msg.retain()
   }
 }
