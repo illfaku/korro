@@ -22,7 +22,7 @@ import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.internal.ByteBufUtils.toBytes
 import io.cafebabe.korro.util.log.Logging
 
-import io.netty.buffer.Unpooled
+import io.netty.buffer.{CompositeByteBuf, Unpooled}
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 
@@ -53,7 +53,12 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private var contentType: ContentType = null
 
-  private val byteCache = Unpooled.compositeBuffer
+  private var byteCache: CompositeByteBuf = null
+
+
+  override def handlerAdded(ctx: ChannelHandlerContext): Unit = byteCache = Unpooled.compositeBuffer
+
+  override def handlerRemoved(ctx: ChannelHandlerContext): Unit = byteCache.release()
 
 
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
