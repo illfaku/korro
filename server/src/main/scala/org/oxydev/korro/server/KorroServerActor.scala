@@ -33,19 +33,13 @@ import scala.collection.JavaConversions._
  * @author Vladimir Konstantinov
  */
 object KorroServerActor {
-
-  @deprecated("specify config explicitly", "0.2.5")
-  val props: Props = Props(new KorroServerActor(null))
-
   def props(config: Config): Props = Props(new KorroServerActor(config))
 }
 
 private [server] class KorroServerActor(config: Config) extends Actor {
 
-  private val cfg = Option(config).getOrElse(context.system.settings.config)
-
-  cfg.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    HttpServerActor.create(new KorroConfig(name, cfg.getConfig(s"korro.server.$name")))
+  config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
+    HttpServerActor.create(new KorroConfig(name, config.getConfig(s"korro.server.$name")))
   }
 
   override def receive = Actor.emptyBehavior

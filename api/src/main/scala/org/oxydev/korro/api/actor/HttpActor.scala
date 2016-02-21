@@ -31,18 +31,6 @@ import akka.actor.Actor
  */
 trait HttpActor extends Actor {
 
-  @deprecated("will be removed with receiveHttp method", "0.2.5")
-  type HttpReceive = PartialFunction[HttpRequest, Unit]
-
-  override def receive = {
-    case req: HttpRequest => receiveHttp.applyOrElse(req, unhandled)
-  }
-
-  @deprecated("this is not really convenient, just override 'receive' as usual", "0.2.5")
-  def receiveHttp: HttpReceive = {
-    case msg => unhandled(msg)
-  }
-
   override def unhandled(message: Any): Unit = message match {
     case req: HttpRequest => sender ! HttpStatus.NotFound()
     case _ => super.unhandled(message)
