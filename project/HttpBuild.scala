@@ -5,7 +5,7 @@ import sbt._
 object HttpBuild extends Build {
 
   lazy val basicSettings = Seq(
-    organization := "io.cafebabe.korro",
+    organization := "org.oxydev.korro",
     version := "0.2.13-SNAPSHOT",
     scalaVersion := Dependency.V.Scala
   )
@@ -64,29 +64,29 @@ object HttpBuild extends Build {
 object OsgiSettings {
 
   lazy val api = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.api.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.api.*"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro API")
   )
 
   lazy val server = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.privatePackage := Seq("io.cafebabe.korro.server.*"),
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.server"),
+    OsgiKeys.privatePackage := Seq("org.oxydev.korro.server.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.server"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Server")
   )
 
   lazy val client = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.privatePackage := Seq("io.cafebabe.korro.client.*"),
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.client"),
+    OsgiKeys.privatePackage := Seq("org.oxydev.korro.client.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.client"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Client")
   )
 
   lazy val internal = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.internal.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.internal.*"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Internal Utilities")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("io.cafebabe.korro.util.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.util.*"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Common Utilities")
   )
 }
