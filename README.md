@@ -1,4 +1,4 @@
-# Korro [![Build Status](https://travis-ci.org/yet-another-cafebabe/korro.svg?branch=master)](https://travis-ci.org/yet-another-cafebabe/korro)
+# Korro [![Build Status](https://travis-ci.org/oxy-development/korro.svg?branch=master)](https://travis-ci.org/oxy-development/korro)
 
 Simple HTTP server/client powered by Netty and Akka.
 
