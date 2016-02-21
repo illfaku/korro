@@ -20,23 +20,22 @@ import org.oxydev.korro.client.actor.HttpClientActor
 import org.oxydev.korro.util.config.wrapped
 
 import akka.actor.{Actor, Props}
+import com.typesafe.config.Config
 
 import java.util.Collections.emptySet
 
 import scala.collection.JavaConversions._
 
 /**
- * TODO: Add description.
+ * The main actor that starts all configured http clients as its child actors.
  *
  * @author Vladimir Konstantinov
  */
 object KorroClientActor {
-  val props: Props = Props(new KorroClientActor)
+  def props(config: Config): Props = Props(new KorroClientActor(config))
 }
 
-private [client] class KorroClientActor extends Actor {
-
-  private val config = context.system.settings.config
+private [client] class KorroClientActor(config: Config) extends Actor {
 
   config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
     context.actorOf(HttpClientActor.props(name, config.getConfig(s"korro.client.$name")), name)
