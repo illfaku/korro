@@ -14,33 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.client
+package org.oxydev.korro.client.config
 
-import org.oxydev.korro.client.actor.HttpClientActor
-import org.oxydev.korro.client.config.ClientConfig
 import org.oxydev.korro.util.config.wrapped
 
-import akka.actor.{Actor, Props}
 import com.typesafe.config.Config
 
-import java.util.Collections.emptySet
-
-import scala.collection.JavaConversions._
+import java.net.URL
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroClientActor {
-  def props(config: Config): Props = Props(new KorroClientActor(config))
-}
-
-private [client] class KorroClientActor(config: Config) extends Actor {
-
-  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    HttpClientActor.create(new ClientConfig(name, config.getConfig(s"korro.client.$name")))
-  }
-
-  override def receive = Actor.emptyBehavior
+class ClientConfig(val name: String, config: Config) {
+  val url: Option[URL] = config.findURL("url")
+  val workerGroupSize: Int = config.findInt("workerGroupSize").getOrElse(1)
 }

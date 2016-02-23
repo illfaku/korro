@@ -17,13 +17,12 @@
 package org.oxydev.korro.client.actor
 
 import org.oxydev.korro.api.http.HttpRequest
+import org.oxydev.korro.client.config.ClientConfig
 import org.oxydev.korro.client.handler.HttpChannelInitializer
 import org.oxydev.korro.internal.ChannelFutureExt
 import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
-import org.oxydev.korro.util.config.wrapped
 
 import akka.actor._
-import com.typesafe.config.Config
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
@@ -38,20 +37,13 @@ import scala.util.{Failure, Success, Try}
  *
  * @author Vladimir Konstantinov
  */
-object HttpClientActor {
-  def props(name: String, config: Config): Props = Props(new HttpClientActor(name, config))
-}
-
-class HttpClientActor(name: String, config: Config) extends Actor with ActorLogging {
-
-  private val urlOption = config.findURL("url")
-  private val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
+class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
   private var group: EventLoopGroup = null
 
   override def preStart(): Unit = {
-    group = new NioEventLoopGroup(workerGroupSize, new IncrementalThreadFactory(s"korro-client-$name"))
-    log.info("Started Korro HTTP client \"{}\" with URL: {}.", name, urlOption)
+    group = new NioEventLoopGroup(config.workerGroupSize, new IncrementalThreadFactory(s"korro-client-${config.name}"))
+    log.info("Started Korro HTTP client \"{}\" with URL: {}.", config.name, config.url)
   }
 
   override def postStop(): Unit = {
@@ -60,7 +52,7 @@ class HttpClientActor(name: String, config: Config) extends Actor with ActorLogg
 
   override def receive = {
 
-    case req: HttpRequest => urlOption match {
+    case req: HttpRequest => config.url match {
       case Some(url) => self forward (url -> req)
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
@@ -75,8 +67,17 @@ class HttpClientActor(name: String, config: Config) extends Actor with ActorLogg
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(config, url, req, sender()))
+        .handler(new HttpChannelInitializer(url, req, sender()))
         .connect(url.getHost, url.getPort)
         .foreach(f => if (!f.isSuccess) f.channel.pipeline.fireExceptionCaught(f.cause))
   }
+}
+
+object HttpClientActor {
+
+  def create(config: ClientConfig)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(props(config), config.name)
+  }
+
+  def props(config: ClientConfig): Props = Props(new HttpClientActor(config))
 }

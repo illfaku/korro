@@ -31,12 +31,6 @@ import io.netty.channel.{Channel, EventLoopGroup}
  *
  * @author Vladimir Konstantinov
  */
-object HttpServerActor {
-  def create(config: KorroConfig)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpServerActor(config)), config.name)
-  }
-}
-
 class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging {
 
   private var bossGroup: EventLoopGroup = null
@@ -70,4 +64,13 @@ class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging {
   }
 
   override def receive = Actor.emptyBehavior
+}
+
+object HttpServerActor {
+
+  def create(config: KorroConfig)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(props(config), config.name)
+  }
+
+  def props(config: KorroConfig): Props = Props(new HttpServerActor(config))
 }

@@ -35,8 +35,7 @@ import java.net.URL
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: Config, url: URL, req: HttpRequest, sender: ActorRef)
-  extends ChannelInitializer[SocketChannel] {
+class HttpChannelInitializer(url: URL, req: HttpRequest, sender: ActorRef) extends ChannelInitializer[SocketChannel] {
 
   private val korroEncoder = new HttpMessageEncoder
   private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
