@@ -25,7 +25,7 @@ import com.typesafe.config.Config
  *
  * @author Vladimir Konstantinov
  */
-class KorroConfig(val name: String, config: Config) {
+class ServerConfig(val name: String, config: Config) {
   val port = config.findInt("port").getOrElse(8080)
   val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
   val http = config.findConfig("HTTP").map(new StandardHttpConfig(_)).getOrElse(DefaultHttpConfig)

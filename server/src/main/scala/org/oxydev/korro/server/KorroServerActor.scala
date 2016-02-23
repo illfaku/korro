@@ -17,7 +17,7 @@
 package org.oxydev.korro.server
 
 import org.oxydev.korro.server.actor.HttpServerActor
-import org.oxydev.korro.server.config.KorroConfig
+import org.oxydev.korro.server.config.ServerConfig
 import org.oxydev.korro.util.config.wrapped
 
 import akka.actor.{Actor, Props}
@@ -39,7 +39,7 @@ object KorroServerActor {
 private [server] class KorroServerActor(config: Config) extends Actor {
 
   config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    HttpServerActor.create(new KorroConfig(name, config.getConfig(s"korro.server.$name")))
+    HttpServerActor.create(new ServerConfig(name, config.getConfig(s"korro.server.$name")))
   }
 
   override def receive = Actor.emptyBehavior

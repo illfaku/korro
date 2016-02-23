@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.server.actor
 
-import org.oxydev.korro.server.config.KorroConfig
+import org.oxydev.korro.server.config.ServerConfig
 import org.oxydev.korro.server.handler.HttpChannelInitializer
 import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
 
@@ -31,7 +31,7 @@ import io.netty.channel.{Channel, EventLoopGroup}
  *
  * @author Vladimir Konstantinov
  */
-class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging {
+class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
 
   private var bossGroup: EventLoopGroup = null
   private var workerGroup: EventLoopGroup = null
@@ -68,9 +68,9 @@ class HttpServerActor(config: KorroConfig) extends Actor with ActorLogging {
 
 object HttpServerActor {
 
-  def create(config: KorroConfig)(implicit factory: ActorRefFactory): ActorRef = {
+  def create(config: ServerConfig)(implicit factory: ActorRefFactory): ActorRef = {
     factory.actorOf(props(config), config.name)
   }
 
-  def props(config: KorroConfig): Props = Props(new HttpServerActor(config))
+  def props(config: ServerConfig): Props = Props(new HttpServerActor(config))
 }

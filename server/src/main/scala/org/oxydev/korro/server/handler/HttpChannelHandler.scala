@@ -17,7 +17,7 @@
 package org.oxydev.korro.server.handler
 
 import org.oxydev.korro.internal.handler.HttpMessageCodec
-import org.oxydev.korro.server.config.KorroConfig
+import org.oxydev.korro.server.config.ServerConfig
 import org.oxydev.korro.util.log.Logging
 
 import akka.actor.ActorContext
@@ -31,7 +31,7 @@ import io.netty.handler.codec.http._
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(config: KorroConfig)(implicit context: ActorContext)
+class HttpChannelHandler(config: ServerConfig)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
   private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
