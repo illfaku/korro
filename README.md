@@ -30,6 +30,10 @@ Configuration example (HOCON):
                 // Comment this line to disable compression.
                 compression = 6
                 
+                // Logger name.
+                // "korro-server" by default.
+                logger = "korro-server-default"
+                
                 routes = [{
                     path = /api/1.0
                     actor = /user/http-router
@@ -46,6 +50,10 @@ Configuration example (HOCON):
                 // false by default.
                 compression = true
                 
+                // Logger name.
+                // "korro-ws" by default.
+                logger = "korro-ws-default"
+
                 routes = [{
                     path = /websocket
                     actor = /user/ws-router
@@ -56,13 +64,21 @@ Configuration example (HOCON):
     
     korro.client = {
         
-        default = { // Accessible at path /user/korro-client/default.
+        default = {
             
-            // Optional URI
-            uri = "http://127.0.0.1:8080"
+            // Optional URL to send requests to.
+            url = "http://127.0.0.1:8080"
             
             // Number of workers to process outgoing messages.
             // 1 by default.
             workerGroupSize = 2
+
+            // Time limit for request processing.
+            // 60 seconds by default.
+            requestTimeout = 10s
+            
+            // Logger name.
+            // "korro-client" by default.
+            logger = "korro-client-default"
         }
     }
