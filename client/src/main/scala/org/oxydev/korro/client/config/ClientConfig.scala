@@ -33,4 +33,5 @@ class ClientConfig(val name: String, config: Config) {
   val url: Option[URL] = config.findURL("url")
   val workerGroupSize: Int = config.findInt("workerGroupSize").getOrElse(1)
   val requestTimeout: FiniteDuration = config.findFiniteDuration("requestTimeout").getOrElse(60 seconds)
+  val logger: String = config.findString("logger").getOrElse("korro-client")
 }

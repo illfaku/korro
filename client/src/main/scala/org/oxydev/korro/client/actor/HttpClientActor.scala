@@ -62,7 +62,7 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
     case (url: URL, req: HttpRequest) =>
       val request = req.copy(headers = req.headers + ("Host" -> url.getHost))
-      HttpRequestActor.create(group, config.requestTimeout) forward (url -> request)
+      HttpRequestActor.create(config, group) forward (url -> request)
   }
 }
 

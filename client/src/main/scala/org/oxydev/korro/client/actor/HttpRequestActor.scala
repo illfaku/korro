@@ -17,6 +17,7 @@
 package org.oxydev.korro.client.actor
 
 import org.oxydev.korro.api.http.{HttpRequest, HttpResponse}
+import org.oxydev.korro.client.config.ClientConfig
 import org.oxydev.korro.client.handler.HttpChannelInitializer
 import org.oxydev.korro.internal.ChannelFutureExt
 
@@ -29,14 +30,13 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import java.net.URL
 
 import scala.concurrent.Promise
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpRequestActor(group: EventLoopGroup, timeout: FiniteDuration) extends Actor {
+class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Actor {
 
   import context.dispatcher
 
@@ -46,7 +46,7 @@ class HttpRequestActor(group: EventLoopGroup, timeout: FiniteDuration) extends A
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(url, req, promise, timeout))
+        .handler(new HttpChannelInitializer(config, url, req, promise))
         .connect(url.getHost, url.getPort)
         .foreach { f => if (!f.isSuccess) promise.failure(f.cause) }
       promise.future andThen PartialFunction(_ => self ! PoisonPill) pipeTo sender
@@ -55,9 +55,9 @@ class HttpRequestActor(group: EventLoopGroup, timeout: FiniteDuration) extends A
 
 object HttpRequestActor {
 
-  def create(group: EventLoopGroup, timeout: FiniteDuration)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(props(group, timeout))
+  def create(config: ClientConfig, group: EventLoopGroup)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(props(config, group))
   }
 
-  def props(group: EventLoopGroup, timeout: FiniteDuration): Props = Props(new HttpRequestActor(group, timeout))
+  def props(config: ClientConfig, group: EventLoopGroup): Props = Props(new HttpRequestActor(config, group))
 }
