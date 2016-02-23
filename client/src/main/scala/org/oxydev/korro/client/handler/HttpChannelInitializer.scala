@@ -16,12 +16,10 @@
  */
 package org.oxydev.korro.client.handler
 
-import org.oxydev.korro.api.http.HttpRequest
-import org.oxydev.korro.internal.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
+import org.oxydev.korro.api.http.{HttpRequest, HttpResponse}
+import org.oxydev.korro.internal.handler.{HttpMessageCodec, LoggingChannelHandler}
 import org.oxydev.korro.util.log.Logger
 
-import akka.actor.ActorRef
-import com.typesafe.config.Config
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
@@ -30,29 +28,27 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 
 import java.net.URL
 
+import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(url: URL, req: HttpRequest, sender: ActorRef) extends ChannelInitializer[SocketChannel] {
-
-  private val korroEncoder = new HttpMessageEncoder
-  private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
+class HttpChannelInitializer(url: URL, req: HttpRequest, promise: Promise[HttpResponse], timeout: FiniteDuration)
+  extends ChannelInitializer[SocketChannel] {
 
   override def initChannel(ch: SocketChannel): Unit = {
-    val pipeline = ch.pipeline
 
-    Option(url.getProtocol).filter(_.equalsIgnoreCase("https")).map { _ =>
-      SslContextBuilder.forClient.trustManager(InsecureTrustManagerFactory.INSTANCE).build
-    } foreach { ctx =>
-      pipeline.addLast("ssl", ctx.newHandler(ch.alloc()))
+    if (url.getProtocol equalsIgnoreCase "https") {
+      val sslCtx = SslContextBuilder.forClient.trustManager(InsecureTrustManagerFactory.INSTANCE).build
+      ch.pipeline.addLast("ssl", sslCtx.newHandler(ch.alloc()))
     }
 
-    pipeline.addLast("http-codec", new HttpClientCodec)
-    pipeline.addLast("logging", loggingHandler)
-    pipeline.addLast("korro-encoder", korroEncoder)
-    pipeline.addLast("korro-decoder", new HttpMessageDecoder(65536L))
-    pipeline.addLast("http", new HttpChannelHandler(url, req, sender))
+    ch.pipeline.addLast("http-codec", new HttpClientCodec)
+    ch.pipeline.addLast("logging", new LoggingChannelHandler(Logger("korro-channel")))
+    ch.pipeline.addLast("korro-codec", new HttpMessageCodec(65536L))
+    ch.pipeline.addLast("http", new HttpChannelHandler(req, promise, timeout))
   }
 }

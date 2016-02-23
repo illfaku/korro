@@ -22,6 +22,8 @@ import com.typesafe.config.Config
 
 import java.net.URL
 
+import scala.concurrent.duration._
+
 /**
  * TODO: Add description.
  *
@@ -30,4 +32,5 @@ import java.net.URL
 class ClientConfig(val name: String, config: Config) {
   val url: Option[URL] = config.findURL("url")
   val workerGroupSize: Int = config.findInt("workerGroupSize").getOrElse(1)
+  val requestTimeout: FiniteDuration = config.findFiniteDuration("requestTimeout").getOrElse(60 seconds)
 }

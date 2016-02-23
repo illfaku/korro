@@ -19,37 +19,49 @@ package org.oxydev.korro.client.handler
 import org.oxydev.korro.api.http.{HttpRequest, HttpResponse}
 import org.oxydev.korro.internal.ChannelFutureExt
 
-import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
-import io.netty.handler.codec.http.HttpHeaders
 
-import java.net.URL
+import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success, Try}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelHandler(url: URL, req: HttpRequest, sender: ActorRef)
+class HttpChannelHandler(req: HttpRequest, promise: Promise[HttpResponse], timeout: FiniteDuration)
   extends SimpleChannelInboundHandler[HttpResponse] {
 
+  private case object TimedOut
+
   override def channelActive(ctx: ChannelHandlerContext): Unit = {
-    val request = req.copy(headers = req.headers + (HttpHeaders.Names.HOST -> url.getHost))
-    ctx.writeAndFlush(request) foreach { future =>
-      if (!future.isSuccess) {
-        sender ! Status.Failure(future.cause)
-        future.channel.close()
-      }
-    }
+
+    ctx.channel.eventLoop.schedule(new Runnable {
+      override def run(): Unit = ctx.channel.pipeline.fireUserEventTriggered(TimedOut)
+    }, timeout.length, timeout.unit)
+
+    ctx.writeAndFlush(req) foreach { f => if (!f.isSuccess) complete(ctx, Failure(f.cause)) }
+
+    super.channelActive(ctx)
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpResponse): Unit = {
-    sender ! Status.Success(msg)
-    ctx.close()
+  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpResponse): Unit = complete(ctx, Success(msg))
+
+  override def userEventTriggered(ctx: ChannelHandlerContext, evt: Any): Unit = evt match {
+    case TimedOut => complete(ctx, Failure(new IllegalStateException("Request has timed out.")))
+    case _ => super.userEventTriggered(ctx, evt)
   }
 
-  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    sender ! Status.Failure(cause)
+  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = complete(ctx, Failure(cause))
+
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    complete(ctx, Failure(new IllegalStateException("Channel was closed before response.")))
+    super.channelInactive(ctx)
+  }
+
+  private def complete(ctx: ChannelHandlerContext, status: Try[HttpResponse]): Unit = {
+    promise tryComplete status
     ctx.close()
   }
 }

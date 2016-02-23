@@ -18,15 +18,11 @@ package org.oxydev.korro.client.actor
 
 import org.oxydev.korro.api.http.HttpRequest
 import org.oxydev.korro.client.config.ClientConfig
-import org.oxydev.korro.client.handler.HttpChannelInitializer
-import org.oxydev.korro.internal.ChannelFutureExt
 import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
 
 import akka.actor._
-import io.netty.bootstrap.Bootstrap
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-import io.netty.channel.socket.nio.NioSocketChannel
 
 import java.net.{URI, URL}
 
@@ -40,6 +36,8 @@ import scala.util.{Failure, Success, Try}
 class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
   private var group: EventLoopGroup = null
+
+  override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   override def preStart(): Unit = {
     group = new NioEventLoopGroup(config.workerGroupSize, new IncrementalThreadFactory(s"korro-client-${config.name}"))
@@ -57,19 +55,14 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
-    case (uri: URI, req: HttpRequest) =>
-      Try (uri.toURL) match {
-        case Success(url) => self forward (url -> req)
-        case Failure(err) => sender ! Status.Failure(err)
-      }
+    case (uri: URI, req: HttpRequest) => Try (uri.toURL) match {
+      case Success(url) => self forward (url -> req)
+      case Failure(err) => sender ! Status.Failure(err)
+    }
 
     case (url: URL, req: HttpRequest) =>
-      new Bootstrap()
-        .group(group)
-        .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(url, req, sender()))
-        .connect(url.getHost, url.getPort)
-        .foreach(f => if (!f.isSuccess) f.channel.pipeline.fireExceptionCaught(f.cause))
+      val request = req.copy(headers = req.headers + ("Host" -> url.getHost))
+      HttpRequestActor.create(group, config.requestTimeout) forward (url -> request)
   }
 }
 
