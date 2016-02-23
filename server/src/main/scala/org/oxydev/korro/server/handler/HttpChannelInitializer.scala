@@ -33,7 +33,7 @@ import io.netty.handler.codec.http._
 class HttpChannelInitializer(config: ServerConfig)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
   private val httpHandler = new HttpChannelHandler(config)
-  private val loggingHandler = new LoggingChannelHandler(Logger("korro-channel"))
+  private val loggingHandler = new LoggingChannelHandler(Logger(config.http.logger))
   private val lastHandler = new LastChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {

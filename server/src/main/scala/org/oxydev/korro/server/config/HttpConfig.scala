@@ -33,20 +33,23 @@ sealed trait HttpConfig {
   def compressionLevel: Option[Int]
   def requestTimeout: FiniteDuration
   def routes: RoutesConfig
+  def logger: String
 }
 
 class StandardHttpConfig(config: Config) extends HttpConfig {
-  override val maxContentLength: Long = config.findBytes("maxContentLength").getOrElse(DefaultHttpConfig.maxContentLength)
-  override val minContentLength: Long = config.findBytes("minContentLength").getOrElse(maxContentLength)
-  override val compressionLevel: Option[Int] = config.findInt("compression")
-  override val requestTimeout: FiniteDuration = config.findFiniteDuration("requestTimeout").getOrElse(DefaultHttpConfig.requestTimeout)
-  override val routes: RoutesConfig = RoutesConfig(config.findConfigList("routes"))
+  override val maxContentLength = config.findBytes("maxContentLength").getOrElse(DefaultHttpConfig.maxContentLength)
+  override val minContentLength = config.findBytes("minContentLength").getOrElse(maxContentLength)
+  override val compressionLevel = config.findInt("compression")
+  override val requestTimeout = config.findFiniteDuration("requestTimeout").getOrElse(DefaultHttpConfig.requestTimeout)
+  override val routes = RoutesConfig(config.findConfigList("routes"))
+  override val logger = config.findString("logger").getOrElse(DefaultHttpConfig.logger)
 }
 
 object DefaultHttpConfig extends HttpConfig {
-  override val maxContentLength: Long = 65536L
-  override val minContentLength: Long = maxContentLength
-  override val compressionLevel: Option[Int] = None
-  override val requestTimeout: FiniteDuration = 60 seconds
-  override val routes: RoutesConfig = RoutesConfig(Nil)
+  override val maxContentLength = 65536L
+  override val minContentLength = maxContentLength
+  override val compressionLevel = None
+  override val requestTimeout = 60 seconds
+  override val routes = RoutesConfig(Nil)
+  override val logger = "korro-server"
 }

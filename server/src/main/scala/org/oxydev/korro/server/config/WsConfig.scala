@@ -29,16 +29,19 @@ trait WsConfig {
   def maxFramePayloadLength: Int
   def compression: Boolean
   def routes: RoutesConfig
+  def logger: String
 }
 
 class StandardWsConfig(config: Config) extends WsConfig {
-  override val maxFramePayloadLength: Int = config.findBytes("maxFramePayloadLength").map(_.toInt).getOrElse(DefaultWsConfig.maxFramePayloadLength)
-  override val compression: Boolean = config.findBoolean("compression").getOrElse(DefaultWsConfig.compression)
-  override val routes: RoutesConfig = RoutesConfig(config.findConfigList("routes"))
+  override val maxFramePayloadLength = config.findBytes("maxFramePayloadLength").map(_.toInt).getOrElse(DefaultWsConfig.maxFramePayloadLength)
+  override val compression = config.findBoolean("compression").getOrElse(DefaultWsConfig.compression)
+  override val routes = RoutesConfig(config.findConfigList("routes"))
+  override val logger = config.findString("logger").getOrElse(DefaultWsConfig.logger)
 }
 
 object DefaultWsConfig extends WsConfig {
-  override val maxFramePayloadLength: Int = 65536
-  override val compression: Boolean = false
-  override val routes: RoutesConfig = RoutesConfig(Nil)
+  override val maxFramePayloadLength = 65536
+  override val compression = false
+  override val routes = RoutesConfig(Nil)
+  override val logger = "korro-ws"
 }
