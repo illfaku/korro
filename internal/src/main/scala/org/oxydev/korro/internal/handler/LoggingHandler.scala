@@ -20,7 +20,6 @@ import org.oxydev.korro.util.log.Logger.Logger
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelDuplexHandler, ChannelHandlerContext, ChannelPromise}
-import io.netty.handler.codec.http.websocketx._
 
 import java.net.SocketAddress
 
@@ -30,7 +29,7 @@ import java.net.SocketAddress
  * @author Vladimir Konstantinov
  */
 @Sharable
-class LoggingChannelHandler(logger: Logger) extends ChannelDuplexHandler {
+class LoggingHandler(logger: Logger) extends ChannelDuplexHandler {
 
   private def enabled: Boolean = logger.isTraceEnabled
 
@@ -39,17 +38,10 @@ class LoggingChannelHandler(logger: Logger) extends ChannelDuplexHandler {
   }
 
   private def log(ctx: ChannelHandlerContext, name: String, msg: Any): Unit = {
-    val message = msg match {
-      case m: TextWebSocketFrame => "TextWebSocketFrame(" + m.text + ')'
-      case m: BinaryWebSocketFrame => "BinaryWebSocketFrame()"
-      case m: CloseWebSocketFrame => "CloseWebSocketFrame()"
-      case m: PingWebSocketFrame => "PingWebSocketFrame()"
-      case m: PongWebSocketFrame => "PongWebSocketFrame()"
-      case m: ContinuationWebSocketFrame => "ContinuationWebSocketFrame()"
-      case _ => msg.toString
-    }
-    log(ctx, name + ": " + message)
+    log(ctx, text(name).applyOrElse(msg, (_: Any) => FormatUtils.formatMessage(name, msg)))
   }
+
+  protected def text(name: String): PartialFunction[Any, String] = PartialFunction.empty
 
   override def channelRegistered(ctx: ChannelHandlerContext): Unit = {
     if (enabled) log(ctx, "REGISTERED")
@@ -120,4 +112,8 @@ class LoggingChannelHandler(logger: Logger) extends ChannelDuplexHandler {
     if (enabled) log(ctx, "FLUSH")
     super.flush(ctx)
   }
+}
+
+private [handler] object FormatUtils extends io.netty.handler.logging.LoggingHandler {
+  override def formatMessage(eventName: String, msg: scala.Any): String = super.formatMessage(eventName, msg)
 }

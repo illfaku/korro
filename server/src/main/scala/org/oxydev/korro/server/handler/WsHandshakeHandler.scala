@@ -17,9 +17,9 @@
 package org.oxydev.korro.server.handler
 
 import org.oxydev.korro.internal.ChannelFutureExt
-import org.oxydev.korro.internal.handler.{WsCompressionDecoder, WsCompressionEncoder, WsMessageCodec}
+import org.oxydev.korro.internal.handler.{WsLoggingHandler, WsCompressionDecoder, WsCompressionEncoder, WsMessageCodec}
 import org.oxydev.korro.server.config.WsConfig
-import org.oxydev.korro.util.log.Logging
+import org.oxydev.korro.util.log.{Logger, Logging}
 
 import akka.actor.ActorContext
 import io.netty.channel._
@@ -59,6 +59,7 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
         pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
         pipeline.addAfter("logging", "ws-codec", new WsMessageCodec)
         pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
+        pipeline.replace("logging", "logging", new WsLoggingHandler(Logger(config.logger)))
       } else {
         log.error(future.cause, "Error during handshake.")
         channel.close()

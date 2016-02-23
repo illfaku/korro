@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.server.handler
 
-import org.oxydev.korro.internal.handler.LoggingChannelHandler
+import org.oxydev.korro.internal.handler.LoggingHandler
 import org.oxydev.korro.server.config.ServerConfig
 import org.oxydev.korro.util.log.Logger
 
@@ -33,7 +33,7 @@ import io.netty.handler.codec.http._
 class HttpChannelInitializer(config: ServerConfig)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
 
   private val httpHandler = new HttpChannelHandler(config)
-  private val loggingHandler = new LoggingChannelHandler(Logger(config.http.logger))
+  private val loggingHandler = new LoggingHandler(Logger(config.http.logger))
   private val lastHandler = new LastChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {
