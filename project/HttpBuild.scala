@@ -118,7 +118,7 @@ object Dependency {
 
   object V {
     val Scala = "2.11.7"
-    val Akka = "2.4.1"
+    val Akka = "2.4.2"
     val Netty = "4.0.34.Final"
   }
 
@@ -126,7 +126,7 @@ object Dependency {
 
   val typesafeConfig = "com.typesafe" % "config" % "1.3.0"
   val json4s = "org.json4s" %% "json4s-native" % "3.3.0"
-  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.16"
+  val slf4j = "org.slf4j" % "slf4j-api" % "1.7.18"
 
   val nettyCommon = "io.netty" % "netty-common" % V.Netty
   val nettyBuffer = "io.netty" % "netty-buffer" % V.Netty
