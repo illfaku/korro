@@ -16,12 +16,12 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.api.ws._
+import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
 import org.oxydev.korro.http.internal.server.actor.WsMessageSender
 import org.oxydev.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorRef}
-import io.netty.channel._
+import akka.actor.{ActorContext, ActorRef, PoisonPill}
+import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 /**
  * TODO: Add description.
@@ -34,14 +34,19 @@ class WsChannelHandler(host: String, route: String)(implicit context: ActorConte
   private var sender: ActorRef = null
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-    sender = WsMessageSender.create(ctx)
-    context.actorSelection(route).tell(ConnectWsMessage(host), sender)
+    sender = WsMessageSender.create(ctx.channel)
+    context.actorSelection(route).tell(Connected(host), sender)
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = msg match {
-    case PingWsMessage => ctx.writeAndFlush(PongWsMessage)
-    case _ => sender ! WsMessageSender.Inbound(msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender ! WsMessageSender.Inbound(msg)
+
+  override def userEventTriggered(ctx: ChannelHandlerContext, evt: Any): Unit = evt match {
+    case WsMessageSender.Disconnect => ctx.close()
+    case _ => ctx.fireUserEventTriggered(evt)
   }
 
-  override def channelInactive(ctx: ChannelHandlerContext): Unit = sender ! WsMessageSender.Inbound(DisconnectWsMessage)
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    sender ! PoisonPill
+    ctx.fireChannelInactive()
+  }
 }
