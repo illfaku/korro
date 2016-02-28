@@ -14,18 +14,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
+import org.oxydev.korro.util.log.Logging
 
-import akka.actor.Props
-import com.typesafe.config.Config
+import io.netty.channel.ChannelHandler.Sharable
+import io.netty.channel.{ChannelHandlerAdapter, ChannelHandlerContext}
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroHttpClient {
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+@Sharable
+class LastChannelHandler extends ChannelHandlerAdapter with Logging {
+
+  override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
+    log.error(cause, "Uncaught error at the end of pipeline. Closing channel...")
+    ctx.close()
+  }
 }

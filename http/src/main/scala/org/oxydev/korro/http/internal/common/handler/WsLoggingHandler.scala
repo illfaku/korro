@@ -14,18 +14,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
+import org.oxydev.korro.util.log.Logger.Logger
 
-import akka.actor.Props
-import com.typesafe.config.Config
+import io.netty.handler.codec.http.websocketx._
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroHttpClient {
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+class WsLoggingHandler(logger: Logger) extends LoggingHandler(logger) {
+
+  override protected def text(name: String): PartialFunction[Any, String] = {
+    case m: TextWebSocketFrame   => formatName(name) + "TEXT   | " + m.text
+    case m: BinaryWebSocketFrame => formatName(name) + "BINARY |"
+    case m: CloseWebSocketFrame  => formatName(name) + "CLOSE  |"
+    case m: PingWebSocketFrame   => formatName(name) + "PING   |"
+    case m: PongWebSocketFrame   => formatName(name) + "PONG   |"
+  }
+
+  private def formatName(name: String): String = String.format("%-8s", name) + " : "
 }

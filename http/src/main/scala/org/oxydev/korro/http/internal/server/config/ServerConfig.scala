@@ -14,18 +14,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http.internal.server.config
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
+import org.oxydev.korro.util.config.wrapped
 
-import akka.actor.Props
 import com.typesafe.config.Config
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroHttpClient {
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+class ServerConfig(val name: String, config: Config) {
+  val port = config.findInt("port").getOrElse(8080)
+  val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
+  val http = config.findConfig("HTTP").map(new StandardHttpConfig(_)).getOrElse(DefaultHttpConfig)
+  val ws = config.findConfig("WebSocket").map(new StandardWsConfig(_)).getOrElse(DefaultWsConfig)
 }

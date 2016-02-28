@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.actor
 
-import org.oxydev.korro.http.server.actor.KorroHttpServerActor
+import org.oxydev.korro.http.internal.server.actor.KorroHttpServerActor
 
 import akka.actor.Props
 import com.typesafe.config.Config

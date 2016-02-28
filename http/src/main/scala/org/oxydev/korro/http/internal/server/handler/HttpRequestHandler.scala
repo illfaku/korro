@@ -14,18 +14,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
+import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.internal.server.actor.HttpResponseSender
+import org.oxydev.korro.http.internal.server.config.HttpConfig
 
-import akka.actor.Props
-import com.typesafe.config.Config
+import akka.actor.ActorContext
+import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroHttpClient {
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+class HttpRequestHandler(config: HttpConfig, route: String)(implicit context: ActorContext)
+  extends SimpleChannelInboundHandler[HttpRequest] {
+
+  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    implicit val sender = HttpResponseSender.create(ctx, config.requestTimeout)
+    context.actorSelection(route) ! msg
+  }
 }

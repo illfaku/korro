@@ -14,18 +14,28 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http.internal.common
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
-
-import akka.actor.Props
-import com.typesafe.config.Config
+import io.netty.buffer.{ByteBuf, Unpooled}
 
 /**
- * The main actor that starts all configured http clients as its child actors.
+ * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object KorroHttpClient {
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+object ByteBufUtils {
+
+  implicit def toBytes(buf: ByteBuf): Array[Byte] = {
+    if (buf.hasArray) {
+      buf.array
+    } else {
+      val bytes = new Array[Byte](buf.readableBytes)
+      buf.getBytes(0, bytes)
+      bytes
+    }
+  }
+
+  implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+
+  def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }
