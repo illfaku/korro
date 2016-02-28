@@ -16,16 +16,14 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.http.api.ws._
-import org.oxydev.korro.http.internal.common.ByteBufUtils
-import ByteBufUtils.{toByteBuf, toBytes}
+import org.oxydev.korro.http.api.ws.{BinaryWsMessage, TextWsMessage, WsMessage}
+import org.oxydev.korro.http.internal.common.ByteBufUtils.{toByteBuf, toVector}
 import org.oxydev.korro.util.log.Logging
 
-import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
-import io.netty.handler.codec.http.websocketx._
+import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame, WebSocketFrame}
 
 import java.util
 
@@ -35,25 +33,16 @@ import java.util
  * @author Vladimir Konstantinov
  */
 @Sharable
-class WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
+object WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
 
   override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: util.List[AnyRef]): Unit = msg match {
-    case ConnectWsMessage(_) =>
-      log.warning("Unable to convert ConnectWsMessage to any WebSocketFrame.")
-      out add Unpooled.EMPTY_BUFFER
-    case DisconnectWsMessage => out add new CloseWebSocketFrame
-    case PingWsMessage => out add new PingWebSocketFrame
-    case PongWsMessage => out add new PongWebSocketFrame
     case TextWsMessage(text) => out add new TextWebSocketFrame(text)
     case BinaryWsMessage(bytes) => out add new BinaryWebSocketFrame(bytes)
   }
 
   override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
-    case frame: CloseWebSocketFrame => out add DisconnectWsMessage
-    case frame: PingWebSocketFrame => out add PingWsMessage
-    case frame: PongWebSocketFrame => out add PongWsMessage
     case frame: BinaryWebSocketFrame => out add BinaryWsMessage(frame.content)
     case frame: TextWebSocketFrame => out add TextWsMessage(frame.text)
-    case frame => log.warning("Unknown frame: {}.", frame)
+    case frame => log.warning("Unexpected frame: {}.", frame)
   }
 }

@@ -14,24 +14,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.internal.common.handler
+package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.util.log.Logger.Logger
-
-import io.netty.handler.codec.http.websocketx._
+import io.netty.channel.ChannelHandler.Sharable
+import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import io.netty.handler.codec.http.websocketx.{CloseWebSocketFrame, PingWebSocketFrame, PongWebSocketFrame}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class WsLoggingHandler(logger: Logger) extends LoggingHandler(logger) {
+@Sharable
+object WsStandardBehaviorHandler extends ChannelInboundHandlerAdapter {
 
-  override protected def text(name: String): PartialFunction[Any, String] = {
-    case m: TextWebSocketFrame   => String.format("%-8s", name) + " TEXT | " + m.text
-    case m: BinaryWebSocketFrame => name + " BINARY"
-    case m: CloseWebSocketFrame  => name + " CLOSE"
-    case m: PingWebSocketFrame   => name + " PING"
-    case m: PongWebSocketFrame   => name + " PONG"
+  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
+    case ping: PingWebSocketFrame => ctx.writeAndFlush(new PongWebSocketFrame(ping.content))
+    case _: CloseWebSocketFrame => ctx.close()
+    case _ => ctx.fireChannelRead(msg)
   }
 }

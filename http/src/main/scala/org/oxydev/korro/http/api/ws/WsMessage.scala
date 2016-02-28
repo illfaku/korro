@@ -22,10 +22,5 @@ package org.oxydev.korro.http.api.ws
  * @author Vladimir Konstantinov
  */
 sealed trait WsMessage
-
-case class ConnectWsMessage(host: String) extends WsMessage
-case object DisconnectWsMessage extends WsMessage
-case object PingWsMessage extends WsMessage
-case object PongWsMessage extends WsMessage
 case class TextWsMessage(text: String) extends WsMessage
-case class BinaryWsMessage(bytes: Array[Byte]) extends WsMessage
+case class BinaryWsMessage(bytes: Vector[Byte]) extends WsMessage

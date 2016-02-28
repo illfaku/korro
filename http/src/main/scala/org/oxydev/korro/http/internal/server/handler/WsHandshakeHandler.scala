@@ -54,12 +54,13 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
-        pipeline.remove(this)
+        pipeline.addBefore("logging", "ws-standard", WsStandardBehaviorHandler)
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
-        pipeline.addAfter("logging", "ws-codec", new WsMessageCodec)
+        pipeline.addAfter("logging", "ws-codec", WsMessageCodec)
         pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
         pipeline.replace("logging", "logging", new WsLoggingHandler(Logger(config.logger)))
+        pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")
         channel.close()
