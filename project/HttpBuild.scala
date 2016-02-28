@@ -43,14 +43,14 @@ object HttpBuild extends Build {
 object OsgiSettings {
 
   lazy val http = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.server.*,org.oxydev.korro.client.*,org.oxydev.korro.internal.*"),
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.api.*,org.oxydev.korro.server,org.oxydev.korro.client"),
+    OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.internal.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.http.api.*,org.oxydev.korro.http.actor.*"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro HTTP")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("org.oxydev.korro.util.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Common Utilities")
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Utilities")
   )
 }
 
