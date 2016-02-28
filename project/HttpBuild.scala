@@ -24,65 +24,28 @@ object HttpBuild extends Build {
     id = "korro",
     base = file("."),
     settings = basicSettings
-  ) aggregate (api, server, client, util, internal)
+  ) aggregate (http, util)
 
-  lazy val api = Project(
-    id = "korro-api",
-    base = file("api"),
+  lazy val http = Project(
+    id = "korro-http",
+    base = file("http"),
     dependencies = Seq(util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.api ++ Dependencies.api
-  )
-
-  lazy val server = Project(
-    id = "korro-server",
-    base = file("server"),
-    dependencies = Seq(api, internal, util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.server ++ Dependencies.server
-  )
-
-  lazy val client = Project(
-    id = "korro-client",
-    base = file("client"),
-    dependencies = Seq(api, internal, util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.client ++ Dependencies.client
-  )
-
-  lazy val internal = Project(
-    id = "korro-internal",
-    base = file("internal"),
-    dependencies = Seq(api, util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.internal ++ Dependencies.internal
+    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.http ++ Dependencies.http
   )
 
   lazy val util = Project(
-  id = "korro-util",
-  base = file("util"),
-  settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
+    id = "korro-util",
+    base = file("util"),
+    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
   )
 }
 
 object OsgiSettings {
 
-  lazy val api = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.api.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro API")
-  )
-
-  lazy val server = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.privatePackage := Seq("org.oxydev.korro.server.*"),
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.server"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Server")
-  )
-
-  lazy val client = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.privatePackage := Seq("org.oxydev.korro.client.*"),
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.client"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Client")
-  )
-
-  lazy val internal = SbtOsgi.osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.internal.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro: Internal Utilities")
+  lazy val http = SbtOsgi.osgiSettings ++ Seq(
+    OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.server.*,org.oxydev.korro.client.*,org.oxydev.korro.internal.*"),
+    OsgiKeys.exportPackage := Seq("org.oxydev.korro.api.*,org.oxydev.korro.server,org.oxydev.korro.client"),
+    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro HTTP")
   )
 
   lazy val util = SbtOsgi.osgiSettings ++ Seq(
@@ -95,19 +58,10 @@ object Dependencies {
 
   import Dependency._
 
-  lazy val api = deps(akka, json4s, scalatest)
-
-  lazy val server = deps(
+  lazy val http = deps(
     akka, typesafeConfig, json4s, slf4j, scalatest,
     nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
   )
-
-  lazy val client = deps(
-    akka, typesafeConfig, json4s, slf4j, scalatest,
-    nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
-  )
-
-  lazy val internal = deps(nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp, json4s, akka)
 
   lazy val util = deps(akka, typesafeConfig, json4s, slf4j, scalatest)
 
