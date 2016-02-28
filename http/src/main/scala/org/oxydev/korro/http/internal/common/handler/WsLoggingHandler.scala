@@ -61,10 +61,10 @@ class WsLoggingHandler(name: String) extends ChannelDuplexHandler {
 
   private def text(msg: Any): Option[String] = msg match {
     case m: TextWebSocketFrame => Some(m.text)
-    case _: BinaryWebSocketFrame => Some("BINARY")
-    case _: CloseWebSocketFrame => Some("CLOSE")
-    case _: PingWebSocketFrame => Some("PING")
-    case _: PongWebSocketFrame => Some("PONG")
+    case m: BinaryWebSocketFrame => Some(s"BINARY(${m.content.readableBytes}B)")
+    case m: CloseWebSocketFrame => Some(s"CLOSE(${m.statusCode}, ${m.reasonText})")
+    case m: PingWebSocketFrame => Some(s"PING(${m.content.readableBytes}B)")
+    case m: PongWebSocketFrame => Some(s"PONG(${m.content.readableBytes}B)")
     case _ => None
   }
 }
