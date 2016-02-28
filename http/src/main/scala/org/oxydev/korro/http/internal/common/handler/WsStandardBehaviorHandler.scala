@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.internal.server.handler
+package org.oxydev.korro.http.internal.common.handler
+
+import org.oxydev.korro.http.internal.common.ChannelFutureExt
 
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import io.netty.channel.{ChannelDuplexHandler, ChannelHandlerContext, ChannelPromise}
 import io.netty.handler.codec.http.websocketx.{CloseWebSocketFrame, PingWebSocketFrame, PongWebSocketFrame}
 
 /**
@@ -26,11 +28,15 @@ import io.netty.handler.codec.http.websocketx.{CloseWebSocketFrame, PingWebSocke
  * @author Vladimir Konstantinov
  */
 @Sharable
-object WsStandardBehaviorHandler extends ChannelInboundHandlerAdapter {
+object WsStandardBehaviorHandler extends ChannelDuplexHandler {
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = msg match {
-    case ping: PingWebSocketFrame => ctx.writeAndFlush(new PongWebSocketFrame(ping.content))
-    case _: CloseWebSocketFrame => ctx.close()
+    case frame: PingWebSocketFrame => ctx.writeAndFlush(new PongWebSocketFrame(frame.content))
+    case frame: CloseWebSocketFrame => ctx.writeAndFlush(frame).foreach(_ => ctx.close())
     case _ => ctx.fireChannelRead(msg)
+  }
+
+  override def close(ctx: ChannelHandlerContext, future: ChannelPromise): Unit = {
+    ctx.writeAndFlush(new CloseWebSocketFrame(1001, "Shutdown")).foreach(_ => ctx.close(future))
   }
 }
