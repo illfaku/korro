@@ -14,33 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.server
+package org.oxydev.korro.http.actor
 
-import org.oxydev.korro.http.server.actor.HttpServerActor
-import org.oxydev.korro.http.server.config.ServerConfig
-import org.oxydev.korro.util.config.wrapped
+import org.oxydev.korro.http.client.actor.KorroHttpClientActor
 
-import akka.actor.{Actor, Props}
+import akka.actor.Props
 import com.typesafe.config.Config
 
-import java.util.Collections.emptySet
-
-import scala.collection.JavaConversions._
-
 /**
- * The main actor that starts all configured http servers as its child actors.
+ * The main actor that starts all configured http clients as its child actors.
  *
  * @author Vladimir Konstantinov
  */
-object KorroServerActor {
-  def props(config: Config): Props = Props(new KorroServerActor(config))
-}
-
-private [server] class KorroServerActor(config: Config) extends Actor {
-
-  config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    HttpServerActor.create(new ServerConfig(name, config.getConfig(s"korro.server.$name")))
-  }
-
-  override def receive = Actor.emptyBehavior
+object KorroHttpClient {
+  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
 }

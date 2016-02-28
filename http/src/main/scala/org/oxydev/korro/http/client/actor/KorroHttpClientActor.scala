@@ -14,13 +14,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.client
+package org.oxydev.korro.http.client.actor
 
-import org.oxydev.korro.http.client.actor.HttpClientActor
 import org.oxydev.korro.http.client.config.ClientConfig
 import org.oxydev.korro.util.config.wrapped
 
-import akka.actor.{Actor, Props}
+import akka.actor.Actor
 import com.typesafe.config.Config
 
 import java.util.Collections.emptySet
@@ -32,11 +31,7 @@ import scala.collection.JavaConversions._
  *
  * @author Vladimir Konstantinov
  */
-object KorroClientActor {
-  def props(config: Config): Props = Props(new KorroClientActor(config))
-}
-
-private [client] class KorroClientActor(config: Config) extends Actor {
+class KorroHttpClientActor(config: Config) extends Actor {
 
   config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
     HttpClientActor.create(new ClientConfig(name, config.getConfig(s"korro.client.$name")))
