@@ -64,7 +64,7 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
 
     case Inbound(_) => stash()
 
-    case SetRecipient(ref) =>
+    case SetTarget(ref) =>
       setRecipientTimeout.cancel()
       unstashAll()
       context become {

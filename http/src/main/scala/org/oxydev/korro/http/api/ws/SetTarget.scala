@@ -23,4 +23,4 @@ import akka.actor.ActorRef
  *
  * @author Vladimir Konstantinov
  */
-case class SetRecipient(ref: ActorRef) // TODO: rename to SetTarget
+case class SetTarget(ref: ActorRef)
