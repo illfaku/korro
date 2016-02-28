@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.api.http
+package org.oxydev.korro.http.api
 
-import org.oxydev.korro.http.api.http.ContentType.DefaultCharset
-import org.oxydev.korro.http.api.http.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
+import org.oxydev.korro.http.api.ContentType.DefaultCharset
+import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
 import org.oxydev.korro.util.protocol.http.MimeTypeMapping.getMimeType
 
 import org.json4s.JValue

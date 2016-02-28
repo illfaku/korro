@@ -16,8 +16,8 @@
  */
 package org.oxydev.korro.http.server.actor
 
-import org.oxydev.korro.http.api.http.HttpResponse
-import org.oxydev.korro.http.api.http.HttpStatus._
+import org.oxydev.korro.http.api.{HttpStatus, HttpResponse}
+import HttpStatus._
 
 import akka.actor._
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}

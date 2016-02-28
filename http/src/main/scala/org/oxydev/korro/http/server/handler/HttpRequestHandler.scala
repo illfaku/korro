@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.server.handler
 
-import org.oxydev.korro.http.api.http.HttpRequest
+import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.server.actor.HttpResponseSender
 import org.oxydev.korro.http.server.config.HttpConfig
 

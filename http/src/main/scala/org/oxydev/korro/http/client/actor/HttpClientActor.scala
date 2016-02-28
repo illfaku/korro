@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.client.actor
 
-import org.oxydev.korro.http.api.http.HttpRequest
+import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.client.config.ClientConfig
 import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
 

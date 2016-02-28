@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.client.handler
 
-import org.oxydev.korro.http.api.http.{HttpRequest, HttpResponse}
+import org.oxydev.korro.http.api.{HttpRequest, HttpResponse}
 import org.oxydev.korro.http.client.config.ClientConfig
 import org.oxydev.korro.http.internal.handler.{HttpMessageCodec, LoggingHandler}
 import org.oxydev.korro.util.log.Logger

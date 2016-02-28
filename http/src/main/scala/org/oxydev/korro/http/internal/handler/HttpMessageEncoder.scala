@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.handler
 
-import org.oxydev.korro.http.api.http._
+import org.oxydev.korro.http.api._
 import org.oxydev.korro.http.internal.ByteBufUtils.toByteBuf
 
 import io.netty.channel.ChannelHandler.Sharable

@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.api.actor
 
-import org.oxydev.korro.http.api.http.{HttpRequest, HttpStatus}
+import org.oxydev.korro.http.api.{HttpRequest, HttpStatus}
 
 import akka.actor.Actor
 
