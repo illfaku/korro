@@ -16,8 +16,9 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.util.log.Logger.Logger
+import org.oxydev.korro.util.log.Logger
 
+import io.netty.channel.{ChannelPromise, ChannelHandlerContext, ChannelDuplexHandler}
 import io.netty.handler.codec.http.websocketx._
 
 /**
@@ -25,13 +26,45 @@ import io.netty.handler.codec.http.websocketx._
  *
  * @author Vladimir Konstantinov
  */
-class WsLoggingHandler(logger: Logger) extends LoggingHandler(logger) {
+class WsLoggingHandler(name: String) extends ChannelDuplexHandler {
 
-  override protected def text(name: String): PartialFunction[Any, String] = {
-    case m: TextWebSocketFrame   => String.format("%-8s", name) + " TEXT | " + m.text
-    case m: BinaryWebSocketFrame => name + " BINARY"
-    case m: CloseWebSocketFrame  => name + " CLOSE"
-    case m: PingWebSocketFrame   => name + " PING"
-    case m: PongWebSocketFrame   => name + " PONG"
+  private val logger = Logger(name)
+
+  private var id: String = null
+
+  private def enabled: Boolean = logger.isTraceEnabled
+
+  private def log(message: String): Unit = {
+    logger.trace("[{}] {}", id, message)
+  }
+
+  override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
+    id = f"0x${ctx.channel.hashCode}%08x"
+    if (enabled) log("CONNECTED")
+    super.handlerAdded(ctx)
+  }
+
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    if (enabled) log("DISCONNECTED")
+    super.channelInactive(ctx)
+  }
+
+  override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = {
+    if (enabled) text(msg) foreach { t => log(">>> " + t) }
+    super.channelRead(ctx, msg)
+  }
+
+  override def write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise): Unit = {
+    if (enabled) text(msg) foreach { t => log("<<< " + t) }
+    super.write(ctx, msg, promise)
+  }
+
+  private def text(msg: Any): Option[String] = msg match {
+    case m: TextWebSocketFrame => Some(m.text)
+    case _: BinaryWebSocketFrame => Some("BINARY")
+    case _: CloseWebSocketFrame => Some("CLOSE")
+    case _: PingWebSocketFrame => Some("PING")
+    case _: PongWebSocketFrame => Some("PONG")
+    case _ => None
   }
 }

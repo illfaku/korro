@@ -19,7 +19,7 @@ package org.oxydev.korro.http.internal.server.handler
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler._
 import org.oxydev.korro.http.internal.server.config.WsConfig
-import org.oxydev.korro.util.log.{Logger, Logging}
+import org.oxydev.korro.util.log.Logging
 
 import akka.actor.ActorContext
 import io.netty.channel._
@@ -54,12 +54,12 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
-        pipeline.addBefore("logging", "ws-standard", WsStandardBehaviorHandler)
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
-        pipeline.addAfter("logging", "ws-codec", WsMessageCodec)
+        pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
+        pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
+        pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
         pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
-        pipeline.replace("logging", "logging", new WsLoggingHandler(Logger(config.logger)))
         pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")

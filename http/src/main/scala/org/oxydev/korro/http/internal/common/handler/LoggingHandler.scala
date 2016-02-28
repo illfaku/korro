@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.util.log.Logger.Logger
+import org.oxydev.korro.util.log.Logger
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelDuplexHandler, ChannelHandlerContext, ChannelPromise}
@@ -29,7 +29,9 @@ import java.net.SocketAddress
  * @author Vladimir Konstantinov
  */
 @Sharable
-class LoggingHandler(logger: Logger) extends ChannelDuplexHandler {
+class LoggingHandler(name: String) extends ChannelDuplexHandler {
+
+  private val logger = Logger(name)
 
   private def enabled: Boolean = logger.isTraceEnabled
 
@@ -38,10 +40,8 @@ class LoggingHandler(logger: Logger) extends ChannelDuplexHandler {
   }
 
   private def log(ctx: ChannelHandlerContext, name: String, msg: Any): Unit = {
-    log(ctx, text(name).applyOrElse(msg, (_: Any) => FormatUtils.formatMessage(name, msg)))
+    log(ctx, FormatUtils.formatMessage(name, msg))
   }
-
-  protected def text(name: String): PartialFunction[Any, String] = PartialFunction.empty
 
   override def channelRegistered(ctx: ChannelHandlerContext): Unit = {
     if (enabled) log(ctx, "REGISTERED")
@@ -64,7 +64,7 @@ class LoggingHandler(logger: Logger) extends ChannelDuplexHandler {
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit = {
-    if (enabled) log(ctx, "EXCEPTION: " + cause.getMessage)
+    if (enabled) log(ctx, "EXCEPTION: " + cause)
     super.exceptionCaught(ctx, cause)
   }
 

@@ -18,8 +18,7 @@ package org.oxydev.korro.http.internal.client.handler
 
 import org.oxydev.korro.http.api.{HttpRequest, HttpResponse}
 import org.oxydev.korro.http.internal.client.config.ClientConfig
-import org.oxydev.korro.http.internal.common.handler.{LoggingHandler, HttpMessageCodec}
-import org.oxydev.korro.util.log.Logger
+import org.oxydev.korro.http.internal.common.handler.{HttpMessageCodec, LoggingHandler}
 
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
@@ -47,7 +46,7 @@ class HttpChannelInitializer(config: ClientConfig, url: URL, req: HttpRequest, p
     }
 
     ch.pipeline.addLast("http-codec", new HttpClientCodec)
-    ch.pipeline.addLast("logging", new LoggingHandler(Logger(config.logger)))
+    ch.pipeline.addLast("logging", new LoggingHandler(config.logger))
     ch.pipeline.addLast("korro-codec", new HttpMessageCodec(65536L))
     ch.pipeline.addLast("http", new HttpChannelHandler(req, promise, config.requestTimeout))
   }
