@@ -46,4 +46,4 @@ case class HttpRequest(
  *
  * @author Vladimir Konstantinov
  */
-case class HttpResponse(status: Int, headers: HttpParams, content: HttpContent) extends HttpMessage
+case class HttpResponse(status: HttpStatus, headers: HttpParams, content: HttpContent) extends HttpMessage

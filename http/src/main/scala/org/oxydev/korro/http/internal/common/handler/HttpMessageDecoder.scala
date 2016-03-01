@@ -97,7 +97,9 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
-    message = HttpResponse(msg.getStatus.code, decodeHeaders(msg.headers), HttpContent.empty)
+    message = HttpResponse(
+      HttpStatus(msg.getStatus.code, msg.getStatus.reasonPhrase), decodeHeaders(msg.headers), HttpContent.empty
+    )
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 

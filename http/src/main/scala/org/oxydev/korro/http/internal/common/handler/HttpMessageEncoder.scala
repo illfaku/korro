@@ -43,7 +43,7 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
         )
       case res: HttpResponse =>
         new netty.DefaultHttpResponse(
-          netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.valueOf(res.status)
+          netty.HttpVersion.HTTP_1_1, new netty.HttpResponseStatus(res.status.code, res.status.reason)
         )
     }
     setHeaders(message, msg)
