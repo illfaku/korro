@@ -91,7 +91,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
     val path = decoder.path
     val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
     message = HttpRequest(
-      msg.getMethod.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
+      HttpMethod(msg.getMethod.name), path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
     )
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }

@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.api.actor
 
-import org.oxydev.korro.http.api.{HttpStatus, HttpRequest}
+import org.oxydev.korro.http.api.{HttpMethod, HttpStatus, HttpRequest}
 
 import akka.actor.{Actor, ActorRef}
 
@@ -106,7 +106,8 @@ object RouteMatcher {
     override def apply(req: HttpRequest): Boolean = test(req)
   }
 
-  def MethodIs(method: String) = apply(_.method equalsIgnoreCase method)
+  def MethodIs(method: String) = apply(_.method.name == method)
+  def MethodIs(method: HttpMethod) = apply(_.method == method)
   def PathIs(path: String) = apply(_.path == path)
   def PathStartsWith(prefix: String) = apply(_.path startsWith prefix)
   def HasHeaderValue(name: String, value: String) = apply(_.headers.all(name).exists(_ equalsIgnoreCase value))

@@ -39,7 +39,7 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     val message: netty.HttpMessage = msg match {
       case req: HttpRequest =>
         new netty.DefaultHttpRequest(
-          netty.HttpVersion.HTTP_1_1, netty.HttpMethod.valueOf(req.method), prepareUri(req.path, req.parameters)
+          netty.HttpVersion.HTTP_1_1, netty.HttpMethod.valueOf(req.method.name), prepareUri(req.path, req.parameters)
         )
       case res: HttpResponse =>
         new netty.DefaultHttpResponse(

@@ -23,8 +23,8 @@ package org.oxydev.korro.http.api
  * {{{
  *   val req: HttpRequest = ???
  *   req match {
- *     case HttpMethod.Get(path, r) => ???
- *     case HttpMethod.Post(path, r) => ???
+ *     case HttpMethod.Get(r) => ???
+ *     case HttpMethod.Post(r) => ???
  *   }
  * }}}
  *
@@ -32,21 +32,31 @@ package org.oxydev.korro.http.api
  */
 object HttpMethod {
 
-  object Get extends HttpMethod("GET")
+  val Get = new HttpMethod("GET")
+  val Post = new HttpMethod("POST")
+  val Put = new HttpMethod("PUT")
+  val Delete = new HttpMethod("DELETE")
+  val Head = new HttpMethod("HEAD")
+  val Connect = new HttpMethod("CONNECT")
+  val Options = new HttpMethod("OPTIONS")
+  val Trace = new HttpMethod("TRACE")
 
-  object Post extends HttpMethod("POST")
+  private val methodMap = Map(
+    Get.name -> Get,
+    Post.name -> Post,
+    Put.name -> Put,
+    Delete.name -> Delete,
+    Head.name -> Head,
+    Connect.name -> Connect,
+    Options.name -> Options,
+    Trace.name -> Trace
+  )
 
-  object Put extends HttpMethod("PUT")
-
-  object Delete extends HttpMethod("DELETE")
-
-  object Head extends HttpMethod("HEAD")
-
-  object Connect extends HttpMethod("CONNECT")
-
-  object Options extends HttpMethod("OPTIONS")
-
-  object Trace extends HttpMethod("TRACE")
+  def apply(name: String): HttpMethod = {
+    require(name != null, "name is null")
+    require(name.trim.nonEmpty, "name is empty")
+    methodMap.getOrElse(name, new HttpMethod(name))
+  }
 }
 
 /**
@@ -54,7 +64,7 @@ object HttpMethod {
  *
  * @author Vladimir Konstantinov
  */
-sealed abstract class HttpMethod(val name: String) {
+class HttpMethod(val name: String) {
 
   def apply(
     path: String,
@@ -62,11 +72,20 @@ sealed abstract class HttpMethod(val name: String) {
     content: HttpContent = HttpContent.empty,
     headers: HttpParams = HttpParams.empty
   ): HttpRequest = {
-    new HttpRequest(name, path, parameters, headers, content)
+    new HttpRequest(this, path, parameters, headers, content)
   }
 
-  def unapply(req: HttpRequest): Option[(String, HttpRequest)] = {
-    if (name == req.method.toUpperCase) Some(req.path, req)
-    else None
+  def unapply(req: HttpRequest): Option[HttpRequest] = if (this == req.method) Some(req) else None
+
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[HttpMethod]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: HttpMethod => (that canEqual this) && name == that.name
+    case _ => false
   }
+
+  override lazy val hashCode = name.hashCode
+
+  override val toString = name
 }

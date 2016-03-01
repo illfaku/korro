@@ -37,7 +37,9 @@ sealed trait HttpMessage {
  *
  * @author Vladimir Konstantinov
  */
-case class HttpRequest(method: String, path: String, parameters: HttpParams, headers: HttpParams, content: HttpContent) extends HttpMessage
+case class HttpRequest(
+  method: HttpMethod, path: String, parameters: HttpParams, headers: HttpParams, content: HttpContent
+) extends HttpMessage
 
 /**
  * HTTP response with status code, content and headers.
