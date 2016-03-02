@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015  Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright (C) 2015, 2016  Vladimir Konstantinov, Yuriy Gintsyak
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.util.akka
+package org.oxydev.korro.util.concurrent.actor
 
 import akka.actor._
 
@@ -29,38 +29,36 @@ import scala.concurrent.duration._
 trait ActorDependency extends Actor {
 
   import context.dispatcher
-  private val scheduler = context.system.scheduler
 
-  private val deps = mutable.Set.empty[DependencyInfo]
+  private val deps = mutable.Set.empty[DepInfo]
 
-  def dependency(path: String)(whenResolved: ActorRef => Unit = null): Unit = {
+  def dependency(path: String)(whenResolved: ActorRef => Unit): Unit = {
     val sel = context.actorSelection(path)
-    val op = Option(whenResolved)
-    val task = scheduleIdentification(sel)
-    deps += new DependencyInfo(sel, op, task, None)
+    val task = scheduleIdentification(path, sel)
+    deps += new DepInfo(path, sel, whenResolved, task)
   }
 
-  private def scheduleIdentification(selection: ActorSelection): Cancellable = {
-    scheduler.schedule(Duration.Zero, 2 seconds)(selection ! Identify(selection))
+  private def scheduleIdentification(id: Any, selection: ActorSelection): Cancellable = {
+    context.system.scheduler.schedule(Duration.Zero, 2 seconds)(selection ! Identify(id))
   }
 
   override def unhandled(message: Any): Unit = message match {
 
     case ActorIdentity(id, Some(ref)) =>
-      deps.find(d => d.ref.isEmpty && d.sel == id) match {
+      deps.find(d => d.id == id && d.ref.isEmpty) match {
         case Some(dep) =>
           dep.task.cancel()
           context watch ref
-          dep.op foreach (_(ref))
-          deps += dep.withRef(ref)
+          dep.op(ref)
+          dep.ref = Some(ref)
         case None => super.unhandled(message)
       }
 
     case Terminated(actor) =>
       deps.find(_.ref.contains(actor)) match {
         case Some(dep) =>
-          val task = scheduleIdentification(dep.sel)
-          deps += dep.withTask(task)
+          dep.ref = None
+          dep.task = scheduleIdentification(dep.id, dep.sel)
         case None => super.unhandled(message)
       }
 
@@ -77,18 +75,14 @@ trait ActorDependency extends Actor {
   }
 }
 
-private [akka] class DependencyInfo(
-  val sel: ActorSelection, val op: Option[(ActorRef => Unit)], val task: Cancellable, val ref: Option[ActorRef]
-) {
+private [actor] class DepInfo(val id: Any, val sel: ActorSelection, val op: ActorRef => Unit, var task: Cancellable) {
 
-  def withTask(t: Cancellable): DependencyInfo = new DependencyInfo(sel, op, t, None)
+  var ref: Option[ActorRef] = None
 
-  def withRef(r: ActorRef): DependencyInfo = new DependencyInfo(sel, op, task, Option(r))
-
-  override def hashCode(): Int = sel.hashCode
+  override val hashCode: Int = id.hashCode
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case that: DependencyInfo => this.sel.equals(that.sel)
+    case that: DepInfo => this.id == that.id
     case _ => false
   }
 }
