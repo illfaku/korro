@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.api
 
-import org.oxydev.korro.util.protocol.http.QueryStringUtils
+import org.oxydev.korro.util.protocol.http.QueryStringCodec
 
 /**
  * TODO: Add description.
@@ -35,9 +35,12 @@ sealed trait HttpMessage {
  */
 case class HttpRequest(method: HttpMethod, uri: String, headers: HttpParams, content: HttpContent) extends HttpMessage {
 
-  lazy val (path, queryString) = QueryStringUtils.split(uri)
+  lazy val (path: String, queryString: String) = {
+    val pos = uri.indexOf('?')
+    if (pos == -1) (uri, "") else (uri.substring(0, pos), uri.substring(pos + 1))
+  }
 
-  lazy val parameters: HttpParams = new HttpParams(QueryStringUtils.decode(queryString))
+  lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
 }
 
 /**

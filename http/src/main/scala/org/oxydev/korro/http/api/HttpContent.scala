@@ -19,7 +19,7 @@ package org.oxydev.korro.http.api
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
 import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
 import org.oxydev.korro.util.protocol.http.MimeTypeMapping.getMimeType
-import org.oxydev.korro.util.protocol.http.QueryStringUtils
+import org.oxydev.korro.util.protocol.http.QueryStringCodec
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}
@@ -106,11 +106,11 @@ object HttpContent {
     def apply(entries: (String, Any)*): HttpContent = apply(DefaultCharset, entries: _*)
     def apply(charset: Charset, entries: (String, Any)*): HttpContent = {
       val e = entries.map(e => e._1 -> e._2.toString).toList
-      val encoded = QueryStringUtils.encode(e, charset.name)
+      val encoded = QueryStringCodec.encode(e, charset.name)
       memory(encoded.getBytes(charset), ContentType(FormUrlEncoded))
     }
     def unapply(msg: HttpMessage): Option[HttpParams] = {
-      val decoded = QueryStringUtils.decode(msg.content.string)
+      val decoded = QueryStringCodec.decode(msg.content.string)
       Some(new HttpParams(decoded))
     }
   }

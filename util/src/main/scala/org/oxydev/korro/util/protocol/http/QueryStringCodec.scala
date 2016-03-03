@@ -23,18 +23,7 @@ import java.net.{URLDecoder, URLEncoder}
  *
  * @author Vladimir Konstantinov
  */
-object QueryStringUtils {
-
-  /**
-   * Splits uri to path and query string.
-   * If there is no '?' in uri, then result will be (uri, "").
-   * @param uri uri to split
-   * @return path and query string as tuple
-   */
-  def split(uri: String): (String, String) = {
-    val pos = uri.indexOf('?')
-    if (pos == -1) uri -> "" else uri.substring(0, pos) -> uri.substring(pos + 1)
-  }
+object QueryStringCodec {
 
   /**
    * Decodes query string to list of string pairs (name, value).
