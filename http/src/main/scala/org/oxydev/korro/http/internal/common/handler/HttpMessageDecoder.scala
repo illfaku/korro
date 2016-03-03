@@ -17,21 +17,18 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
-import org.oxydev.korro.http.api.ContentType.Names.FormUrlEncoded
 import org.oxydev.korro.http.api._
-import org.oxydev.korro.http.internal.common.ByteBufUtils
-import ByteBufUtils.toBytes
+import org.oxydev.korro.http.internal.common.ByteBufUtils.toBytes
+import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.buffer.{CompositeByteBuf, Unpooled}
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
+import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 
-import java.nio.charset.Charset
 import java.util
 
 import scala.collection.JavaConversions._
-import scala.util.Try
 
 /**
  * TODO: Add description.
@@ -40,11 +37,11 @@ import scala.util.Try
  */
 class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.HttpObject] with Logging {
 
-  private val BadRequest = new netty.DefaultFullHttpResponse(
+  private lazy val BadRequest = new netty.DefaultFullHttpResponse(
     netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.BAD_REQUEST
   )
 
-  private val TooBigContent = new netty.DefaultFullHttpResponse(
+  private lazy val TooBigContent = new netty.DefaultFullHttpResponse(
     netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.BAD_REQUEST,
     Unpooled.copiedBuffer(s"Content length is too big. Limit is $maxSize bytes.", DefaultCharset)
   )
@@ -64,43 +61,37 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
     if (msg.getDecoderResult.isFailure) {
-      ctx.writeAndFlush(BadRequest.retain()).addListener(ChannelFutureListener.CLOSE)
+      finish(ctx, BadRequest)
       log.error(msg.getDecoderResult.cause, "Failed to decode inbound message.")
-    } else msg match {
-
-      case m: netty.HttpMessage =>
-        if (message != null) reset()
-        val size = getContentLength(m)
-        if (size > maxSize) ctx.writeAndFlush(TooBigContent.retain()).addListener(ChannelFutureListener.CLOSE)
-        else decodeMessage(m, out)
-
-      case m: netty.HttpContent => if (message != null) decodeContent(ctx, m, out)
-
-      case _ => throw new IllegalStateException(s"Unknown Netty's HttpObject: ${msg.getClass}.")
+    } else {
+      msg match {
+        case m: netty.HttpMessage =>
+          if (message != null) reset()
+          val size = netty.HttpHeaders.getContentLength(m, 0)
+          if (size > maxSize) finish(ctx, TooBigContent) else decodeMessage(m, out)
+        case m: netty.HttpContent => if (message != null) decodeContent(ctx, m, out)
+      }
     }
   }
 
   private def decodeMessage(msg: netty.HttpMessage, out: util.List[AnyRef]): Unit = msg match {
     case m: netty.HttpRequest => decodeRequest(m)
     case m: netty.HttpResponse => decodeResponse(m)
-    case _ => throw new IllegalStateException(s"Unknown Netty's HttpMessage: ${msg.getClass}.")
   }
 
   private def decodeRequest(msg: netty.HttpRequest): Unit = {
-    val decoder = new netty.QueryStringDecoder(msg.getUri)
-    val path = decoder.path
-    val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
-    message = HttpRequest(
-      HttpMethod(msg.getMethod.name), path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
-    )
-    contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
+    message = HttpRequest(HttpMethod(msg.getMethod.name), msg.getUri, decodeHeaders(msg.headers), HttpContent.empty)
+    contentType = parseContentType(msg)
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
-    message = HttpResponse(
-      HttpStatus(msg.getStatus.code, msg.getStatus.reasonPhrase), decodeHeaders(msg.headers), HttpContent.empty
-    )
-    contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
+    val status = HttpStatus(msg.getStatus.code, msg.getStatus.reasonPhrase)
+    message = HttpResponse(status, decodeHeaders(msg.headers), HttpContent.empty)
+    contentType = parseContentType(msg)
+  }
+
+  private def parseContentType(msg: netty.HttpMessage): ContentType = {
+    ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
@@ -110,7 +101,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private def decodeContent(ctx: ChannelHandlerContext, cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
     if (byteCache.readableBytes + cnt.content.readableBytes > maxSize) {
-      ctx.writeAndFlush(TooBigContent.retain()).addListener(ChannelFutureListener.CLOSE)
+      finish(ctx, TooBigContent)
       reset()
     } else {
       byteCache.addComponent(cnt.content.retain())
@@ -130,13 +121,13 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
     reset()
   }
 
-  private def getContentLength(msg: netty.HttpMessage): Long = {
-    Option(msg.headers.get(netty.HttpHeaders.Names.CONTENT_LENGTH)).flatMap(l => Try(l.toLong).toOption).getOrElse(0L)
-  }
-
   private def reset(): Unit = {
     message = null
     contentType = null
     byteCache.clear()
+  }
+
+  private def finish(ctx: ChannelHandlerContext, msg: netty.FullHttpResponse): Unit = {
+    ctx.writeAndFlush(msg.retain()).closeChannel()
   }
 }

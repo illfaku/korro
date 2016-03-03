@@ -16,6 +16,8 @@
  */
 package org.oxydev.korro.http.api
 
+import org.oxydev.korro.util.protocol.http.QueryStringUtils
+
 /**
  * HTTP request methods as constructors and handy extractors of request.
  * <br><br>
@@ -72,7 +74,8 @@ class HttpMethod(val name: String) {
     content: HttpContent = HttpContent.empty,
     headers: HttpParams = HttpParams.empty
   ): HttpRequest = {
-    new HttpRequest(this, path, parameters, headers, content)
+    val query = if (parameters.isEmpty) "" else "?" + QueryStringUtils.encode(parameters.entries)
+    new HttpRequest(this, s"$path$query", headers, content)
   }
 
   def unapply(req: HttpRequest): Option[HttpRequest] = if (this == req.method) Some(req) else None

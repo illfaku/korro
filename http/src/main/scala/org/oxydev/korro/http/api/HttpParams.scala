@@ -103,6 +103,7 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def -(entry: (String, Any)): HttpParams = new HttpParams(entries.filter(e => e._1 != entry._1 || e._2 != entry._2.toString))
 
+  def isEmpty: Boolean = entries.isEmpty
 
   def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
 

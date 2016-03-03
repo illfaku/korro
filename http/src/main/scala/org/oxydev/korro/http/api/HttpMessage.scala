@@ -16,6 +16,8 @@
  */
 package org.oxydev.korro.http.api
 
+import org.oxydev.korro.util.protocol.http.QueryStringUtils
+
 /**
  * TODO: Add description.
  *
@@ -27,22 +29,19 @@ sealed trait HttpMessage {
 }
 
 /**
- * HTTP request representation. It contains:
- * <ul>
- *   <li>method
- *   <li>path without prefix
- *   <li>query parameters from uri or body (if Content-Type is application/x-www-form-urlencoded)
- *   <li>content (body)
- *   <li>headers
+ * HTTP request representation.
  *
  * @author Vladimir Konstantinov
  */
-case class HttpRequest(
-  method: HttpMethod, path: String, parameters: HttpParams, headers: HttpParams, content: HttpContent
-) extends HttpMessage
+case class HttpRequest(method: HttpMethod, uri: String, headers: HttpParams, content: HttpContent) extends HttpMessage {
+
+  lazy val (path, queryString) = QueryStringUtils.split(uri)
+
+  lazy val parameters: HttpParams = new HttpParams(QueryStringUtils.decode(queryString))
+}
 
 /**
- * HTTP response with status code, content and headers.
+ * HTTP response representation.
  *
  * @author Vladimir Konstantinov
  */
