@@ -19,12 +19,12 @@ package org.oxydev.korro.http.api
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
 import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
 import org.oxydev.korro.util.protocol.http.MimeTypeMapping.getMimeType
+import org.oxydev.korro.util.protocol.http.QueryStringUtils
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parseOpt
 
-import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
@@ -39,7 +39,8 @@ sealed trait HttpContent {
   def contentType: ContentType
   def length: Long
   def bytes: Array[Byte]
-  def string: String = new String(bytes, contentType.charset.getOrElse(DefaultCharset))
+  def string: String = string(contentType.charset.getOrElse(DefaultCharset))
+  def string(charset: Charset): String = new String(bytes, charset)
   def save(path: Path): Unit
 }
 
@@ -51,7 +52,6 @@ sealed trait HttpContent {
 class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
   override val length: Long = bytes.length
   override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
-
   override lazy val toString: String = s"MemoryHttpContent(contentType=$contentType, length=$length)"
 }
 
@@ -63,7 +63,6 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) ex
 class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long) extends HttpContent {
   override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
   override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
-
   override lazy val toString: String = s"FileHttpContent(contentType=$contentType, length=$length, path=$file)"
 }
 
@@ -88,25 +87,31 @@ object HttpContent {
     new FileHttpContent(path, contentType, length)
   }
 
-  def form(entries: (String, Any)*): HttpContent = {
-    val encoded = entries map {
-      case (name, value) => URLEncoder.encode(name, "UTF-8") + "=" + URLEncoder.encode(value.toString, "UTF-8")
-    } mkString "&"
-    memory(encoded.getBytes(DefaultCharset), ContentType(FormUrlEncoded))
-  }
-
 
   object Text {
     def apply(text: CharSequence, charset: Charset = DefaultCharset): HttpContent = {
       memory(text.toString.getBytes(charset), ContentType(TextPlain, charset))
     }
-    def unapply(msg: HttpMessage): Option[String] = if (msg.content.length > 0) Some(msg.content.string) else None
+    def unapply(msg: HttpMessage): Option[String] = Some(msg.content.string)
   }
 
   object Json {
     def apply(json: JValue, charset: Charset = DefaultCharset): HttpContent = {
       memory(compact(render(json)).getBytes(charset), ContentType(ApplicationJson, charset))
     }
-    def unapply(msg: HttpMessage): Option[JValue] = Text.unapply(msg).flatMap(parseOpt)
+    def unapply(msg: HttpMessage): Option[JValue] = parseOpt(msg.content.string)
+  }
+
+  object Form {
+    def apply(entries: (String, Any)*): HttpContent = apply(DefaultCharset, entries: _*)
+    def apply(charset: Charset, entries: (String, Any)*): HttpContent = {
+      val e = entries.map(e => e._1 -> e._2.toString).toList
+      val encoded = QueryStringUtils.encode(e, charset.name)
+      memory(encoded.getBytes(charset), ContentType(FormUrlEncoded))
+    }
+    def unapply(msg: HttpMessage): Option[HttpParams] = {
+      val decoded = QueryStringUtils.decode(msg.content.string)
+      Some(new HttpParams(decoded))
+    }
   }
 }
