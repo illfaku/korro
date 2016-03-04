@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.api.actor
 
-import org.oxydev.korro.http.api.{HttpMethod, HttpStatus, HttpRequest}
+import org.oxydev.korro.http.api.{HttpMethod, HttpRequest, HttpStatus}
 
 import akka.actor.{Actor, ActorRef}
 
@@ -40,13 +40,17 @@ trait HttpRouter extends Actor {
 
   private val routes = mutable.Map.empty[ActorRef, RouteMatcher]
 
-  override def unhandled(message: Any): Unit = message match {
-    case HttpRouter.SetRoute(actor, matcher) => routes += (actor -> matcher)
-    case HttpRouter.UnsetRoute(actor) => routes -= actor
-    case req: HttpRequest => routes.find(_._2(req)) match {
+  protected def route(req: HttpRequest): Unit = {
+    routes.find(_._2(req)) match {
       case Some((actor, _)) => actor forward req
       case None => sender ! HttpStatus.NotFound()
     }
+  }
+
+  override def unhandled(message: Any): Unit = message match {
+    case HttpRouter.SetRoute(actor, matcher) => routes += (actor -> matcher)
+    case HttpRouter.UnsetRoute(actor) => routes -= actor
+    case req: HttpRequest => route(req)
     case _ => super.unhandled(message)
   }
 }
@@ -58,17 +62,17 @@ object HttpRouter {
 
   /**
    * Message for router actor to set your actor as handler of matched requests.
-    *
-    * @param actor actor reference of your handler-actor
+   *
+   * @param actor actor reference of your handler-actor
    * @param matcher matcher to test requests against
    */
   case class SetRoute(actor: ActorRef, matcher: RouteMatcher)
 
   /**
-    * Message for router actor to remove your actor from handlers list.
-    *
-    * @param actor actor reference of your handler-actor
-    */
+   * Message for router actor to remove your actor from handlers list.
+   *
+   * @param actor actor reference of your handler-actor
+   */
   case class UnsetRoute(actor: ActorRef)
 }
 
@@ -96,10 +100,10 @@ trait RouteMatcher { self =>
 }
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
-  */
+ * TODO: Add description.
+ *
+ * @author Vladimir Konstantinov
+ */
 object RouteMatcher {
 
   def apply(test: HttpRequest => Boolean): RouteMatcher = new RouteMatcher {
