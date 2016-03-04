@@ -16,11 +16,12 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.{HttpStatus, HttpResponse}
-import HttpStatus._
+import org.oxydev.korro.http.api.HttpResponse
+import org.oxydev.korro.http.api.HttpResponse.Status.RequestTimeout
+import org.oxydev.korro.http.internal.common.ChannelFutureExt
 
 import akka.actor._
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
+import io.netty.channel.ChannelHandlerContext
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -50,7 +51,7 @@ class HttpResponseSender(ctx: ChannelHandlerContext, timeout: FiniteDuration) ex
   }
 
   private def send(res: HttpResponse): Unit = {
-    ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE)
+    ctx.writeAndFlush(res).closeChannel()
     context.stop(self)
   }
 }

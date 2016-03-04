@@ -134,4 +134,75 @@ object HttpRequest {
  *
  * @author Vladimir Konstantinov
  */
-case class HttpResponse(status: HttpStatus, headers: HttpParams, content: HttpContent) extends HttpMessage
+case class HttpResponse(
+  status: HttpResponse.Status,
+  headers: HttpParams,
+  content: HttpContent
+) extends HttpMessage
+
+object HttpResponse {
+
+  /**
+   * TODO: Add description.
+   *
+   * @author Vladimir Konstantinov
+   */
+  object Status {
+
+    val Ok = new Status(200, "OK")
+    val BadRequest = new Status(400, "Bad Request")
+    val Unauthorized = new Status(401, "Unauthorized")
+    val NotFound = new Status(404, "Not Found")
+    val RequestTimeout = new Status(408, "Request Timeout")
+    val ServerError = new Status(500, "Internal Server Error")
+    val ServiceUnavailable = new Status(503, "Service Unavailable")
+
+    private val statusMap = Map(
+      Ok.code -> Ok,
+      BadRequest.code -> BadRequest,
+      Unauthorized.code -> Unauthorized,
+      NotFound.code -> NotFound,
+      RequestTimeout.code -> RequestTimeout,
+      ServerError.code -> ServerError,
+      ServiceUnavailable.code -> ServiceUnavailable
+    )
+
+    private def reasonFor(code: Int): String = {
+      if (code < 100) "Unknown Status"
+      else if (code < 200) "Informational"
+      else if (code < 300) "Successful"
+      else if (code < 400) "Redirection"
+      else if (code < 500) "Client Error"
+      else if (code < 600) "Server Error"
+      else "Unknown Status"
+    }
+
+    def apply(code: Int): Status = statusMap.getOrElse(code, new Status(code, reasonFor(code)))
+
+    def apply(code: Int, reason: String): Status = new Status(code, reason)
+  }
+
+  /**
+   * TODO: Add description.
+   *
+   * @author Vladimir Konstantinov
+   */
+  class Status(val code: Int, val reason: String) {
+
+    def apply(content: HttpContent = HttpContent.empty, headers: HttpParams = HttpParams.empty): HttpResponse = {
+      new HttpResponse(this, headers, content)
+    }
+
+    def unapply(res: HttpResponse): Option[HttpResponse] = if (this == res.status) Some(res) else None
+
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Status => code == that.code
+      case _ => false
+    }
+
+    override val hashCode: Int = code
+
+    override lazy val toString = s"$code $reason"
+  }
+}

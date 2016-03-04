@@ -83,7 +83,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
-    val status = HttpStatus(msg.getStatus.code, msg.getStatus.reasonPhrase)
+    val status = HttpResponse.Status(msg.getStatus.code, msg.getStatus.reasonPhrase)
     message = HttpResponse(status, decodeHeaders(msg.headers), HttpContent.empty)
   }
 

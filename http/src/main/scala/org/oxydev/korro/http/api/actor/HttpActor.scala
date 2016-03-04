@@ -16,13 +16,14 @@
  */
 package org.oxydev.korro.http.api.actor
 
-import org.oxydev.korro.http.api.{HttpRequest, HttpStatus}
+import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
 
 import akka.actor.Actor
 
 /**
  * Actor for handling `HttpRequest` messages.
- * It will return `HttpStatus.NotFound()` to sender if request unhandled.
+ * It will return `HttpResponse.Status.NotFound()` to sender if request unhandled.
  *
  * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
  * `super.unhandled`.
@@ -32,7 +33,7 @@ import akka.actor.Actor
 trait HttpActor extends Actor {
 
   override def unhandled(message: Any): Unit = message match {
-    case req: HttpRequest => sender ! HttpStatus.NotFound()
+    case req: HttpRequest => sender ! NotFound()
     case _ => super.unhandled(message)
   }
 }

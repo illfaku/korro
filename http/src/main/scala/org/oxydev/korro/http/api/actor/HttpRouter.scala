@@ -16,7 +16,8 @@
  */
 package org.oxydev.korro.http.api.actor
 
-import org.oxydev.korro.http.api.{HttpRequest, HttpStatus}
+import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
 
 import akka.actor.{Actor, ActorRef}
 
@@ -29,7 +30,8 @@ import scala.collection.mutable
  * Send `HttpRouter.UnsetRoute(ActorRef)` to remove your actor from handlers list.
  *
  * <p>If this actor will not process `HttpRequest` itself in `receive` method then it will try to find handler-actor
- * that matches this request and forward request to it, otherwise it will send `HttpStatus.NotFound()` to the sender.
+ * that matches this request and forward request to it, otherwise it will send `HttpResponse.Status.NotFound()`
+ * to the sender.
  *
  * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
  * `super.unhandled`.
@@ -43,7 +45,7 @@ trait HttpRouter extends Actor {
   protected def route(req: HttpRequest): Unit = {
     routes.find(_._2(req)) match {
       case Some((actor, _)) => actor forward req
-      case None => sender ! HttpStatus.NotFound()
+      case None => sender ! NotFound()
     }
   }
 
