@@ -127,6 +127,33 @@ object HttpRequest {
 
     override val toString = name
   }
+
+  /**
+   * Extracts path from HttpRequest.
+   *
+   * @author Vladimir Konstantinov
+   */
+  object Path {
+    def unapply(req: HttpRequest): Option[String] = Some(req.path)
+  }
+
+  /**
+   * Extracts segments of a path.
+   * {{{
+   *   "/a/b/c/d/e" match {
+   *     case "/a/b" / v1 / "d" / v2 => s"$v1-$v2"   // c-e
+   *   }
+   * }}}
+   *
+   * @author Vladimir Konstantinov
+   */
+  object / {
+    def unapply(path: String): Option[(String, String)] = {
+      val pos = path.lastIndexOf('/')
+      if (pos >= 0) Some(path.substring(0, pos) -> path.substring(pos + 1))
+      else None
+    }
+  }
 }
 
 /**
