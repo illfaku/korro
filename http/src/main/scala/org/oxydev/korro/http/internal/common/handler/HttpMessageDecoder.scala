@@ -50,8 +50,6 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private var message: HttpMessage = null
 
-  private var contentType: ContentType = null
-
   private var byteCache: CompositeByteBuf = null
 
 
@@ -82,17 +80,11 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private def decodeRequest(msg: netty.HttpRequest): Unit = {
     message = HttpRequest(Method(msg.getMethod.name), msg.getUri, decodeHeaders(msg.headers), HttpContent.empty)
-    contentType = parseContentType(msg)
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
     val status = HttpStatus(msg.getStatus.code, msg.getStatus.reasonPhrase)
     message = HttpResponse(status, decodeHeaders(msg.headers), HttpContent.empty)
-    contentType = parseContentType(msg)
-  }
-
-  private def parseContentType(msg: netty.HttpMessage): ContentType = {
-    ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
@@ -114,17 +106,20 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   private def composeMessage(out: util.List[AnyRef]): Unit = {
     if (byteCache.isReadable) {
       message = message match {
-        case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, contentType))
-        case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))
+        case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, parseContentType(m)))
+        case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, parseContentType(m)))
       }
     }
     out add message
     reset()
   }
 
+  private def parseContentType(msg: HttpMessage): ContentType = {
+    ContentType.parse(msg.headers.get("Content-Type").orNull)
+  }
+
   private def reset(): Unit = {
     message = null
-    contentType = null
     byteCache.clear()
   }
 
