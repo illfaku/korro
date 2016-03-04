@@ -78,7 +78,7 @@ object HttpContent {
   def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
 
   def file(path: Path): HttpContent = {
-    file(path, ContentType(getMimeType(path).getOrElse(OctetStream)), Files.size(path))
+    file(path, ContentType(getMimeType(path.toString).getOrElse(OctetStream)), Files.size(path))
   }
   def file(path: Path, contentType: ContentType): HttpContent = {
     file(path, contentType, Files.size(path))

@@ -20,10 +20,8 @@ import org.oxydev.korro.util.lang.Loan.loan
 import org.oxydev.korro.util.log.Logging
 
 import java.io.{BufferedReader, InputStreamReader}
-import java.nio.file.Path
-import java.util.stream.Collectors
 
-import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 /**
  * TODO: Add description.
@@ -36,9 +34,14 @@ object MimeTypeMapping extends Logging {
     try {
       loan (getClass.getClassLoader.getResource("/mime.types").openStream()) to { in =>
         val reader = new BufferedReader(new InputStreamReader(in))
-        reader.lines.collect(Collectors.toList[String]).toStream
-          .map(_.split(" ", 2)).filter(_.length == 2)
-          .map(l => l(0) -> l(1).split(" ").toList).toMap
+        val result = ListBuffer.empty[(String, List[String])]
+        var line = reader.readLine()
+        while (line != null) {
+          val parts = line.split("""\s+""")
+          if (parts.length > 1) result += (parts.head -> parts.tail.toList)
+          line = reader.readLine()
+        }
+        result.toMap
       }
     } catch {
       case e: Throwable =>
@@ -53,15 +56,9 @@ object MimeTypeMapping extends Logging {
 
   def getExtension(mimeType: String): Option[String] = mime2Ext.get(mimeType.toLowerCase).map(_.head)
 
-  def getMimeType(extension: String): Option[String] = ext2mime.get(extension.toLowerCase).map(_.head)
-
-  def getMimeType(path: Path): Option[String] = {
-    val filename = path.toFile.getName
-    filename.lastIndexOf('.') match {
-      case -1 => None
-      case pos =>
-        val extension = filename.substring(pos + 1)
-        getMimeType(extension)
-    }
+  def getMimeType(s: String): Option[String] = {
+    val pos = s.lastIndexOf('.')
+    if (pos >= 0) ext2mime.get(s.substring(pos + 1).toLowerCase).map(_.head)
+    else ext2mime.get(s.toLowerCase).map(_.head)
   }
 }

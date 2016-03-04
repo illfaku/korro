@@ -99,7 +99,7 @@ model/vrml vrml wrl
 text/calendar ics ifb
 text/css css
 text/html html htm
-text/plain asc txt
+text/plain txt asc
 text/richtext rtx
 text/rtf rtf
 text/sgml sgm sgml
@@ -108,7 +108,7 @@ text/vnd.wap.wml wml
 text/vnd.wap.wmlscript wmls
 text/x-setext etx
 video/mp4 mp4
-video/mpeg mpe mpeg mpg
+video/mpeg mpeg mpe mpg
 video/quicktime mov qt
 video/vnd.mpegurl m4u mxu
 video/x-dv dif dv
