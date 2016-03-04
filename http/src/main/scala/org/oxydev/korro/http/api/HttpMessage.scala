@@ -16,7 +16,10 @@
  */
 package org.oxydev.korro.http.api
 
+import org.oxydev.korro.util.i18n.Locales
 import org.oxydev.korro.util.protocol.http.QueryStringCodec
+
+import java.util.Locale
 
 /**
  * TODO: Add description.
@@ -41,6 +44,8 @@ case class HttpRequest(method: HttpMethod, uri: String, headers: HttpParams, con
   }
 
   lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
+
+  lazy val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
 }
 
 /**
