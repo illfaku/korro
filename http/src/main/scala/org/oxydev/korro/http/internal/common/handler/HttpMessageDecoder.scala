@@ -17,6 +17,7 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
+import org.oxydev.korro.http.api.HttpRequest.Method
 import org.oxydev.korro.http.api._
 import org.oxydev.korro.http.internal.common.ByteBufUtils.toBytes
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
@@ -80,7 +81,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeRequest(msg: netty.HttpRequest): Unit = {
-    message = HttpRequest(HttpMethod(msg.getMethod.name), msg.getUri, decodeHeaders(msg.headers), HttpContent.empty)
+    message = HttpRequest(Method(msg.getMethod.name), msg.getUri, decodeHeaders(msg.headers), HttpContent.empty)
     contentType = parseContentType(msg)
   }
 
