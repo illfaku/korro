@@ -65,27 +65,38 @@ private class RouteConfig(config: Config) {
 
   private val path: Option[String] = config.findString("path")
 
-  private val uriPattern: Option[Pattern] = config.findString("uri-pattern").map(Pattern.compile)
+  private val pathPrefix: Option[String] = config.findString("path-prefix")
+
+  private val pathPattern: Option[Pattern] = config.findString("path-pattern").map(Pattern.compile)
 
   private val headers: Iterable[(String, String)] = config.findStringList("headers") map { header =>
-    val a = header.split(":", 2).map(_.trim)
+    val a = header.split("=", 2).map(_.trim)
     if (a.length == 1) a(0) -> null else a(0) -> a(1)
   }
 
 
   def test(req: HttpRequest): Boolean = {
-    testMethod(req.getMethod) && testPath(req.getUri) && testUri(req.getUri) && testHeaders(req.headers)
+    testMethod(req.getMethod) &&
+      testPath(req.getUri) &&
+      testPathPrefix(req.getUri) &&
+      testPathPattern(req.getUri) &&
+      testHeaders(req.headers)
   }
 
 
   private def testMethod(m: HttpMethod): Boolean = method.forall(_ equalsIgnoreCase m.name)
 
-  private def testPath(uri: String): Boolean = path.forall(uri.startsWith)
+  private def testPath(uri: String): Boolean = path.forall(_ == path(uri))
 
-  private def testUri(uri: String): Boolean = uriPattern.forall(_.matcher(uri).matches)
+  private def testPathPrefix(uri: String): Boolean = pathPrefix.forall(uri.startsWith)
+
+  private def testPathPattern(uri: String): Boolean = pathPattern.forall(_.matcher(path(uri)).matches)
 
   private def testHeaders(h: HttpHeaders): Boolean = headers forall {
     case (name, null) => h.contains(name)
     case (name, value) => h.contains(name, value, true)
   }
+
+
+  private def path(uri: String): String = uri.split('?').head
 }
