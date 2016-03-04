@@ -28,7 +28,7 @@ import org.json4s.native.JsonParser.parseOpt
 import java.nio.charset.Charset
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 /**
  * TODO: Add description.
@@ -41,7 +41,7 @@ sealed trait HttpContent {
   def bytes: Array[Byte]
   def string: String = string(contentType.charset.getOrElse(DefaultCharset))
   def string(charset: Charset): String = new String(bytes, charset)
-  def save(path: Path): Unit
+  def save(file: Path): Unit
 }
 
 /**
@@ -51,7 +51,7 @@ sealed trait HttpContent {
  */
 class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
   override val length: Long = bytes.length
-  override def save(path: Path): Unit = Files.write(path, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+  override def save(file: Path): Unit = Files.write(file, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
   override lazy val toString: String = s"MemoryHttpContent(contentType=$contentType, length=$length)"
 }
 
@@ -60,10 +60,10 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) ex
  *
  * @author Vladimir Konstantinov
  */
-class FileHttpContent(val file: Path, val contentType: ContentType, val length: Long) extends HttpContent {
-  override lazy val bytes: Array[Byte] = Files.readAllBytes(file)
-  override def save(path: Path): Unit = Files.copy(file, path, REPLACE_EXISTING)
-  override lazy val toString: String = s"FileHttpContent(contentType=$contentType, length=$length, path=$file)"
+class FileHttpContent(val path: String, val contentType: ContentType, val length: Long) extends HttpContent {
+  override lazy val bytes: Array[Byte] = Files.readAllBytes(Paths.get(path))
+  override def save(file: Path): Unit = Files.copy(Paths.get(path), file, REPLACE_EXISTING)
+  override lazy val toString: String = s"FileHttpContent(contentType=$contentType, length=$length, path=$path)"
 }
 
 /**
@@ -77,13 +77,13 @@ object HttpContent {
 
   def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
 
-  def file(path: Path): HttpContent = {
-    file(path, ContentType(getMimeType(path.toString).getOrElse(OctetStream)), Files.size(path))
+  def file(path: String): HttpContent = {
+    file(path, ContentType(getMimeType(path.toString).getOrElse(OctetStream)))
   }
-  def file(path: Path, contentType: ContentType): HttpContent = {
-    file(path, contentType, Files.size(path))
+  def file(path: String, contentType: ContentType): HttpContent = {
+    file(path, contentType, Files.size(Paths.get(path)))
   }
-  def file(path: Path, contentType: ContentType, length: Long): HttpContent = {
+  def file(path: String, contentType: ContentType, length: Long): HttpContent = {
     new FileHttpContent(path, contentType, length)
   }
 

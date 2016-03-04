@@ -17,13 +17,13 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.api._
-import org.oxydev.korro.http.internal.common.ByteBufUtils
-import ByteBufUtils.toByteBuf
+import org.oxydev.korro.http.internal.common.ByteBufUtils.toByteBuf
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}
 import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 
+import java.io.File
 import java.util
 
 /**
@@ -39,7 +39,7 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     val message: netty.HttpMessage = msg match {
       case req: HttpRequest =>
         new netty.DefaultHttpRequest(
-          netty.HttpVersion.HTTP_1_1, netty.HttpMethod.valueOf(req.method.name), prepareUri(req.path, req.parameters)
+          netty.HttpVersion.HTTP_1_1, netty.HttpMethod.valueOf(req.method.name), req.uri
         )
       case res: HttpResponse =>
         new netty.DefaultHttpResponse(
@@ -49,28 +49,21 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     setHeaders(message, msg)
     out add message
 
-    if (msg.content.length > 0) {
-      out add encodeContent(msg.content)
-    }
+    if (msg.content.length > 0) out add encodeContent(msg.content)
+
     out add netty.LastHttpContent.EMPTY_LAST_CONTENT
   }
 
   private def encodeContent(content: HttpContent): AnyRef = content match {
     case c: MemoryHttpContent => new netty.DefaultHttpContent(c.bytes)
-    case c: FileHttpContent => new DefaultFileRegion(c.file.toFile, 0, c.length)
+    case c: FileHttpContent => new DefaultFileRegion(new File(c.path), 0, c.length)
   }
 
-  private def prepareUri(path: String, parameters: HttpParams): String = {
-    val encoder = new netty.QueryStringEncoder(path)
-    parameters.entries foreach { case (name, value) => encoder.addParam(name, value) }
-    encoder.toString
-  }
-
-  private def setHeaders(nettyMsg: netty.HttpMessage, msg: HttpMessage): Unit = {
-    msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(nettyMsg, name, value) }
+  private def setHeaders(message: netty.HttpMessage, msg: HttpMessage): Unit = {
+    msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(message, name, value) }
     if (msg.content.length > 0) {
-      netty.HttpHeaders.setContentLength(nettyMsg, msg.content.length)
-      netty.HttpHeaders.addHeader(nettyMsg, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
+      netty.HttpHeaders.setContentLength(message, msg.content.length)
+      netty.HttpHeaders.addHeader(message, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
     }
   }
 }
