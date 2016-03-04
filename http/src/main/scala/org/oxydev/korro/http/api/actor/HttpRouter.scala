@@ -114,5 +114,6 @@ object RouteMatcher {
   def MethodIs(method: HttpMethod) = apply(_.method == method)
   def PathIs(path: String) = apply(_.path == path)
   def PathStartsWith(prefix: String) = apply(_.path startsWith prefix)
+  def HasHeader(name: String) = apply(_.headers.get(name).isDefined)
   def HasHeaderValue(name: String, value: String) = apply(_.headers.all(name).exists(_ equalsIgnoreCase value))
 }
