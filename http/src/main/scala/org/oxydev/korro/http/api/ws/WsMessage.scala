@@ -23,4 +23,4 @@ package org.oxydev.korro.http.api.ws
  */
 sealed trait WsMessage
 case class TextWsMessage(text: String) extends WsMessage
-case class BinaryWsMessage(bytes: Vector[Byte]) extends WsMessage
+case class BinaryWsMessage(bytes: Array[Byte]) extends WsMessage

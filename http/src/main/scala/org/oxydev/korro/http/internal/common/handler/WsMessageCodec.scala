@@ -17,7 +17,7 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.api.ws.{BinaryWsMessage, TextWsMessage, WsMessage}
-import org.oxydev.korro.http.internal.common.ByteBufUtils.{toByteBuf, toVector}
+import org.oxydev.korro.http.internal.common.ByteBufUtils.{toByteBuf, toBytes}
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.channel.ChannelHandler.Sharable

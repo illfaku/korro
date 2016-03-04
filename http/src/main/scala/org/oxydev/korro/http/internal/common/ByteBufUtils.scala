@@ -35,11 +35,7 @@ object ByteBufUtils {
     }
   }
 
-  implicit def toVector(buf: ByteBuf): Vector[Byte] = toBytes(buf).toVector
-
   implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
-
-  implicit def toByteBuf(bytes: Vector[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes.toArray)
 
   def emptyByteBuf: ByteBuf = Unpooled.buffer(0)
 }
