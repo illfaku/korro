@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.ws.{Connected, SetTarget, WsMessage}
+import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
 
 import akka.actor._
 import io.netty.channel.Channel
@@ -32,36 +32,42 @@ class WsMessageActor(channel: Channel, route: String, init: Connected) extends A
 
   import context.dispatcher
 
-  val setTargetTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
+  val identifyTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
 
   override def preStart(): Unit = {
-    context.actorSelection(route) ! init
+    context.actorSelection(route) ! Identify('route)
     super.preStart()
   }
 
   override def receive = {
 
-    case ReceiveTimeout =>
-      log.error("Command SetTarget was not received in 5 seconds. Closing connection...")
-      disconnect()
+    case _: WsMessageActor.Inbound => stash()
 
-    case WsMessageActor.Inbound(_) => stash()
-
-    case SetTarget(ref) =>
-      setTargetTimeout.cancel()
+    case ActorIdentity('route, Some(ref)) =>
+      identifyTimeout.cancel()
       context watch ref
+      ref ! init
       unstashAll()
       context become {
         case WsMessageActor.Inbound(msg) => ref ! msg
         case msg: WsMessage => channel.writeAndFlush(msg)
         case Terminated(`ref`) => disconnect()
       }
+
+    case ActorIdentity('route, None) =>
+      identifyTimeout.cancel()
+      log.error("Actor {} was not found. Closing connection...", route)
+      disconnect()
+
+    case ReceiveTimeout =>
+      log.error("Actor {} has not responded in 5 seconds. Closing connection...", route)
+      disconnect()
   }
 
   private def disconnect(): Unit = channel.pipeline.fireUserEventTriggered(WsMessageActor.Disconnect)
 
   override def postStop(): Unit = {
-    setTargetTimeout.cancel()
+    identifyTimeout.cancel()
     super.postStop()
   }
 }
@@ -70,6 +76,6 @@ object WsMessageActor {
 
   def props(channel: Channel, route: String, init: Connected): Props = Props(new WsMessageActor(channel, route, init))
 
-  case class Inbound[T <: WsMessage](msg: T)
+  case class Inbound(msg: WsMessage)
   case object Disconnect
 }
