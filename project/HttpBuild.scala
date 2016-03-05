@@ -1,6 +1,5 @@
 import com.typesafe.sbt.osgi.{OsgiKeys, SbtOsgi}
 import sbt.Keys._
-import sbt.Project.Initialize
 import sbt._
 
 object HttpBuild extends Build {
