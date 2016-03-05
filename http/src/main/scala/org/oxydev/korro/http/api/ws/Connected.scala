@@ -21,4 +21,4 @@ package org.oxydev.korro.http.api.ws
  *
  * @author Vladimir Konstantinov
  */
-case class Connected(host: String)
+case class Connected(ip: String)

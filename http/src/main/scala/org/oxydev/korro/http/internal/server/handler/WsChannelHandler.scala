@@ -36,7 +36,7 @@ import scala.util.{Failure, Success}
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(parent: ActorRef, host: String, route: String)
+class WsChannelHandler(parent: ActorRef, ip: String, route: String)
   extends SimpleChannelInboundHandler[WsMessage] with Logging {
 
   private var sender: Option[ActorRef] = None
@@ -46,7 +46,7 @@ class WsChannelHandler(parent: ActorRef, host: String, route: String)
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     implicit val ec: ExecutionContext = ctx.channel.eventLoop
     implicit val timeout = Timeout(5 seconds)
-    (parent ? WsMessageActor.props(ctx.channel, route, Connected(host))).mapTo[ActorRef] onComplete {
+    (parent ? WsMessageActor.props(ctx.channel, route, Connected(ip))).mapTo[ActorRef] onComplete {
       case Success(ref) if ctx.channel.isActive =>
         stash foreach (ref ! WsMessageActor.Inbound(_))
         stash.clear()

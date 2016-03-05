@@ -59,7 +59,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, extractHost(channel, req), route))
+        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, extractIp(channel, req), route))
         pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")
@@ -68,12 +68,12 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
     }
   }
 
-  private def extractHost(channel: Channel, req: HttpRequest): String = {
-    val host = req.headers.get("X-Real-IP")
-    if (host != null) host
+  private def extractIp(channel: Channel, req: HttpRequest): String = {
+    val ip = req.headers.get("X-Real-IP")
+    if (ip != null) ip
     else channel.remoteAddress match {
       case address: InetSocketAddress => address.getHostString
-      case _ => "UNKNOWN"
+      case _ => "N/A"
     }
   }
 }
