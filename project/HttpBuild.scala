@@ -1,13 +1,42 @@
 import com.typesafe.sbt.osgi.{OsgiKeys, SbtOsgi}
 import sbt.Keys._
+import sbt.Project.Initialize
 import sbt._
 
 object HttpBuild extends Build {
 
   lazy val basicSettings = Seq(
+
     organization := "org.oxydev",
     version := "0.3.0-SNAPSHOT",
-    scalaVersion := Dependency.V.Scala
+    scalaVersion := Dependency.V.Scala,
+
+    licenses := Seq("GNU Lesser General Public License" -> url("http://www.gnu.org/licenses/lgpl.html")),
+    homepage := Some(url("https://github.com/oxy-development/korro")),
+    organizationHomepage := Some(url("https://github.com/oxy-development")),
+
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    },
+    publishArtifact in Test := false,
+    pomIncludeRepository := { _ => false },
+    pomExtra :=
+      <scm>
+        <url>git@github.com:oxy-development/korro.git</url>
+        <connection>scm:git:git@github.com:oxy-development/korro.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>illfaku</id>
+          <name>Vladimir Konstantinov</name>
+          <url>https://github.com/illfaku</url>
+        </developer>
+      </developers>
   )
 
   lazy val compileJdkSettings = Seq(
@@ -23,7 +52,7 @@ object HttpBuild extends Build {
   lazy val root = Project(
     id = "korro",
     base = file("."),
-    settings = basicSettings
+    settings = basicSettings ++ Seq(publishArtifact := false)
   ) aggregate (http, util)
 
   lazy val http = Project(
