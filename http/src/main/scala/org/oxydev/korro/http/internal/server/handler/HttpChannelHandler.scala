@@ -18,9 +18,8 @@ package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.internal.common.handler.HttpMessageCodec
 import org.oxydev.korro.http.internal.server.config.ServerConfig
-import org.oxydev.korro.util.log.Logging
 
-import akka.actor.ActorContext
+import akka.actor.ActorRef
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
@@ -31,8 +30,7 @@ import io.netty.handler.codec.http._
  * @author Vladimir Konstantinov
  */
 @Sharable
-class HttpChannelHandler(config: ServerConfig)(implicit context: ActorContext)
-  extends SimpleChannelInboundHandler[HttpRequest] with Logging {
+class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleChannelInboundHandler[HttpRequest] {
 
   private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
 
@@ -53,14 +51,14 @@ class HttpChannelHandler(config: ServerConfig)(implicit context: ActorContext)
       if (ctx.pipeline.get("http-request") != null) {
         ctx.pipeline.remove("http-request")
       }
-      ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, route))
+      ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, parent, route))
       ctx.fireChannelRead(msg)
     case None => notFound(ctx)
   }
 
   private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.ws.routes(msg) match {
     case Some(route) =>
-      ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeHandler(config.ws, route))
+      ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
       ctx.fireChannelRead(msg)
     case None => notFound(ctx)
   }

@@ -17,36 +17,59 @@
 package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
-import org.oxydev.korro.http.internal.server.actor.WsMessageSender
+import org.oxydev.korro.http.internal.server.actor.WsMessageActor
 import org.oxydev.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorRef, PoisonPill}
+import akka.actor.{ActorRef, PoisonPill}
+import akka.pattern.ask
+import akka.util.Timeout
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
+
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext
+import scala.concurrent.JavaConversions._
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-class WsChannelHandler(host: String, route: String)(implicit context: ActorContext)
+class WsChannelHandler(parent: ActorRef, host: String, route: String)
   extends SimpleChannelInboundHandler[WsMessage] with Logging {
 
-  private var sender: ActorRef = null
+  private var sender: Option[ActorRef] = None
+
+  private val stash = ListBuffer.empty[WsMessage]
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
-    sender = WsMessageSender.create(ctx.channel)
-    context.actorSelection(route).tell(Connected(host), sender)
+    implicit val ec: ExecutionContext = ctx.channel.eventLoop
+    implicit val timeout = Timeout(5 seconds)
+    (parent ? WsMessageActor.props(ctx.channel, route, Connected(host))).mapTo[ActorRef] onComplete {
+      case Success(ref) if ctx.channel.isActive =>
+        stash foreach (ref ! WsMessageActor.Inbound(_))
+        stash.clear()
+        sender = Some(ref)
+      case Success(ref) => ref ! PoisonPill
+      case Failure(cause) =>
+        log.error(cause, "Failed to instantiate WsMessageActor.")
+        ctx.close()
+    }
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender ! WsMessageSender.Inbound(msg)
+  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender match {
+    case Some(ref) => ref ! WsMessageActor.Inbound(msg)
+    case None => stash += msg
+  }
 
   override def userEventTriggered(ctx: ChannelHandlerContext, evt: Any): Unit = evt match {
-    case WsMessageSender.Disconnect => ctx.close()
+    case WsMessageActor.Disconnect => ctx.close()
     case _ => ctx.fireUserEventTriggered(evt)
   }
 
   override def channelInactive(ctx: ChannelHandlerContext): Unit = {
-    sender ! PoisonPill
+    sender foreach (_ ! PoisonPill)
     ctx.fireChannelInactive()
   }
 }

@@ -45,7 +45,7 @@ class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
-        .childHandler(new HttpChannelInitializer(config))
+        .childHandler(new HttpChannelInitializer(config, self))
 
       channel = bootstrap.bind(config.port).sync().channel
 
@@ -63,7 +63,9 @@ class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
     if (workerGroup != null) workerGroup.shutdownGracefully()
   }
 
-  override def receive = Actor.emptyBehavior
+  override def receive = {
+    case props: Props => sender ! context.actorOf(props)
+  }
 }
 
 object HttpServerActor {

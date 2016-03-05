@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.ws.{SetTarget, WsMessage}
+import org.oxydev.korro.http.api.ws.{Connected, SetTarget, WsMessage}
 
 import akka.actor._
 import io.netty.channel.Channel
@@ -28,26 +28,16 @@ import scala.concurrent.duration._
  *
  * @author Vladimir Konstantinov
  */
-object WsMessageSender {
-
-  def create(channel: Channel)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(props(channel))
-
-  def props(channel: Channel): Props = Props(new WsMessageSender(channel))
-
-  case class Inbound[T <: WsMessage](msg: T)
-  case object Disconnect
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class WsMessageSender(channel: Channel) extends Actor with Stash with ActorLogging {
+class WsMessageActor(channel: Channel, route: String, init: Connected) extends Actor with Stash with ActorLogging {
 
   import context.dispatcher
 
   val setTargetTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
+
+  override def preStart(): Unit = {
+    context.actorSelection(route) ! init
+    super.preStart()
+  }
 
   override def receive = {
 
@@ -55,23 +45,31 @@ class WsMessageSender(channel: Channel) extends Actor with Stash with ActorLoggi
       log.error("Command SetTarget was not received in 5 seconds. Closing connection...")
       disconnect()
 
-    case WsMessageSender.Inbound(_) => stash()
+    case WsMessageActor.Inbound(_) => stash()
 
     case SetTarget(ref) =>
       setTargetTimeout.cancel()
       context watch ref
       unstashAll()
       context become {
-        case WsMessageSender.Inbound(msg) => ref ! msg
+        case WsMessageActor.Inbound(msg) => ref ! msg
         case msg: WsMessage => channel.writeAndFlush(msg)
         case Terminated(`ref`) => disconnect()
       }
   }
 
-  private def disconnect(): Unit = channel.pipeline.fireUserEventTriggered(WsMessageSender.Disconnect)
+  private def disconnect(): Unit = channel.pipeline.fireUserEventTriggered(WsMessageActor.Disconnect)
 
   override def postStop(): Unit = {
     setTargetTimeout.cancel()
     super.postStop()
   }
+}
+
+object WsMessageActor {
+
+  def props(channel: Channel, route: String, init: Connected): Props = Props(new WsMessageActor(channel, route, init))
+
+  case class Inbound[T <: WsMessage](msg: T)
+  case object Disconnect
 }

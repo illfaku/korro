@@ -18,7 +18,7 @@ package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.internal.server.config.ServerConfig
 
-import akka.actor.ActorContext
+import akka.actor.{ActorRef, ActorContext}
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.{HttpContentCompressor, HttpServerCodec}
@@ -29,9 +29,9 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
  *
  * @author Vladimir Konstantinov
  */
-class HttpChannelInitializer(config: ServerConfig)(implicit context: ActorContext) extends ChannelInitializer[SocketChannel] {
+class HttpChannelInitializer(config: ServerConfig, parent: ActorRef) extends ChannelInitializer[SocketChannel] {
 
-  private val httpHandler = new HttpChannelHandler(config)
+  private val httpHandler = new HttpChannelHandler(config, parent)
   private val loggingHandler = new LoggingHandler(config.http.logger, LogLevel.TRACE)
   private val lastHandler = new LastChannelHandler
 

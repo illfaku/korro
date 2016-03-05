@@ -21,7 +21,7 @@ import org.oxydev.korro.http.internal.common.handler._
 import org.oxydev.korro.http.internal.server.config.WsConfig
 import org.oxydev.korro.util.log.Logging
 
-import akka.actor.ActorContext
+import akka.actor.ActorRef
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
 import io.netty.handler.codec.http.{HttpHeaders, HttpRequest}
@@ -33,7 +33,7 @@ import java.net.{InetSocketAddress, URI}
  *
  * @author Vladimir Konstantinov
  */
-class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: ActorContext)
+class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
@@ -59,7 +59,7 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
+        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, extractHost(channel, req), route))
         pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")

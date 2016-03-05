@@ -16,42 +16,47 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.HttpResponse
-import org.oxydev.korro.http.api.HttpResponse.Status.RequestTimeout
+import org.oxydev.korro.http.api.HttpResponse.Status.{RequestTimeout, ServerError}
+import org.oxydev.korro.http.api.{HttpRequest, HttpResponse}
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
+import org.oxydev.korro.http.internal.server.config.HttpConfig
 
 import akka.actor._
-import io.netty.channel.ChannelHandlerContext
-
-import scala.concurrent.duration.FiniteDuration
+import io.netty.channel.Channel
 
 /**
  * TODO: Add description.
  *
  * @author Vladimir Konstantinov
  */
-object HttpResponseSender {
-  def create(ctx: ChannelHandlerContext, timeout: FiniteDuration)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props(new HttpResponseSender(ctx, timeout)))
+class HttpMessageActor(channel: Channel, config: HttpConfig, route: String, req: HttpRequest)
+  extends Actor with ActorLogging {
+
+  override def preStart(): Unit = {
+    context.actorSelection(route) ! req
+    context.setReceiveTimeout(config.requestTimeout)
+    super.preStart()
   }
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class HttpResponseSender(ctx: ChannelHandlerContext, timeout: FiniteDuration) extends Actor {
-
-  context.setReceiveTimeout(timeout)
 
   override def receive = {
     case res: HttpResponse => send(res)
-    case ReceiveTimeout => send(RequestTimeout())
+    case Status.Success(res: HttpResponse) => send(res)
+    case Status.Failure(cause) =>
+      log.error(cause, "Received failure instead of HttpResponse for {}.", req)
+      send(ServerError())
+    case ReceiveTimeout =>
+      log.error("HttpResponse for {} was not received in time.", req)
+      send(RequestTimeout())
   }
 
   private def send(res: HttpResponse): Unit = {
-    ctx.writeAndFlush(res).closeChannel()
+    channel.writeAndFlush(res).closeChannel()
     context.stop(self)
+  }
+}
+
+object HttpMessageActor {
+  def props(channel: Channel, config: HttpConfig, route: String, req: HttpRequest): Props = {
+    Props(new HttpMessageActor(channel, config, route, req))
   }
 }

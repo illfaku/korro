@@ -17,10 +17,10 @@
 package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.internal.server.actor.HttpResponseSender
+import org.oxydev.korro.http.internal.server.actor.HttpMessageActor
 import org.oxydev.korro.http.internal.server.config.HttpConfig
 
-import akka.actor.ActorContext
+import akka.actor.ActorRef
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 /**
@@ -28,11 +28,10 @@ import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
  *
  * @author Vladimir Konstantinov
  */
-class HttpRequestHandler(config: HttpConfig, route: String)(implicit context: ActorContext)
+class HttpRequestHandler(config: HttpConfig, parent: ActorRef, route: String)
   extends SimpleChannelInboundHandler[HttpRequest] {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    implicit val sender = HttpResponseSender.create(ctx, config.requestTimeout)
-    context.actorSelection(route) ! msg
+    parent ! HttpMessageActor.props(ctx.channel, config, route, msg)
   }
 }
