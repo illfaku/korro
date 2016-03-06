@@ -27,7 +27,7 @@ Configuration example (HOCON):
                 max-content-length = 2M
                 
                 // Compression level from 0 to 9.
-                // Comment this line to disable compression.
+                // Unspecified by default.
                 compression = 6
                 
                 // Logger name.
@@ -54,10 +54,14 @@ Configuration example (HOCON):
                 // The same as compression by default.
                 decompression = true
                 
+                // Name of header with client IP.
+                // Unspecified by default.
+                source-ip-header = "X-Real-IP"
+                
                 // Logger name.
                 // "korro-ws" by default.
                 logger = "korro-ws-default"
-
+                
                 routes = [{
                     path = /websocket
                     actor = /user/ws-router
@@ -70,7 +74,8 @@ Configuration example (HOCON):
         
         default = {
             
-            // Optional URL to send requests to.
+            // URL to send requests to.
+            // Unspecified by default.
             url = "http://127.0.0.1:8080"
             
             // Number of workers to process outgoing messages.

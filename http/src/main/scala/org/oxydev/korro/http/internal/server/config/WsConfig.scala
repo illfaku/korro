@@ -31,6 +31,7 @@ trait WsConfig {
   def decompression: Boolean
   def routes: RoutesConfig
   def logger: String
+  def sourceIpHeader: Option[String]
 }
 
 class StandardWsConfig(config: Config) extends WsConfig {
@@ -39,6 +40,7 @@ class StandardWsConfig(config: Config) extends WsConfig {
   override val decompression = config.findBoolean("decompression").getOrElse(compression)
   override val routes = RoutesConfig(config.findConfigList("routes"))
   override val logger = config.findString("logger").getOrElse(DefaultWsConfig.logger)
+  override val sourceIpHeader = config.findString("source-ip-header")
 }
 
 object DefaultWsConfig extends WsConfig {
@@ -47,4 +49,5 @@ object DefaultWsConfig extends WsConfig {
   override val decompression = compression
   override val routes = RoutesConfig(Nil)
   override val logger = "korro-ws"
+  override val sourceIpHeader = None
 }

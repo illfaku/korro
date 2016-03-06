@@ -69,11 +69,8 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   }
 
   private def extractIp(channel: Channel, req: HttpRequest): String = {
-    val ip = req.headers.get("X-Real-IP")
-    if (ip != null) ip
-    else channel.remoteAddress match {
-      case address: InetSocketAddress => address.getHostString
-      case _ => "N/A"
+    config.sourceIpHeader.flatMap(name => Option(req.headers.get(name))) getOrElse {
+      channel.remoteAddress.asInstanceOf[InetSocketAddress].getHostString
     }
   }
 }
