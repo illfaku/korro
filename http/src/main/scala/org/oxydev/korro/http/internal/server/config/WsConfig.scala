@@ -33,7 +33,7 @@ trait WsConfig {
 }
 
 class StandardWsConfig(config: Config) extends WsConfig {
-  override val maxFramePayloadLength = config.findBytes("maxFramePayloadLength").map(_.toInt).getOrElse(DefaultWsConfig.maxFramePayloadLength)
+  override val maxFramePayloadLength = config.findBytes("max-frame-payload-length").map(_.toInt).getOrElse(DefaultWsConfig.maxFramePayloadLength)
   override val compression = config.findBoolean("compression").getOrElse(DefaultWsConfig.compression)
   override val routes = RoutesConfig(config.findConfigList("routes"))
   override val logger = config.findString("logger").getOrElse(DefaultWsConfig.logger)

@@ -37,10 +37,10 @@ sealed trait HttpConfig {
 }
 
 class StandardHttpConfig(config: Config) extends HttpConfig {
-  override val maxContentLength = config.findBytes("maxContentLength").getOrElse(DefaultHttpConfig.maxContentLength)
-  override val minContentLength = config.findBytes("minContentLength").getOrElse(maxContentLength)
+  override val maxContentLength = config.findBytes("max-content-length").getOrElse(DefaultHttpConfig.maxContentLength)
+  override val minContentLength = config.findBytes("min-content-length").getOrElse(maxContentLength)
   override val compressionLevel = config.findInt("compression")
-  override val requestTimeout = config.findFiniteDuration("requestTimeout").getOrElse(DefaultHttpConfig.requestTimeout)
+  override val requestTimeout = config.findFiniteDuration("request-timeout").getOrElse(DefaultHttpConfig.requestTimeout)
   override val routes = RoutesConfig(config.findConfigList("routes"))
   override val logger = config.findString("logger").getOrElse(DefaultHttpConfig.logger)
 }

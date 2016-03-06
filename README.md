@@ -14,17 +14,17 @@ Configuration example (HOCON):
             
             // Number of workers to process incoming messages.
             // 1 by default.
-            workerGroupSize = 2
+            worker-group-size = 2
             
             HTTP = {
                 
                 // Time limit to ask route actor.
                 // 60 seconds by default.
-                requestTimeout = 10s
+                request-timeout = 10s
                 
                 // Maximal length of HTTP request content.
                 // 65536 bytes by default.
-                maxContentLength = 2M
+                max-content-length = 2M
                 
                 // Compression level from 0 to 9.
                 // Comment this line to disable compression.
@@ -44,7 +44,7 @@ Configuration example (HOCON):
                 
                 // Maximal WebSocket frame payload length.
                 // 65536 bytes by default.
-                maxFramePayloadLength = 2M
+                max-frame-payload-length = 2M
                 
                 // Compression of WebSocket text frames.
                 // false by default.
@@ -71,11 +71,11 @@ Configuration example (HOCON):
             
             // Number of workers to process outgoing messages.
             // 1 by default.
-            workerGroupSize = 2
+            worker-group-size = 2
 
             // Time limit for request processing.
             // 60 seconds by default.
-            requestTimeout = 10s
+            request-timeout = 10s
             
             // Logger name.
             // "korro-client" by default.

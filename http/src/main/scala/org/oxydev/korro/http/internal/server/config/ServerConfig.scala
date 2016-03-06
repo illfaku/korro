@@ -27,7 +27,7 @@ import com.typesafe.config.Config
  */
 class ServerConfig(val name: String, config: Config) {
   val port = config.findInt("port").getOrElse(8080)
-  val workerGroupSize = config.findInt("workerGroupSize").getOrElse(1)
+  val workerGroupSize = config.findInt("worker-group-size").getOrElse(1)
   val http = config.findConfig("HTTP").map(new StandardHttpConfig(_)).getOrElse(DefaultHttpConfig)
   val ws = config.findConfig("WebSocket").map(new StandardWsConfig(_)).getOrElse(DefaultWsConfig)
 }
