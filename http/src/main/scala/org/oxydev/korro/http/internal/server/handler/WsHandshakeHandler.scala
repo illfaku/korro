@@ -55,7 +55,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
         val pipeline = channel.pipeline
         pipeline.remove("http")
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
-        pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
+        if (config.decompression) pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)

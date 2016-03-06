@@ -50,6 +50,10 @@ Configuration example (HOCON):
                 // false by default.
                 compression = true
                 
+                // Decompression of WebSocket binary frames.
+                // The same as compression by default.
+                decompression = true
+                
                 // Logger name.
                 // "korro-ws" by default.
                 logger = "korro-ws-default"
