@@ -16,9 +16,7 @@
  */
 package org.oxydev.korro.http.internal
 
-import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
-
-import scala.util.{Failure, Success, Try}
+import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 
 /**
  * TODO: Add description.
@@ -33,11 +31,9 @@ package object common {
       override def operationComplete(future: ChannelFuture): Unit = f(future)
     })
 
-    def onComplete(f: Try[Channel] => Unit): Unit = future.addListener(new ChannelFutureListener {
-      override def operationComplete(future: ChannelFuture): Unit = {
-        if (future.isSuccess) f(Success(future.channel)) else f(Failure(future.cause))
-      }
-    })
+    def onSuccess(f: ChannelFuture => Unit): Unit = if (future.isSuccess) foreach(f)
+
+    def onFailure(f: ChannelFuture => Unit): Unit = if (!future.isSuccess) foreach(f)
 
     def closeChannel(): Unit = future.addListener(ChannelFutureListener.CLOSE)
   }
