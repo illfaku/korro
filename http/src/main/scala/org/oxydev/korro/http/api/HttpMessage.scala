@@ -19,6 +19,7 @@ package org.oxydev.korro.http.api
 import org.oxydev.korro.util.i18n.Locales
 import org.oxydev.korro.util.protocol.http.QueryStringCodec
 
+import java.net.{MalformedURLException, URL}
 import java.util.Locale
 
 /**
@@ -51,6 +52,16 @@ case class HttpRequest(
   lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
 
   lazy val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
+
+  def to(url: URL): OutgoingHttpRequest = {
+    val req =
+      if (url.getPath != "" && (uri == "" || uri.startsWith("?"))) this.copy(uri = url.getPath + uri)
+      else this
+    OutgoingHttpRequest(req, url)
+  }
+
+  @throws(classOf[MalformedURLException])
+  def to(url: String): OutgoingHttpRequest = to(new URL(url))
 }
 
 object HttpRequest {
@@ -106,7 +117,7 @@ object HttpRequest {
   class Method(val name: String) {
 
     def apply(
-      path: String,
+      path: String = "",
       parameters: HttpParams = HttpParams.empty,
       content: HttpContent = HttpContent.empty,
       headers: HttpParams = HttpParams.empty
@@ -141,7 +152,7 @@ object HttpRequest {
    * Extracts segments of a path.
    * {{{
    *   "/a/b/c/d/e" match {
-   *     case "/a/b" / v1 / "d" / v2 => s"$v1-$v2"   // c-e
+   *     case "/a/b" / v1 / "d" / v2 => v1 + "-" + v2   // c-e
    *   }
    * }}}
    *
