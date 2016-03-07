@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.actor
+package org.oxydev.korro.http
 
 import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
 
@@ -22,10 +22,14 @@ import akka.actor.Props
 import com.typesafe.config.Config
 
 /**
- * The main actor that starts all configured http clients as its child actors.
- *
- * @author Vladimir Konstantinov
+ * Props provider for the main actor that starts all configured http clients as its child actors.
  */
 object KorroHttpClient {
+
+  /**
+   * Creates props with which you can start clients' parent actor by your name using your ActorRefFactory.
+   * @param config Configuration of all HTTP clients that need to be started.
+   * @return Props for actor creation.
+   */
   def props(config: Config): Props = Props(new KorroHttpClientActor(config))
 }
