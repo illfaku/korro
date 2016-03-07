@@ -16,20 +16,20 @@
  */
 package org.oxydev.korro.http
 
-import org.oxydev.korro.http.internal.client.actor.KorroHttpClientActor
+import org.oxydev.korro.http.internal.server.actor.KorroHttpServerActor
 
 import akka.actor.Props
 import com.typesafe.config.Config
 
 /**
- * Props provider for the main actor that starts all configured http clients as its child actors.
+ * Props provider for the main actor that starts all configured http servers as its child actors.
  */
-object KorroHttpClient {
+object KorroHttpServers {
 
   /**
-   * Creates props with which you can start clients' parent actor by your name using your ActorRefFactory.
-   * @param config Configuration of all HTTP clients that need to be started.
+   * Creates props with which you can start servers' parent actor by your name using your ActorRefFactory.
+   * @param config Configuration of all HTTP servers that need to be started.
    * @return Props for actor creation.
    */
-  def props(config: Config): Props = Props(new KorroHttpClientActor(config))
+  def props(config: Config): Props = Props(new KorroHttpServerActor(config))
 }
