@@ -16,17 +16,13 @@
  */
 package org.oxydev.korro.http.internal.client.actor
 
-import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.api.{HttpRequest, OutgoingHttpRequest}
 import org.oxydev.korro.http.internal.client.config.ClientConfig
 import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
 
 import akka.actor._
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
-
-import java.net.{URI, URL}
-
-import scala.util.{Failure, Success, Try}
 
 /**
  * TODO: Add description.
@@ -51,18 +47,11 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
   override def receive = {
 
     case req: HttpRequest => config.url match {
-      case Some(url) => self forward (url -> req)
+      case Some(url) => self forward (req to url)
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
-    case (uri: URI, req: HttpRequest) => Try (uri.toURL) match {
-      case Success(url) => self forward (url -> req)
-      case Failure(err) => sender ! Status.Failure(err)
-    }
-
-    case (url: URL, req: HttpRequest) =>
-      val request = req.copy(headers = req.headers + ("Host" -> url.getHost))
-      HttpRequestActor.create(config, group) forward (url -> request)
+    case outgoing: OutgoingHttpRequest => HttpRequestActor.create(config, group) forward outgoing
   }
 }
 

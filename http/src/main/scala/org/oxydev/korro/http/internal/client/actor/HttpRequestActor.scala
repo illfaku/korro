@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.client.actor
 
-import org.oxydev.korro.http.api.{HttpRequest, HttpResponse}
+import org.oxydev.korro.http.api.{HttpResponse, OutgoingHttpRequest}
 import org.oxydev.korro.http.internal.client.config.ClientConfig
 import org.oxydev.korro.http.internal.client.handler.HttpChannelInitializer
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
@@ -26,8 +26,6 @@ import akka.pattern.pipe
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
-
-import java.net.URL
 
 import scala.concurrent.Promise
 
@@ -41,14 +39,14 @@ class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Acto
   import context.dispatcher
 
   override def receive = {
-    case (url: URL, req: HttpRequest) =>
+    case OutgoingHttpRequest(req, url) =>
       val promise = Promise[HttpResponse]
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
         .handler(new HttpChannelInitializer(config, url, req, promise))
         .connect(url.getHost, url.getPort)
-        .foreach { f => if (!f.isSuccess) promise.failure(f.cause) }
+        .onFailure(promise failure _.cause)
       promise.future andThen PartialFunction(_ => self ! PoisonPill) pipeTo sender
   }
 }

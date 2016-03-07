@@ -57,7 +57,7 @@ case class HttpRequest(
     val req =
       if (url.getPath != "" && (uri == "" || uri.startsWith("?"))) this.copy(uri = url.getPath + uri)
       else this
-    OutgoingHttpRequest(req, url)
+    OutgoingHttpRequest(req.copy(headers = req.headers + ("Host" -> url.getHost)), url)
   }
 
   @throws(classOf[MalformedURLException])
