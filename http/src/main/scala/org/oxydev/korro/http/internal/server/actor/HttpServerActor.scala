@@ -64,7 +64,8 @@ class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
   }
 
   override def receive = {
-    case props: Props => sender ! context.actorOf(props)
+    case HttpServerActor.CreateChild(props, true) => sender ! context.actorOf(props)
+    case HttpServerActor.CreateChild(props, false) => context.actorOf(props)
   }
 }
 
@@ -75,4 +76,6 @@ object HttpServerActor {
   }
 
   def props(config: ServerConfig): Props = Props(new HttpServerActor(config))
+
+  case class CreateChild(props: Props, returnRef: Boolean)
 }

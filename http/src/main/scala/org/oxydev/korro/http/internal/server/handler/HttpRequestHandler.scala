@@ -17,7 +17,7 @@
 package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.internal.server.actor.HttpMessageActor
+import org.oxydev.korro.http.internal.server.actor.{HttpMessageActor, HttpServerActor}
 import org.oxydev.korro.http.internal.server.config.HttpConfig
 
 import akka.actor.ActorRef
@@ -32,6 +32,7 @@ class HttpRequestHandler(config: HttpConfig, parent: ActorRef, route: String)
   extends SimpleChannelInboundHandler[HttpRequest] {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    parent ! HttpMessageActor.props(ctx.channel, config, route, msg)
+    val props = HttpMessageActor.props(ctx.channel, config, route, msg)
+    parent ! HttpServerActor.CreateChild(props, returnRef = false)
   }
 }

@@ -17,7 +17,7 @@
 package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
-import org.oxydev.korro.http.internal.server.actor.WsMessageActor
+import org.oxydev.korro.http.internal.server.actor.{HttpServerActor, WsMessageActor}
 import org.oxydev.korro.util.log.Logging
 
 import akka.actor.{ActorRef, PoisonPill}
@@ -46,7 +46,8 @@ class WsChannelHandler(parent: ActorRef, ip: String, route: String)
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     implicit val ec: ExecutionContext = ctx.channel.eventLoop
     implicit val timeout = Timeout(5 seconds)
-    (parent ? WsMessageActor.props(ctx.channel, route, Connected(ip))).mapTo[ActorRef] onComplete {
+    val props = WsMessageActor.props(ctx.channel, route, Connected(ip))
+    (parent ? HttpServerActor.CreateChild(props, returnRef = true)).mapTo[ActorRef] onComplete {
       case Success(ref) if ctx.channel.isActive =>
         stash foreach (ref ! WsMessageActor.Inbound(_))
         stash.clear()
