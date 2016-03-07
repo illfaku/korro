@@ -27,13 +27,13 @@ package object common {
 
   implicit class ChannelFutureExt(future: ChannelFuture) {
 
-    def foreach(f: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
-      override def operationComplete(future: ChannelFuture): Unit = f(future)
+    def foreach(op: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
+      override def operationComplete(f: ChannelFuture): Unit = op(f)
     })
 
-    def onSuccess(f: ChannelFuture => Unit): Unit = if (future.isSuccess) foreach(f)
+    def onSuccess(op: ChannelFuture => Unit): Unit = foreach(f => if (f.isSuccess) op(f))
 
-    def onFailure(f: ChannelFuture => Unit): Unit = if (!future.isSuccess) foreach(f)
+    def onFailure(op: ChannelFuture => Unit): Unit = foreach(f => if (!f.isSuccess) op(f))
 
     def closeChannel(): Unit = future.addListener(ChannelFutureListener.CLOSE)
   }
