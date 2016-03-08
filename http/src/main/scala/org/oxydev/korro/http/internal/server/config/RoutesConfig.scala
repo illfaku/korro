@@ -69,6 +69,8 @@ private class RouteConfig(config: Config) {
 
   private val pathPattern: Option[Pattern] = config.findString("path-pattern").map(Pattern.compile)
 
+  private val host: Option[String] = config.findString("host")
+
   private val headers: Iterable[(String, String)] = config.findStringList("headers") map { header =>
     val a = header.split("=", 2).map(_.trim)
     if (a.length == 1) a(0) -> null else a(0) -> a(1)
@@ -80,6 +82,7 @@ private class RouteConfig(config: Config) {
       testPath(req.getUri) &&
       testPathPrefix(req.getUri) &&
       testPathPattern(req.getUri) &&
+      testHost(req.headers) &&
       testHeaders(req.headers)
   }
 
@@ -91,6 +94,11 @@ private class RouteConfig(config: Config) {
   private def testPathPrefix(uri: String): Boolean = pathPrefix.forall(uri.startsWith)
 
   private def testPathPattern(uri: String): Boolean = pathPattern.forall(_.matcher(path(uri)).matches)
+
+  private def testHost(h: HttpHeaders): Boolean = host forall { hst =>
+    val hh = h.get(HttpHeaders.Names.HOST)
+    hh != null && (hh == hst || hh.split(':').head == hst)
+  }
 
   private def testHeaders(h: HttpHeaders): Boolean = headers forall {
     case (name, null) => h.contains(name)
