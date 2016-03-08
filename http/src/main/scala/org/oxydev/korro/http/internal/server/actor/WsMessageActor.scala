@@ -16,26 +16,21 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
+import org.oxydev.korro.http.api.ws.{SetTarget, WsConnection, WsMessage}
 
 import akka.actor._
 import io.netty.channel.Channel
 
 import scala.concurrent.duration._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class WsMessageActor(channel: Channel, route: String, init: Connected) extends Actor with Stash with ActorLogging {
+class WsMessageActor(channel: Channel, route: String, init: WsConnection) extends Actor with Stash with ActorLogging {
 
   import context.dispatcher
 
-  val identifyTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
+  val setTargetTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
 
   override def preStart(): Unit = {
-    context.actorSelection(route) ! Identify('route)
+    context.actorSelection(route) ! init
     super.preStart()
   }
 
@@ -43,10 +38,9 @@ class WsMessageActor(channel: Channel, route: String, init: Connected) extends A
 
     case _: WsMessageActor.Inbound => stash()
 
-    case ActorIdentity('route, Some(ref)) =>
-      identifyTimeout.cancel()
+    case SetTarget(Some(ref)) =>
+      setTargetTimeout.cancel()
       context watch ref
-      ref ! init
       unstashAll()
       context become {
         case WsMessageActor.Inbound(msg) => ref ! msg
@@ -54,27 +48,27 @@ class WsMessageActor(channel: Channel, route: String, init: Connected) extends A
         case Terminated(`ref`) => disconnect()
       }
 
-    case ActorIdentity('route, None) =>
-      identifyTimeout.cancel()
-      log.error("Actor {} was not found. Closing connection...", route)
+    case SetTarget(None) =>
+      setTargetTimeout.cancel()
+      log.error("No actor for {}. Closing connection...", init)
       disconnect()
 
     case ReceiveTimeout =>
-      log.error("Actor {} has not responded in 5 seconds. Closing connection...", route)
+      log.error("SetTarget command was not received in 5 seconds. Closing connection...", route)
       disconnect()
   }
 
   private def disconnect(): Unit = channel.pipeline.fireUserEventTriggered(WsMessageActor.Disconnect)
 
   override def postStop(): Unit = {
-    identifyTimeout.cancel()
+    setTargetTimeout.cancel()
     super.postStop()
   }
 }
 
 object WsMessageActor {
 
-  def props(channel: Channel, route: String, init: Connected): Props = Props(new WsMessageActor(channel, route, init))
+  def props(channel: Channel, route: String, init: WsConnection): Props = Props(new WsMessageActor(channel, route, init))
 
   case class Inbound(msg: WsMessage)
   case object Disconnect

@@ -16,26 +16,26 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
+import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler.HttpMessageCodec
 import org.oxydev.korro.http.internal.server.config.ServerConfig
 
 import akka.actor.ActorRef
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext, SimpleChannelInboundHandler}
+import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 @Sharable
 class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleChannelInboundHandler[HttpRequest] {
 
   private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
 
+  private val BadRequest = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
+
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    if (isHandshake(msg)) doHandshake(ctx, msg) else doRequest(ctx, msg)
+    if (!msg.headers.contains(HttpHeaders.Names.HOST)) finish(ctx, BadRequest)
+    else if (isHandshake(msg)) doHandshake(ctx, msg)
+    else doRequest(ctx, msg)
   }
 
   private def isHandshake(msg: HttpRequest): Boolean = {
@@ -53,17 +53,17 @@ class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleC
       }
       ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, parent, route))
       ctx.fireChannelRead(msg)
-    case None => notFound(ctx)
+    case None => finish(ctx, NotFound)
   }
 
   private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.ws.routes(msg) match {
     case Some(route) =>
       ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
       ctx.fireChannelRead(msg)
-    case None => notFound(ctx)
+    case None => finish(ctx, NotFound)
   }
 
-  private def notFound(ctx: ChannelHandlerContext): Unit = {
-    ctx.writeAndFlush(NotFound.retain()).addListener(ChannelFutureListener.CLOSE)
+  private def finish(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
+    ctx.writeAndFlush(msg.retain()).closeChannel()
   }
 }

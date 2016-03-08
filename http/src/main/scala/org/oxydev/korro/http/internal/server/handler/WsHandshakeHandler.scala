@@ -16,6 +16,7 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
+import org.oxydev.korro.http.api.ws.WsConnection
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler._
 import org.oxydev.korro.http.internal.server.config.WsConfig
@@ -28,11 +29,6 @@ import io.netty.handler.codec.http.{HttpHeaders, HttpRequest}
 
 import java.net.{InetSocketAddress, URI}
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
@@ -59,7 +55,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, extractIp(channel, req), route))
+        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, connection(channel, req), route))
         pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")
@@ -68,9 +64,15 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
     }
   }
 
-  private def extractIp(channel: Channel, req: HttpRequest): String = {
-    config.sourceIpHeader.flatMap(name => Option(req.headers.get(name))) getOrElse {
+  private def connection(channel: Channel, req: HttpRequest): WsConnection = {
+    val host = req.headers.get(HttpHeaders.Names.HOST)
+    val path = {
+      val pos = req.getUri.indexOf('?')
+      if (pos >= 0) req.getUri.substring(0, pos) else req.getUri
+    }
+    val sourceIp = config.sourceIpHeader.flatMap(name => Option(req.headers.get(name))) getOrElse {
       channel.remoteAddress.asInstanceOf[InetSocketAddress].getHostString
     }
+    WsConnection(host, path, sourceIp)
   }
 }

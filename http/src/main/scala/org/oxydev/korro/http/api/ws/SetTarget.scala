@@ -16,9 +16,11 @@
  */
 package org.oxydev.korro.http.api.ws
 
+import akka.actor.ActorRef
+
 /**
- * TODO: Add description.
+ * Command to tell HTTP server which actor will process [[WsMessage]]s.
  *
- * @author Vladimir Konstantinov
+ * @param ref `Some` actor reference or `None` if there is no actor for that.
  */
-case class Connected(ip: String)
+case class SetTarget(ref: Option[ActorRef])

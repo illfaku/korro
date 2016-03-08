@@ -16,7 +16,7 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.api.ws.{Connected, WsMessage}
+import org.oxydev.korro.http.api.ws.{WsConnection, WsMessage}
 import org.oxydev.korro.http.internal.server.actor.{HttpServerActor, WsMessageActor}
 import org.oxydev.korro.util.log.Logging
 
@@ -31,12 +31,7 @@ import scala.concurrent.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class WsChannelHandler(parent: ActorRef, ip: String, route: String)
+class WsChannelHandler(parent: ActorRef, connection: WsConnection, route: String)
   extends SimpleChannelInboundHandler[WsMessage] with Logging {
 
   private var sender: Option[ActorRef] = None
@@ -46,7 +41,7 @@ class WsChannelHandler(parent: ActorRef, ip: String, route: String)
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     implicit val ec: ExecutionContext = ctx.channel.eventLoop
     implicit val timeout = Timeout(5 seconds)
-    val props = WsMessageActor.props(ctx.channel, route, Connected(ip))
+    val props = WsMessageActor.props(ctx.channel, route, connection)
     (parent ? HttpServerActor.CreateChild(props, returnRef = true)).mapTo[ActorRef] onComplete {
       case Success(ref) if ctx.channel.isActive =>
         stash foreach (ref ! WsMessageActor.Inbound(_))
