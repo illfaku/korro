@@ -39,13 +39,22 @@ class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Acto
   import context.dispatcher
 
   override def receive = {
+
     case OutgoingHttpRequest(req, url) =>
+
+      val port =
+        if (url.getPort == -1) {
+          if (url.getProtocol equalsIgnoreCase "https") 443 else 80
+        } else {
+          url.getPort
+        }
+
       val promise = Promise[HttpResponse]
       new Bootstrap()
         .group(group)
         .channel(classOf[NioSocketChannel])
         .handler(new HttpChannelInitializer(config, url, req, promise))
-        .connect(url.getHost, url.getPort)
+        .connect(url.getHost, port)
         .onFailure(promise failure _.cause)
       promise.future andThen PartialFunction(_ => self ! PoisonPill) pipeTo sender
   }
