@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.api.actor
+
+package org.oxydev.korro.http.tools
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
