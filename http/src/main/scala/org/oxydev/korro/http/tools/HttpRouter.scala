@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.oxydev.korro.http.tools
 
 import org.oxydev.korro.http.api.HttpRequest
@@ -25,24 +24,29 @@ import akka.actor.{Actor, ActorRef}
 import scala.collection.mutable
 
 /**
- * Actor for handling `HttpRequest` messages just like `HttpActor` but with routing functionality.
+ * Actor for handling [[HttpRequest]] messages just like [[HttpActor]] but with routing functionality.
  *
- * <p>Send `HttpRouter.SetRoute(ActorRef, RouteMatcher)` to it to set your actor as handler of matched requests.
- * Send `HttpRouter.UnsetRoute(ActorRef)` to remove your actor from handlers list.
+ * <p>Send [[HttpRouter#SetRoute]] to it to set your actor as handler of matched requests.
+ * Send [[HttpRouter#UnsetRoute]] to remove your actor from handlers list.
  *
- * <p>If this actor will not process `HttpRequest` itself in `receive` method then it will try to find handler-actor
- * that matches this request and forward request to it, otherwise it will send `HttpResponse.Status.NotFound()`
- * to the sender.
+ * <p>If this actor will not process [[HttpRequest]] itself in `receive` method then it will try to find actor
+ * that matches this request and forward request to it, otherwise it will send response with status 404 to sender.
  *
  * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
  * `super.unhandled`.
- *
- * @author Vladimir Konstantinov
  */
 trait HttpRouter extends Actor {
 
-  private val routes = mutable.Map.empty[ActorRef, RouteMatcher]
+  private val routes = mutable.Map.empty[ActorRef, HttpRequestMatcher]
 
+  /**
+   * Forwards [[HttpRequest]] to matching route if found, otherwise sends response with status 404 to sender.
+   *
+   * <p> Note: because of usage of `sender` method inside be sure to use this method only within `receive` or
+   * `unhandled` methods.
+   *
+   * @param req Request to route.
+   */
   protected def route(req: HttpRequest): Unit = {
     routes.find(_._2(req)) match {
       case Some((actor, _)) => actor forward req
@@ -51,72 +55,30 @@ trait HttpRouter extends Actor {
   }
 
   override def unhandled(message: Any): Unit = message match {
-    case HttpRouter.SetRoute(actor, matcher) => routes += (actor -> matcher)
-    case HttpRouter.UnsetRoute(actor) => routes -= actor
+    case HttpRouter.SetRoute(ref, matcher) => routes += (ref -> matcher)
+    case HttpRouter.UnsetRoute(ref) => routes -= ref
     case req: HttpRequest => route(req)
     case _ => super.unhandled(message)
   }
 }
 
 /**
- * Companion object for `HttpRouter` trait.
+ * DTO for HttpRouter trait.
  */
 object HttpRouter {
 
   /**
    * Message for router actor to set your actor as handler of matched requests.
    *
-   * @param actor actor reference of your handler-actor
-   * @param matcher matcher to test requests against
+   * @param ref Actor reference to set.
+   * @param matcher Matcher to test requests against.
    */
-  case class SetRoute(actor: ActorRef, matcher: RouteMatcher)
+  case class SetRoute(ref: ActorRef, matcher: HttpRequestMatcher)
 
   /**
-   * Message for router actor to remove your actor from handlers list.
+   * Message for HttpRouter to remove your actor from handlers list.
    *
-   * @param actor actor reference of your handler-actor
+   * @param ref Actor reference to unset.
    */
-  case class UnsetRoute(actor: ActorRef)
-}
-
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-trait RouteMatcher { self =>
-
-  def apply(req: HttpRequest): Boolean
-
-  def &&(other: RouteMatcher): RouteMatcher = new RouteMatcher {
-    override def apply(req: HttpRequest): Boolean = self(req) && other(req)
-  }
-
-  def ||(other: RouteMatcher): RouteMatcher = new RouteMatcher {
-    override def apply(req: HttpRequest): Boolean = self(req) || other(req)
-  }
-
-  def unary_! : RouteMatcher = new RouteMatcher {
-    override def apply(req: HttpRequest): Boolean = !self(req)
-  }
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-object RouteMatcher {
-
-  def apply(test: HttpRequest => Boolean): RouteMatcher = new RouteMatcher {
-    override def apply(req: HttpRequest): Boolean = test(req)
-  }
-
-  def MethodIs(method: String) = apply(_.method.name == method)
-  def MethodIs(method: HttpRequest.Method) = apply(_.method == method)
-  def PathIs(path: String) = apply(_.path == path)
-  def PathStartsWith(prefix: String) = apply(_.path startsWith prefix)
-  def HasHeader(name: String) = apply(_.headers.get(name).isDefined)
-  def HasHeaderValue(name: String, value: String) = apply(_.headers.all(name).exists(_ equalsIgnoreCase value))
+  case class UnsetRoute(ref: ActorRef)
 }
