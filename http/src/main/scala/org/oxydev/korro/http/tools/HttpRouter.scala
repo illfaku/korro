@@ -18,6 +18,7 @@ package org.oxydev.korro.http.tools
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
+import org.oxydev.korro.http.tools.HttpRequestPredicate.HttpRequestPredicate
 
 import akka.actor.{Actor, ActorRef}
 
@@ -37,7 +38,7 @@ import scala.collection.mutable
  */
 trait HttpRouter extends Actor {
 
-  private val routes = mutable.Map.empty[ActorRef, HttpRequestMatcher]
+  private val routes = mutable.Map.empty[ActorRef, HttpRequestPredicate]
 
   /**
    * Forwards [[HttpRequest]] to matching route if found, otherwise sends response with status 404 to sender.
@@ -73,7 +74,7 @@ object HttpRouter {
    * @param ref Actor reference to set.
    * @param matcher Matcher to test requests against.
    */
-  case class SetRoute(ref: ActorRef, matcher: HttpRequestMatcher)
+  case class SetRoute(ref: ActorRef, matcher: HttpRequestPredicate)
 
   /**
    * Message for HttpRouter to remove your actor from handlers list.

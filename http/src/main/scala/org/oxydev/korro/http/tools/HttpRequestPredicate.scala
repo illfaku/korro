@@ -17,35 +17,16 @@
 package org.oxydev.korro.http.tools
 
 import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.util.lang.{Predicate, Predicate1}
 
 /**
- * Predicate for [[HttpRouter]].
+ * Predicates for [[HttpRouter]].
  */
-trait HttpRequestMatcher { self =>
+object HttpRequestPredicate {
 
-  def apply(req: HttpRequest): Boolean
+  type HttpRequestPredicate = Predicate1[HttpRequest]
 
-  def &&(other: HttpRequestMatcher): HttpRequestMatcher = new HttpRequestMatcher {
-    override def apply(req: HttpRequest): Boolean = self(req) && other(req)
-  }
-
-  def ||(other: HttpRequestMatcher): HttpRequestMatcher = new HttpRequestMatcher {
-    override def apply(req: HttpRequest): Boolean = self(req) || other(req)
-  }
-
-  def unary_! : HttpRequestMatcher = new HttpRequestMatcher {
-    override def apply(req: HttpRequest): Boolean = !self(req)
-  }
-}
-
-/**
- * Factory methods for HttpRequestMatcher trait.
- */
-object HttpRequestMatcher {
-
-  def apply(test: HttpRequest => Boolean): HttpRequestMatcher = new HttpRequestMatcher {
-    override def apply(req: HttpRequest): Boolean = test(req)
-  }
+  def apply(test: HttpRequest => Boolean): HttpRequestPredicate = Predicate(test)
 
   def MethodIs(method: String) = apply(_.method.name == method)
   def MethodIs(method: HttpRequest.Method) = apply(_.method == method)
