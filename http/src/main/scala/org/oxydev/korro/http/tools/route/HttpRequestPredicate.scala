@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.tools
+package org.oxydev.korro.http.tools.route
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.util.lang.{Predicate, Predicate1}
@@ -24,9 +24,7 @@ import org.oxydev.korro.util.lang.{Predicate, Predicate1}
  */
 object HttpRequestPredicate {
 
-  type HttpRequestPredicate = Predicate1[HttpRequest]
-
-  def apply(test: HttpRequest => Boolean): HttpRequestPredicate = Predicate(test)
+  def apply(test: HttpRequest => Boolean): Predicate1[HttpRequest] = Predicate(test)
 
   def MethodIs(method: String) = apply(_.method.name == method)
   def MethodIs(method: HttpRequest.Method) = apply(_.method == method)

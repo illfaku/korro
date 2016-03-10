@@ -14,21 +14,19 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.oxydev.korro.http.tools
+package org.oxydev.korro.http.tools.route
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
-import org.oxydev.korro.http.tools.HttpRequestPredicate.HttpRequestPredicate
+import org.oxydev.korro.util.lang.Predicate1
 
 import akka.actor.{Actor, ActorRef}
 
 import scala.collection.mutable
 
 /**
- * Actor for handling [[HttpRequest]] messages just like [[HttpActor]] but with routing functionality.
- *
- * <p>Send [[HttpRouter#SetRoute]] to it to set your actor as handler of matched requests.
- * Send [[HttpRouter#UnsetRoute]] to remove your actor from handlers list.
+ * Actor for handling [[HttpRequest]] messages with routing functionality.
+ * Accepts [[HttpRouter#SetRoute]] and [[HttpRouter#UnsetRoute]] commands.
  *
  * <p>If this actor will not process [[HttpRequest]] itself in `receive` method then it will try to find actor
  * that matches this request and forward request to it, otherwise it will send response with status 404 to sender.
@@ -38,13 +36,12 @@ import scala.collection.mutable
  */
 trait HttpRouter extends Actor {
 
-  private val routes = mutable.Map.empty[ActorRef, HttpRequestPredicate]
+  private val routes = mutable.Map.empty[ActorRef, Predicate1[HttpRequest]]
 
   /**
    * Forwards [[HttpRequest]] to matching route if found, otherwise sends response with status 404 to sender.
    *
-   * <p> Note: because of usage of `sender` method inside be sure to use this method only within `receive` or
-   * `unhandled` methods.
+   * <p> Note: because of usage of `sender` method inside be sure to use this method only within this actor.
    *
    * @param req Request to route.
    */
@@ -56,7 +53,7 @@ trait HttpRouter extends Actor {
   }
 
   override def unhandled(message: Any): Unit = message match {
-    case HttpRouter.SetRoute(ref, matcher) => routes += (ref -> matcher)
+    case HttpRouter.SetRoute(ref, predicate) => routes += (ref -> predicate)
     case HttpRouter.UnsetRoute(ref) => routes -= ref
     case req: HttpRequest => route(req)
     case _ => super.unhandled(message)
@@ -64,20 +61,20 @@ trait HttpRouter extends Actor {
 }
 
 /**
- * DTO for HttpRouter trait.
+ * HttpRouter commands.
  */
 object HttpRouter {
 
   /**
-   * Message for router actor to set your actor as handler of matched requests.
+   * Command for HttpRouter to set your actor as handler of matched requests.
    *
    * @param ref Actor reference to set.
-   * @param matcher Matcher to test requests against.
+   * @param predicate Matcher to test requests against.
    */
-  case class SetRoute(ref: ActorRef, matcher: HttpRequestPredicate)
+  case class SetRoute(ref: ActorRef, predicate: Predicate1[HttpRequest])
 
   /**
-   * Message for HttpRouter to remove your actor from handlers list.
+   * Command for HttpRouter to remove your actor from handlers list.
    *
    * @param ref Actor reference to unset.
    */
