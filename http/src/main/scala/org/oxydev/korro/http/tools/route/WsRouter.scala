@@ -16,8 +16,7 @@
  */
 package org.oxydev.korro.http.tools.route
 
-import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
+import org.oxydev.korro.http.api.ws.{SetTarget, WsConnection}
 import org.oxydev.korro.util.lang.Predicate1
 
 import akka.actor.{Actor, ActorRef}
@@ -25,56 +24,56 @@ import akka.actor.{Actor, ActorRef}
 import scala.collection.mutable
 
 /**
- * Actor for handling [[HttpRequest]] messages with routing functionality.
- * Accepts [[HttpRouter#SetRoute]] and [[HttpRouter#UnsetRoute]] commands.
+ * Actor for handling [[WsConnection]] messages with routing functionality.
+ * Accepts [[WsRouter#SetRoute]] and [[WsRouter#UnsetRoute]] commands.
  *
- * <p>If this actor will not process [[HttpRequest]] itself in `receive` method then it will try to find actor
- * that matches this message and forward message to it, otherwise it will send response with status 404 to sender.
+ * <p>If this actor will not process [[WsConnection]] itself in `receive` method then it will try to find actor
+ * that matches this message and forward message to it, otherwise it will send [[SetTarget]]`(None)` to sender.
  *
  * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
  * `super.unhandled`.
  */
-trait HttpRouter extends Actor {
+trait WsRouter extends Actor {
 
-  private val routes = mutable.Map.empty[ActorRef, Predicate1[HttpRequest]]
+  private val routes = mutable.Map.empty[ActorRef, Predicate1[WsConnection]]
 
   /**
-   * Forwards [[HttpRequest]] to matching route if found, otherwise sends response with status 404 to sender.
+   * Forwards [[WsConnection]] to matching route if found, otherwise sends [[SetTarget]]`(None)` to sender.
    *
    * <p> Note: because of usage of `sender` method inside be sure to use this method only within this actor.
    *
-   * @param req Request to route.
+   * @param wc Connection to route.
    */
-  protected def route(req: HttpRequest): Unit = {
-    routes.find(_._2(req)) match {
-      case Some((actor, _)) => actor forward req
-      case None => sender ! NotFound()
+  protected def route(wc: WsConnection): Unit = {
+    routes.find(_._2(wc)) match {
+      case Some((actor, _)) => actor forward wc
+      case None => sender ! SetTarget(None)
     }
   }
 
   override def unhandled(message: Any): Unit = message match {
-    case HttpRouter.SetRoute(ref, predicate) => routes += (ref -> predicate)
-    case HttpRouter.UnsetRoute(ref) => routes -= ref
-    case req: HttpRequest => route(req)
+    case WsRouter.SetRoute(ref, predicate) => routes += (ref -> predicate)
+    case WsRouter.UnsetRoute(ref) => routes -= ref
+    case wc: WsConnection => route(wc)
     case _ => super.unhandled(message)
   }
 }
 
 /**
- * HttpRouter commands.
+ * WsRouter commands.
  */
-object HttpRouter {
+object WsRouter {
 
   /**
-   * Command for HttpRouter to set your actor as handler of matched requests.
+   * Command for WsRouter to set your actor as handler of matched connections.
    *
    * @param ref Actor reference to set.
-   * @param predicate Predicate to test requests against.
+   * @param predicate Predicate to test connections against.
    */
-  case class SetRoute(ref: ActorRef, predicate: Predicate1[HttpRequest])
+  case class SetRoute(ref: ActorRef, predicate: Predicate1[WsConnection])
 
   /**
-   * Command for HttpRouter to remove your actor from handlers list.
+   * Command for WsRouter to remove your actor from handlers list.
    *
    * @param ref Actor reference to unset.
    */
