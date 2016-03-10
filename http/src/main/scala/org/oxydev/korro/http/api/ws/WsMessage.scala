@@ -17,10 +17,22 @@
 package org.oxydev.korro.http.api.ws
 
 /**
- * TODO: Add description.
+ * Marker trait for WebSocket data frame representations.
  *
- * @author Vladimir Konstantinov
+ * @see https://tools.ietf.org/html/rfc6455#section-5.6
  */
 sealed trait WsMessage
+
+/**
+ * WebSocket text frame representation.
+ *
+ * @param text Text data from frame.
+ */
 case class TextWsMessage(text: String) extends WsMessage
+
+/**
+ * WebSocket binary frame representation.
+ *
+ * @param bytes Binary data from frame.
+ */
 case class BinaryWsMessage(bytes: Array[Byte]) extends WsMessage
