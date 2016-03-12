@@ -17,7 +17,7 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.api._
-import org.oxydev.korro.http.internal.common.ByteBufUtils.toByteBuf
+import org.oxydev.korro.http.internal.common.toByteBuf
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}
@@ -26,11 +26,6 @@ import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 import java.io.File
 import java.util
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 @Sharable
 class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 

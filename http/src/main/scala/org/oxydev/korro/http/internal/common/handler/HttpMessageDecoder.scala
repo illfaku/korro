@@ -19,8 +19,7 @@ package org.oxydev.korro.http.internal.common.handler
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
 import org.oxydev.korro.http.api.HttpRequest.Method
 import org.oxydev.korro.http.api._
-import org.oxydev.korro.http.internal.common.ByteBufUtils.toBytes
-import org.oxydev.korro.http.internal.common.ChannelFutureExt
+import org.oxydev.korro.http.internal.common.{ChannelFutureExt, toBytes}
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.buffer.{CompositeByteBuf, Unpooled}
@@ -31,11 +30,6 @@ import java.util
 
 import scala.collection.JavaConversions._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.HttpObject] with Logging {
 
   private lazy val BadRequest = new netty.DefaultFullHttpResponse(

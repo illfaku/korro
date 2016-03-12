@@ -16,8 +16,7 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.http.internal.common.ByteBufUtils
-import ByteBufUtils.toByteBuf
+import org.oxydev.korro.http.internal.common.toByteBuf
 import org.oxydev.korro.util.io.zipString
 import org.oxydev.korro.util.log.Logging
 
@@ -36,8 +35,6 @@ import scala.util.Try
  * <p>Ideally it should be done using Compression Extensions for WebSocket
  * (https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-27).
  * It is implemented in Netty 5.0 but not in 4.0.
- *
- * @author Vladimir Konstantinov
  */
 @Sharable
 class WsCompressionEncoder extends MessageToMessageEncoder[WebSocketFrame] with Logging {
