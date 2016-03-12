@@ -51,7 +51,7 @@ case class HttpRequest(
 
   lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
 
-  lazy val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
+  implicit val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
 
   def to(url: URL): OutgoingHttpRequest = {
     val req =
