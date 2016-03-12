@@ -19,8 +19,6 @@ package org.oxydev.korro.http.internal.common.handler
 import io.netty.channel.CombinedChannelDuplexHandler
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Combines [[HttpMessageDecoder]] and [[HttpMessageEncoder]].
  */
-class HttpMessageCodec(maxSize: Long) extends CombinedChannelDuplexHandler(new HttpMessageDecoder(maxSize), new HttpMessageEncoder)
+class HttpMessageCodec(maxSize: Long) extends CombinedChannelDuplexHandler(new HttpMessageDecoder(maxSize), HttpMessageEncoder)

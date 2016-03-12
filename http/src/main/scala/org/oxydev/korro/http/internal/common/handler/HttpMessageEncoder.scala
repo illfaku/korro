@@ -26,8 +26,11 @@ import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 import java.io.File
 import java.util
 
+/**
+ * Converts Korro's HttpMessage to Netty's HttpObjects (message, content and last content).
+ */
 @Sharable
-class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
+object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
   override def encode(ctx: ChannelHandlerContext, msg: HttpMessage, out: util.List[AnyRef]): Unit = {
 
@@ -58,7 +61,9 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(message, name, value) }
     if (msg.content.length > 0) {
       netty.HttpHeaders.setContentLength(message, msg.content.length)
-      netty.HttpHeaders.addHeader(message, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
+      msg.content.contentType foreach { contentType =>
+        netty.HttpHeaders.addHeader(message, netty.HttpHeaders.Names.CONTENT_TYPE, contentType.toString)
+      }
     }
   }
 }

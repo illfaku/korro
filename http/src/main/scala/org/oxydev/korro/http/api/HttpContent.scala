@@ -17,8 +17,7 @@
 package org.oxydev.korro.http.api
 
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
-import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, OctetStream, TextPlain}
-import org.oxydev.korro.util.protocol.http.MimeTypeMapping.getMimeType
+import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, TextPlain}
 import org.oxydev.korro.util.protocol.http.QueryStringCodec
 
 import org.json4s.JValue
@@ -26,71 +25,99 @@ import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parseOpt
 
 import java.nio.charset.Charset
-import java.nio.file.StandardCopyOption.REPLACE_EXISTING
-import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Abstract representation of HTTP message body.
  */
 sealed trait HttpContent {
-  def contentType: ContentType
+
+  /**
+   * Optional content type from/for HTTP message headers.
+   */
+  def contentType: Option[ContentType]
+
+  /**
+   * Size of data (in bytes).
+   */
   def length: Long
+
+  /**
+   * Extracts binary data.
+   */
   def bytes: Array[Byte]
-  def string: String = string(contentType.charset.getOrElse(DefaultCharset))
+
+  /**
+   * Converts binary data of this content to String using charset from content type or
+   * [[ContentType#DefaultCharset]] if there is no one.
+   */
+  def string: String = string(contentType.flatMap(_.charset).getOrElse(DefaultCharset))
+
+  /**
+   * Converts binary data of this content to String using provided charset.
+   */
   def string(charset: Charset): String = new String(bytes, charset)
-  def save(file: Path): Unit
 }
 
 /**
- * TODO: Add description.
+ * HTTP message body representation stored in memory.
  *
- * @author Vladimir Konstantinov
+ * @param bytes Binary data.
+ * @param contentType Optional content type from/for HTTP message headers.
  */
-class MemoryHttpContent(val bytes: Array[Byte], val contentType: ContentType) extends HttpContent {
+class MemoryHttpContent(val bytes: Array[Byte], val contentType: Option[ContentType]) extends HttpContent {
+
+  /**
+   * Length of [[bytes]].
+   */
   override val length: Long = bytes.length
-  override def save(file: Path): Unit = Files.write(file, bytes, CREATE, WRITE, TRUNCATE_EXISTING)
+
   override lazy val toString: String = s"MemoryHttpContent(contentType=$contentType, length=$length)"
 }
 
 /**
- * TODO: Add description.
+ * HTTP message body representation stored in file.
  *
- * @author Vladimir Konstantinov
+ * @param path Path to file storing data of HTTP content.
+ * @param contentType Optional content type from/for HTTP message headers.
+ * @param length Size of data (in bytes).
  */
-class FileHttpContent(val path: String, val contentType: ContentType, val length: Long) extends HttpContent {
+class FileHttpContent(val path: String, val contentType: Option[ContentType], val length: Long) extends HttpContent {
+
+  /**
+   * Reads all bytes from file at [[path]].
+   */
   override lazy val bytes: Array[Byte] = Files.readAllBytes(Paths.get(path))
-  override def save(file: Path): Unit = Files.copy(Paths.get(path), file, REPLACE_EXISTING)
+
   override lazy val toString: String = s"FileHttpContent(contentType=$contentType, length=$length, path=$path)"
 }
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Factories of HttpContent.
  */
 object HttpContent {
 
-  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, ContentType(OctetStream))
+  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, None)
 
-  def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = new MemoryHttpContent(bytes, contentType)
+  def memory(bytes: Array[Byte]): HttpContent = memory(bytes, None)
+  def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = memory(bytes, Some(contentType))
+  def memory(bytes: Array[Byte], contentType: Option[ContentType]): HttpContent = {
+    new MemoryHttpContent(bytes, contentType)
+  }
 
-  def file(path: String): HttpContent = {
-    file(path, ContentType(getMimeType(path.toString).getOrElse(OctetStream)))
-  }
-  def file(path: String, contentType: ContentType): HttpContent = {
-    file(path, contentType, Files.size(Paths.get(path)))
-  }
-  def file(path: String, contentType: ContentType, length: Long): HttpContent = {
+  def file(path: String): HttpContent = file(path, None)
+  def file(path: String, contentType: ContentType): HttpContent = file(path, Some(contentType))
+  def file(path: String, contentType: Option[ContentType]): HttpContent = file(path, contentType, Files.size(Paths.get(path)))
+  def file(path: String, length: Long): HttpContent = file(path, None, length)
+  def file(path: String, contentType: ContentType, length: Long): HttpContent = file(path, Some(contentType), length)
+  def file(path: String, contentType: Option[ContentType], length: Long): HttpContent = {
     new FileHttpContent(path, contentType, length)
   }
 
 
   object Text {
-    def apply(text: CharSequence, charset: Charset = DefaultCharset): HttpContent = {
-      memory(text.toString.getBytes(charset), ContentType(TextPlain, charset))
+    def apply(text: String, charset: Charset = DefaultCharset): HttpContent = {
+      memory(text.getBytes(charset), ContentType(TextPlain, charset))
     }
     def unapply(msg: HttpMessage): Option[String] = Some(msg.content.string)
   }
@@ -103,11 +130,9 @@ object HttpContent {
   }
 
   object Form {
-    def apply(entries: (String, Any)*): HttpContent = apply(DefaultCharset, entries: _*)
-    def apply(charset: Charset, entries: (String, Any)*): HttpContent = {
-      val e = entries.map(e => e._1 -> e._2.toString).toList
-      val encoded = QueryStringCodec.encode(e, charset.name)
-      memory(encoded.getBytes(charset), ContentType(FormUrlEncoded))
+    def apply(entries: (String, Any)*): HttpContent = {
+      val encoded = QueryStringCodec.encode(entries.map(e => e._1 -> e._2.toString).toList)
+      memory(encoded.getBytes(DefaultCharset), ContentType(FormUrlEncoded))
     }
     def unapply(msg: HttpMessage): Option[HttpParams] = {
       val decoded = QueryStringCodec.decode(msg.content.string)
