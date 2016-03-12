@@ -50,12 +50,10 @@ object ContentType {
   /**
    * Tries to extract mime type and charset from Content-Type header.
    */
-  def parse(header: String): ContentType = {
-    regex.unapplySeq(header) map { l =>
-      val mime = l.head
-      val charset = l.drop(1).headOption.flatMap(toCharset)
-      ContentType(mime, charset)
-    } getOrElse ContentType(Names.OctetStream)
+  def parse(header: String): Option[ContentType] = regex.unapplySeq(header) map { l =>
+    val mime = l.head
+    val charset = l.drop(1).headOption.flatMap(toCharset)
+    ContentType(mime, charset)
   }
 
   private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption

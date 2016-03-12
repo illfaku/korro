@@ -102,7 +102,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private def composeMessage(out: util.List[AnyRef]): Unit = {
     if (byteCache != null) {
-      val contentType = message.headers.get("Content-Type").map(ContentType.parse)
+      val contentType = message.headers.get("Content-Type").flatMap(ContentType.parse)
       message = message match {
         case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, contentType))
         case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))
