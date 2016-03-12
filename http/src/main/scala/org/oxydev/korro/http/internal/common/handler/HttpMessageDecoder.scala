@@ -30,6 +30,11 @@ import java.util
 
 import scala.collection.JavaConversions._
 
+/**
+ * Aggregates Netty's HttpObjects (HttpMessage and HttpContents up to LastHttpContent) to Korro's HttpMessage.
+ *
+ * @param maxSize Maximum size of content.
+ */
 class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.HttpObject] with Logging {
 
   private lazy val BadRequest = new netty.DefaultFullHttpResponse(
@@ -47,21 +52,16 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   private var byteCache: CompositeByteBuf = null
 
 
-  override def handlerAdded(ctx: ChannelHandlerContext): Unit = byteCache = Unpooled.compositeBuffer
-
-  override def handlerRemoved(ctx: ChannelHandlerContext): Unit = byteCache.release()
-
-
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
     if (msg.getDecoderResult.isFailure) {
       finish(ctx, BadRequest)
-      log.error(msg.getDecoderResult.cause, "Failed to decode inbound message.")
+      log.debug("Failed to decode inbound message. {}", msg.getDecoderResult.cause)
     } else {
       msg match {
         case m: netty.HttpMessage =>
-          if (message != null) reset()
-          val size = netty.HttpHeaders.getContentLength(m, 0)
-          if (size > maxSize) finish(ctx, TooBigContent) else decodeMessage(m, out)
+          reset()
+          if (netty.HttpHeaders.getContentLength(m, 0) > maxSize) finish(ctx, TooBigContent)
+          else decodeMessage(m, out)
         case m: netty.HttpContent => if (message != null) decodeContent(ctx, m, out)
       }
     }
@@ -87,37 +87,50 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeContent(ctx: ChannelHandlerContext, cnt: netty.HttpContent, out: util.List[AnyRef]): Unit = {
-    if (byteCache.readableBytes + cnt.content.readableBytes > maxSize) {
+    val size = if (byteCache == null) cnt.content.readableBytes else byteCache.readableBytes + cnt.content.readableBytes
+    if (size > maxSize) {
       finish(ctx, TooBigContent)
-      reset()
     } else {
-      byteCache.addComponent(cnt.content.retain())
-      byteCache.writerIndex(byteCache.writerIndex() + cnt.content.readableBytes)
+      if (cnt.content.isReadable) {
+        if (byteCache == null) byteCache = ctx.alloc.compositeBuffer
+        byteCache.addComponent(cnt.content.retain())
+        byteCache.writerIndex(byteCache.writerIndex() + cnt.content.readableBytes)
+      }
       if (cnt.isInstanceOf[netty.LastHttpContent]) composeMessage(out)
     }
   }
 
   private def composeMessage(out: util.List[AnyRef]): Unit = {
-    if (byteCache.isReadable) {
+    if (byteCache != null) {
+      val contentType = ContentType.parse(message.headers.get("Content-Type").orNull)
       message = message match {
-        case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, parseContentType(m)))
-        case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, parseContentType(m)))
+        case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, contentType))
+        case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))
       }
     }
     out add message
     reset()
   }
 
-  private def parseContentType(msg: HttpMessage): ContentType = {
-    ContentType.parse(msg.headers.get("Content-Type").orNull)
-  }
 
-  private def reset(): Unit = {
+  @inline private def reset(): Unit = {
     message = null
-    byteCache.clear()
+    if (byteCache != null) {
+      byteCache.release()
+      byteCache = null
+    }
   }
 
-  private def finish(ctx: ChannelHandlerContext, msg: netty.FullHttpResponse): Unit = {
+  @inline private def finish(ctx: ChannelHandlerContext, msg: netty.FullHttpResponse): Unit = {
     ctx.writeAndFlush(msg.retain()).closeChannel()
+    reset()
+  }
+
+
+  override def handlerRemoved(ctx: ChannelHandlerContext): Unit = reset()
+
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = {
+    reset()
+    super.channelInactive(ctx)
   }
 }
