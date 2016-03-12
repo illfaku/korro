@@ -28,7 +28,7 @@ import java.nio.charset.Charset
 import java.nio.file.{Files, Paths}
 
 /**
- * Abstract representation of HTTP message body.
+ * HTTP message body representation.
  */
 sealed trait HttpContent {
 

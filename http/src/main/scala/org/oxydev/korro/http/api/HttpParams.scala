@@ -24,11 +24,40 @@ import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.control.NoStackTrace
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
+class HttpParams(val entries: List[(String, String)]) {
+
+  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: entries)
+
+  def ++(that: HttpParams): HttpParams = new HttpParams(entries ++ that.entries)
+
+  def -(name: String): HttpParams = new HttpParams(entries.filter(_._1 != name))
+
+  def -(entry: (String, Any)): HttpParams = new HttpParams(entries.filter(e => e._1 != entry._1 || e._2 != entry._2.toString))
+
+  def isEmpty: Boolean = entries.isEmpty
+
+  def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
+
+  def get(name: String): Option[String] = all(name).headOption
+
+  def all(name: String): List[String] = entries.filter(_._1 == name).map(_._2)
+
+
+  import HttpParams.Extractions._
+
+  def mandatory[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, V] = {
+    entry(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
+  }
+
+  def optional[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, Option[V]] = {
+    entry(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
+  }
+
+  private def entry(name: String): Option[(String, String)] = entries.find(_._1 == name)
+
+  override lazy val toString: String = entries.mkString("HttpParams(", ", ", ")")
+}
+
 object HttpParams {
 
   val empty: HttpParams = new HttpParams(Nil)
@@ -86,43 +115,4 @@ object HttpParams {
     val asDuration = asString.map(Duration.create)
     val asFiniteDuration = asDuration.map(d => FiniteDuration(d.length, d.unit))
   }
-}
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class HttpParams(val entries: List[(String, String)]) {
-
-  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: entries)
-
-  def ++(that: HttpParams): HttpParams = new HttpParams(entries ++ that.entries)
-
-  def -(name: String): HttpParams = new HttpParams(entries.filter(_._1 != name))
-
-  def -(entry: (String, Any)): HttpParams = new HttpParams(entries.filter(e => e._1 != entry._1 || e._2 != entry._2.toString))
-
-  def isEmpty: Boolean = entries.isEmpty
-
-  def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
-
-  def get(name: String): Option[String] = all(name).headOption
-
-  def all(name: String): List[String] = entries.filter(_._1 == name).map(_._2)
-
-
-  import HttpParams.Extractions._
-
-  def mandatory[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, V] = {
-    entry(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
-  }
-
-  def optional[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, Option[V]] = {
-    entry(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
-  }
-
-  private def entry(name: String): Option[(String, String)] = entries.find(_._1 == name)
-
-  override lazy val toString: String = entries.mkString("HttpParams(", ", ", ")")
 }

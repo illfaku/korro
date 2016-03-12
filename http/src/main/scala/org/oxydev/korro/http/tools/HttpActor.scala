@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.oxydev.korro.http.tools
 
 import org.oxydev.korro.http.api.HttpRequest
@@ -23,13 +22,11 @@ import org.oxydev.korro.http.api.HttpResponse.Status.NotFound
 import akka.actor.Actor
 
 /**
- * Actor for handling `HttpRequest` messages.
- * It will return `HttpResponse.Status.NotFound()` to sender if request unhandled.
+ * Actor for handling [[HttpRequest]] messages.
+ * It will return response with status 404 to sender if request is unhandled.
  *
  * <p>Note: this trait overrides `unhandled` method, so if you want to override it too do not forget to call
  * `super.unhandled`.
- *
- * @author Vladimir Konstantinov
  */
 trait HttpActor extends Actor {
 

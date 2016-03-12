@@ -19,8 +19,6 @@ package org.oxydev.korro.http.api
 import java.net.URL
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Command for HTTP client.
  */
 case class OutgoingHttpRequest(req: HttpRequest, url: URL)

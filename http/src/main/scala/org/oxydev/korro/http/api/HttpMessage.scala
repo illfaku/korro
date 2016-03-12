@@ -23,19 +23,23 @@ import java.net.{MalformedURLException, URL}
 import java.util.Locale
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * HTTP message representation.
  */
 sealed trait HttpMessage {
+
+  /**
+   * HTTP headers.
+   */
   def headers: HttpParams
+
+  /**
+   * Message body.
+   */
   def content: HttpContent
 }
 
 /**
  * HTTP request representation.
- *
- * @author Vladimir Konstantinov
  */
 case class HttpRequest(
   method: HttpRequest.Method,
@@ -51,8 +55,15 @@ case class HttpRequest(
 
   lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
 
+  /**
+   * Locale parsed from Accept-Language header using [[Locales#parse]].
+   */
   implicit val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
 
+  /**
+   * Creates [[OutgoingHttpRequest]] for HTTP client. Adds Host header extracted from provided URL and
+   * if [[path]] is empty in this request then also extracts it from URL and sets it.
+   */
   def to(url: URL): OutgoingHttpRequest = {
     val req =
       if (url.getPath != "" && (uri == "" || uri.startsWith("?"))) this.copy(uri = url.getPath + uri)
@@ -63,6 +74,10 @@ case class HttpRequest(
     OutgoingHttpRequest(req.copy(headers = req.headers + ("Host" -> host)), url)
   }
 
+  /**
+   * @see [[to(URL)]]
+   * @throws java.net.MalformedURLException If URL is malformed.
+   */
   @throws(classOf[MalformedURLException])
   def to(url: String): OutgoingHttpRequest = to(new URL(url))
 }
@@ -80,8 +95,6 @@ object HttpRequest {
    *     case Post(r) => ???
    *   }
    * }}}
-   *
-   * @author Vladimir Konstantinov
    */
   object Method {
 
@@ -113,9 +126,7 @@ object HttpRequest {
   }
 
   /**
-   * TODO: Add description.
-   *
-   * @author Vladimir Konstantinov
+   * HTTP request method representation.
    */
   class Method(val name: String) {
 
@@ -144,8 +155,6 @@ object HttpRequest {
 
   /**
    * Extracts path from HttpRequest.
-   *
-   * @author Vladimir Konstantinov
    */
   object Path {
     def unapply(req: HttpRequest): Option[String] = Some(req.path)
@@ -158,8 +167,6 @@ object HttpRequest {
    *     case "/a/b" / v1 / "d" / v2 => v1 + "-" + v2   // c-e
    *   }
    * }}}
-   *
-   * @author Vladimir Konstantinov
    */
   object / {
     def unapply(path: String): Option[(String, String)] = {
@@ -172,8 +179,6 @@ object HttpRequest {
 
 /**
  * HTTP response representation.
- *
- * @author Vladimir Konstantinov
  */
 case class HttpResponse(
   status: HttpResponse.Status,
@@ -183,11 +188,6 @@ case class HttpResponse(
 
 object HttpResponse {
 
-  /**
-   * TODO: Add description.
-   *
-   * @author Vladimir Konstantinov
-   */
   object Status {
 
     val Ok = new Status(200, "OK")
@@ -224,9 +224,7 @@ object HttpResponse {
   }
 
   /**
-   * TODO: Add description.
-   *
-   * @author Vladimir Konstantinov
+   * HTTP response status representation.
    */
   class Status(val code: Int, val reason: String) {
 

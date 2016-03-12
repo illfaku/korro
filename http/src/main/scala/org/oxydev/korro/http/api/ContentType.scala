@@ -21,12 +21,17 @@ import java.nio.charset.Charset
 import scala.util.Try
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Content-Type header representation.
  */
+case class ContentType(mime: String, charset: Option[Charset]) {
+  override lazy val toString = charset.map(ch => s"$mime; charset=${ch.name.toLowerCase}").getOrElse(mime)
+}
+
 object ContentType {
 
+  /**
+   * Constants for some of mime types.
+   */
   object Names {
     val TextPlain = "text/plain"
     val ApplicationJson = "application/json"
@@ -34,10 +39,17 @@ object ContentType {
     val OctetStream = "application/octet-stream"
   }
 
+  /**
+   * Constant for default charset (UTF-8).
+   */
   val DefaultCharset = Charset.forName("UTF-8")
+
 
   private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
 
+  /**
+   * Tries to extract mime type and charset from Content-Type header.
+   */
   def parse(header: String): ContentType = {
     regex.unapplySeq(header) map { l =>
       val mime = l.head
@@ -51,8 +63,4 @@ object ContentType {
   def apply(mime: String): ContentType = apply(mime, None)
 
   def apply(mime: String, charset: Charset): ContentType = apply(mime, Some(charset))
-}
-
-case class ContentType(mime: String, charset: Option[Charset]) {
-  override lazy val toString = charset.map(ch => s"$mime; charset=${ch.name.toLowerCase}").getOrElse(mime)
 }
