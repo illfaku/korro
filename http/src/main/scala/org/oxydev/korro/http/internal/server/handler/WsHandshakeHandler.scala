@@ -24,7 +24,7 @@ import org.oxydev.korro.util.log.Logging
 
 import akka.actor.ActorRef
 import io.netty.channel._
-import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
+import io.netty.handler.codec.http.websocketx._
 import io.netty.handler.codec.http.{HttpHeaders, HttpRequest}
 
 import java.net.{InetSocketAddress, URI}
@@ -50,6 +50,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
+        pipeline.addBefore("logging", "ws-aggregator", new WebSocketFrameAggregator(config.maxFramePayloadLength))
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         if (config.decompression) pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
