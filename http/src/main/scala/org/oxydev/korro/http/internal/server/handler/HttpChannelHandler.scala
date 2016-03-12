@@ -25,6 +25,14 @@ import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 
+/**
+ * Modifies channel pipeline according to request type (common HTTP request or WebSocket handshake).
+ * Also makes some validation of request and searches for route using provided config
+ * (if not found sends response with status code 404).
+ *
+ * @param config Server configuration.
+ * @param parent Reference of associated HttpServerActor.
+ */
 @Sharable
 class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleChannelInboundHandler[HttpRequest] {
 
@@ -58,7 +66,8 @@ class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleC
 
   private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.ws.routes(msg) match {
     case Some(route) =>
-      ctx.pipeline.addAfter(ctx.name, "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
+      ctx.pipeline.addAfter(ctx.name, "http-aggregator", new HttpObjectAggregator(8192))
+      ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
       ctx.fireChannelRead(msg)
     case None => finish(ctx, NotFound)
   }

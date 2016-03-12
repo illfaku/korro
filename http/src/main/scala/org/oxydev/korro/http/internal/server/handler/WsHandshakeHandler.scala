@@ -25,31 +25,39 @@ import org.oxydev.korro.util.log.Logging
 import akka.actor.ActorRef
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
-import io.netty.handler.codec.http.{HttpHeaders, HttpRequest}
+import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
 
 import java.net.{InetSocketAddress, URI}
 
+/**
+ * Completes WebSocket handshake with client and modifies channel pipeline to handle WebSocket frames.
+ *
+ * @param config Server WebSocket configuration.
+ * @param parent Reference of associated HttpServerActor.
+ * @param route Path to actor to which WsMessages will be sent.
+ */
 class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
-  extends SimpleChannelInboundHandler[HttpRequest] with Logging {
+  extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+  override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
     newHandshaker(msg) match {
       case Some(handshaker) => handshake(handshaker, ctx.channel, msg)
       case None => WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel).closeChannel()
     }
   }
 
-  private def newHandshaker(req: HttpRequest): Option[WebSocketServerHandshaker] = {
+  private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
     val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
     val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
     Option(factory.newHandshaker(req))
   }
 
-  private def handshake(handshaker: WebSocketServerHandshaker, channel: Channel, req: HttpRequest): Unit = {
+  private def handshake(handshaker: WebSocketServerHandshaker, channel: Channel, req: FullHttpRequest): Unit = {
     handshaker.handshake(channel, req) foreach { future =>
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
+        pipeline.remove("http-aggregator")
         pipeline.addBefore("logging", "ws-aggregator", new WebSocketFrameAggregator(config.maxFramePayloadLength))
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         if (config.decompression) pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
@@ -65,7 +73,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
     }
   }
 
-  private def connection(channel: Channel, req: HttpRequest): WsConnection = {
+  private def connection(channel: Channel, req: FullHttpRequest): WsConnection = {
     val host = req.headers.get(HttpHeaders.Names.HOST)
     val path = {
       val pos = req.getUri.indexOf('?')
