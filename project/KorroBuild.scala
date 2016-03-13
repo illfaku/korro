@@ -10,7 +10,7 @@ object KorroBuild extends Build {
     version := "0.3.0-SNAPSHOT",
     scalaVersion := Dependency.V.Scala,
 
-    licenses := Seq("GNU Lesser General Public License" -> url("http://www.gnu.org/licenses/lgpl.html")),
+    licenses := Seq("Apache 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     homepage := Some(url("https://github.com/oxy-development/korro")),
     organizationHomepage := Some(url("https://github.com/oxy-development")),
 
