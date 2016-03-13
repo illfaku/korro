@@ -56,7 +56,6 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
-        pipeline.remove("http-aggregator")
         pipeline.addBefore("logging", "ws-aggregator", new WebSocketFrameAggregator(config.maxFramePayloadLength))
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         if (config.decompression) pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
