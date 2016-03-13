@@ -114,6 +114,9 @@ object HttpContent {
   }
 
 
+  /**
+   * Factory and extractor for content of type `text/plain`.
+   */
   object Text {
     def apply(text: String, charset: Charset = DefaultCharset): HttpContent = {
       memory(text.getBytes(charset), ContentType(TextPlain, charset))
@@ -121,6 +124,9 @@ object HttpContent {
     def unapply(msg: HttpMessage): Option[String] = Some(msg.content.string)
   }
 
+  /**
+   * Factory and extractor for content of type `application/json`.
+   */
   object Json {
     def apply(json: JValue, charset: Charset = DefaultCharset): HttpContent = {
       memory(compact(render(json)).getBytes(charset), ContentType(ApplicationJson, charset))
@@ -128,6 +134,9 @@ object HttpContent {
     def unapply(msg: HttpMessage): Option[JValue] = parseOpt(msg.content.string)
   }
 
+  /**
+   * Factory and extractor for content of type `application/x-www-form-urlencoded`.
+   */
   object Form {
     def apply(entries: (String, Any)*): HttpContent = {
       val encoded = QueryStringCodec.encode(entries.map(e => e._1 -> e._2.toString).toList)
