@@ -2,7 +2,7 @@ import com.typesafe.sbt.osgi.{OsgiKeys, SbtOsgi}
 import sbt.Keys._
 import sbt._
 
-object HttpBuild extends Build {
+object KorroBuild extends Build {
 
   lazy val basicSettings = Seq(
 
