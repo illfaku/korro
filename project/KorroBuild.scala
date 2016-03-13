@@ -71,8 +71,12 @@ object KorroBuild extends Build {
 object OsgiSettings {
 
   lazy val http = SbtOsgi.osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq(
+      "org.oxydev.korro.http",
+      "org.oxydev.korro.http.api.*",
+      "org.oxydev.korro.http.tools.*"
+    ),
     OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.internal.*"),
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.http.api.*,org.oxydev.korro.http.actor.*"),
     OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro HTTP")
   )
 
