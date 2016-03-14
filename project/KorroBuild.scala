@@ -4,7 +4,7 @@ import sbt._
 
 object KorroBuild extends Build {
 
-  lazy val basicSettings = Seq(
+  lazy val defaultSettings = Defaults.coreDefaultSettings ++ Seq(
 
     organization := "org.oxydev",
     version := "0.3.0-SNAPSHOT",
@@ -51,20 +51,20 @@ object KorroBuild extends Build {
   lazy val root = Project(
     id = "korro",
     base = file("."),
-    settings = basicSettings ++ Seq(publishArtifact := false)
+    settings = defaultSettings ++ Seq(publishArtifact := false)
   ) aggregate (http, util)
 
   lazy val http = Project(
     id = "korro-http",
     base = file("http"),
     dependencies = Seq(util),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.http ++ Dependencies.http
+    settings = defaultSettings ++ compileJdkSettings ++ OsgiSettings.http ++ Dependencies.http
   )
 
   lazy val util = Project(
     id = "korro-util",
     base = file("util"),
-    settings = basicSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
+    settings = defaultSettings ++ compileJdkSettings ++ OsgiSettings.util ++ Dependencies.util
   )
 }
 
