@@ -154,9 +154,31 @@ object HttpRequest {
 
   /**
    * Extracts path from HttpRequest.
+   * {{{
+   *   val req: HttpRequest = ...
+   *   req match {
+   *     case Path("/some/path") => ...
+   *   }
+   * }}}
    */
   object Path {
     def unapply(req: HttpRequest): Option[String] = Some(req.path)
+  }
+
+  /**
+   * Checks that path of HttpRequest starts with prefix.
+   * {{{
+   *   val req: HttpRequest = ...
+   *   val ApiPrefix = new PathPrefix("/api")
+   *   req match {
+   *     case ApiPrefix() => ...
+   *   }
+   * }}}
+   *
+   * @param prefix Path prefix to test against HttpRequest.
+   */
+  class PathPrefix(prefix: String) {
+    def unapply(req: HttpRequest): Boolean = req.path startsWith prefix
   }
 
   /**
