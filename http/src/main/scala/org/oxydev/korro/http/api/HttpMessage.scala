@@ -182,6 +182,22 @@ object HttpRequest {
   }
 
   /**
+   * Checks that path of HttpRequest ends with suffix.
+   * {{{
+   *   val req: HttpRequest = ...
+   *   val PetCountSuffix = new PathSuffix("/pet/count")
+   *   req match {
+   *     case PetCountSuffix() => ...
+   *   }
+   * }}}
+   *
+   * @param suffix Path suffix to test against HttpRequest.
+   */
+  class PathSuffix(suffix: String) {
+    def unapply(req: HttpRequest): Boolean = req.path endsWith suffix
+  }
+
+  /**
    * Extracts segments of a path.
    * {{{
    *   "/a/b/c/d/e" match {
