@@ -18,30 +18,48 @@ package org.oxydev.korro.util.protocol.jsonrpc
 import org.json4s._
 
 /**
- * TODO: Add description.
+ * Modified representation of JSON-RPC protocol message.
  *
- * @author Vladimir Konstantinov
+ * @see http://www.jsonrpc.org/specification
  */
 sealed trait JsonRpcMessage {
+
+  /**
+   * Converts this message to JSON.
+   */
   def toJson: JValue
 }
 
 object JsonRpcMessage {
 
+  /**
+   * Implicit conversion of JsonRpcMessages to JSON.
+   */
   implicit def toJson(msg: JsonRpcMessage): JValue = msg.toJson
 
+  /**
+   * Tries to convert JSON to one of JsonRpcMessages.
+   */
   def from(json: JValue): Option[JsonRpcMessage] = {
     JsonRpcRequest.from(json) orElse JsonRpcResult.from(json) orElse JsonRpcError.from(json)
   }
 }
 
 /**
- * TODO: Add description.
+ * Modified representation of JSON-RPC protocol request or notification (if id is missing).
  *
- * @author Vladimir Konstantinov
+ * @see http://www.jsonrpc.org/specification#request_object
+ *
+ * @param method Name of the method to be invoked.
+ * @param version Version of the method (not present in specification).
+ * @param params Parameters needed for this request processing. Can be any JSON value (object, array or even nothing).
+ * @param id Optional request identifier.
  */
 case class JsonRpcRequest(method: String, version: String, params: JValue, id: Option[Int] = None) extends JsonRpcMessage {
 
+  /**
+   * This request as JSON.
+   */
   override lazy val toJson = JObject(
     List(
       ("method", JString(method)),
@@ -53,6 +71,9 @@ case class JsonRpcRequest(method: String, version: String, params: JValue, id: O
 
 object JsonRpcRequest {
 
+  /**
+   * Tries to convert JSON to JsonRpcRequest.
+   */
   def from(json: JValue): Option[JsonRpcRequest] = json match {
     case JObject(fields) =>
       (for {
@@ -75,14 +96,20 @@ object JsonRpcRequest {
 }
 
 /**
- * TODO: Add description.
+ * Modified representation of JSON-RPC protocol response divided into two separate entities.
  *
- * @author Vladimir Konstantinov
+ * @see http://www.jsonrpc.org/specification#response_object
  */
 sealed trait JsonRpcReply extends JsonRpcMessage {
 
+  /**
+   * Adds id to this response.
+   */
   def withId(id: Int): JsonRpcReply = withId(Some(id))
 
+  /**
+   * Adds optional id to this response.
+   */
   def withId(id: Option[Int]): JsonRpcReply = this match {
     case j: JsonRpcResult => j.copy(id = id)
     case j: JsonRpcError => j.copy(id = id)
@@ -90,12 +117,16 @@ sealed trait JsonRpcReply extends JsonRpcMessage {
 }
 
 /**
- * TODO: Add description.
+ * Successful JsonRpcResponse.
  *
- * @author Vladimir Konstantinov
+ * @param result Some JSON representing result.
+ * @param id Optional response identifier.
  */
 case class JsonRpcResult(result: JValue, id: Option[Int] = None) extends JsonRpcReply {
 
+  /**
+   * This response as JSON.
+   */
   override lazy val toJson = JObject(
     List(
       ("result", result)
@@ -105,6 +136,9 @@ case class JsonRpcResult(result: JValue, id: Option[Int] = None) extends JsonRpc
 
 object JsonRpcResult {
 
+  /**
+   * Tries to convert JSON to JsonRpcResult.
+   */
   def from(json: JValue): Option[JsonRpcResult] = json match {
     case JObject(fields) =>
       (for {
@@ -119,12 +153,17 @@ object JsonRpcResult {
 }
 
 /**
- * TODO: Add description.
+ * Unsuccessful JsonRpcResponse.
  *
- * @author Vladimir Konstantinov
+ * @param code Error code.
+ * @param message Error message.
+ * @param id Optional response identifier.
  */
 case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) extends JsonRpcReply {
 
+  /**
+   * This response as JSON.
+   */
   override lazy val toJson = JObject(
     List(
       ("error", JObject(
@@ -137,6 +176,9 @@ case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) exte
 
 object JsonRpcError {
 
+  /**
+   * Constants for pre-defined error codes.
+   */
   object Codes {
     val ParseError = -32700
     val InvalidRequest = -32600
@@ -145,12 +187,34 @@ object JsonRpcError {
     val InternalError = -32603
   }
 
+  /**
+   * Returns JsonRpcError with pre-defined `Parse error` code.
+   */
   def ParseError(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.ParseError, message, id)
+
+  /**
+   * Returns JsonRpcError with pre-defined `Invalid Request` code.
+   */
   def InvalidRequest(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InvalidRequest, message, id)
+
+  /**
+   * Returns JsonRpcError with pre-defined `Method not found` code.
+   */
   def MethodNotFound(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.MethodNotFound, message, id)
+
+  /**
+   * Returns JsonRpcError with pre-defined `Invalid params` code.
+   */
   def InvalidParams(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InvalidParams, message, id)
+
+  /**
+   * Returns JsonRpcError with pre-defined `Internal error` code.
+   */
   def InternalError(message: String, id: Option[Int] = None): JsonRpcError = apply(Codes.InternalError, message, id)
 
+  /**
+   * Tries to convert JSON to JsonRpcError.
+   */
   def from(json: JValue): Option[JsonRpcError] = json match {
     case JObject(fields) =>
       (for {
