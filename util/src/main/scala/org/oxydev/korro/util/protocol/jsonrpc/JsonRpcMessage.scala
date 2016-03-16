@@ -57,13 +57,16 @@ object JsonRpcRequest {
     case JObject(fields) =>
       (for {
         ("method", JString(method)) <- fields
-        ("params", params) <- fields
-      } yield JsonRpcRequest(method, findVersion(fields), params, findId(fields))).headOption
+      } yield JsonRpcRequest(method, findVersion(fields), findParams(fields), findId(fields))).headOption
     case _ => None
   }
 
   private def findVersion(fields: List[(String, JValue)]): String = {
     (for (("version", JString(version)) <- fields) yield version).headOption.getOrElse("1.0")
+  }
+
+  private def findParams(fields: List[(String, JValue)]): JValue = {
+    (for (("params", params) <- fields) yield params).headOption.getOrElse(JNothing)
   }
 
   private def findId(fields: List[(String, JValue)]): Option[Int] = {
