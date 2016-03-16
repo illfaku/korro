@@ -49,7 +49,6 @@ object JsonRpcMessage {
  * Modified representation of JSON-RPC protocol request or notification (if id is missing).
  *
  * @see http://www.jsonrpc.org/specification#request_object
- *
  * @param method Name of the method to be invoked.
  * @param version Version of the method (not present in specification).
  * @param params Parameters needed for this request processing. Can be any JSON value (object, array or even nothing).
@@ -100,17 +99,17 @@ object JsonRpcRequest {
  *
  * @see http://www.jsonrpc.org/specification#response_object
  */
-sealed trait JsonRpcReply extends JsonRpcMessage {
+sealed trait JsonRpcResponse extends JsonRpcMessage {
 
   /**
    * Adds id to this response.
    */
-  def withId(id: Int): JsonRpcReply = withId(Some(id))
+  def withId(id: Int): JsonRpcResponse = withId(Some(id))
 
   /**
    * Adds optional id to this response.
    */
-  def withId(id: Option[Int]): JsonRpcReply = this match {
+  def withId(id: Option[Int]): JsonRpcResponse = this match {
     case j: JsonRpcResult => j.copy(id = id)
     case j: JsonRpcError => j.copy(id = id)
   }
@@ -122,7 +121,7 @@ sealed trait JsonRpcReply extends JsonRpcMessage {
  * @param result Some JSON representing result.
  * @param id Optional response identifier.
  */
-case class JsonRpcResult(result: JValue, id: Option[Int] = None) extends JsonRpcReply {
+case class JsonRpcResult(result: JValue, id: Option[Int] = None) extends JsonRpcResponse {
 
   /**
    * This response as JSON.
@@ -159,7 +158,7 @@ object JsonRpcResult {
  * @param message Error message.
  * @param id Optional response identifier.
  */
-case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) extends JsonRpcReply {
+case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) extends JsonRpcResponse {
 
   /**
    * This response as JSON.
@@ -177,7 +176,7 @@ case class JsonRpcError(code: Int, message: String, id: Option[Int] = None) exte
 object JsonRpcError {
 
   /**
-   * Constants for pre-defined error codes.
+   * Pre-defined error codes.
    */
   object Codes {
     val ParseError = -32700
