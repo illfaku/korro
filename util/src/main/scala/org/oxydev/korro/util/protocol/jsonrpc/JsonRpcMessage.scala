@@ -28,6 +28,20 @@ sealed trait JsonRpcMessage {
    * Converts this message to JSON.
    */
   def toJson: JValue
+
+  /**
+   * Adds id to this message.
+   */
+  def withId(id: Int): JsonRpcMessage = withId(Some(id))
+
+  /**
+   * Adds optional id to this message.
+   */
+  def withId(id: Option[Int]): JsonRpcMessage = this match {
+    case j: JsonRpcRequest => j.copy(id = id)
+    case j: JsonRpcResult => j.copy(id = id)
+    case j: JsonRpcError => j.copy(id = id)
+  }
 }
 
 object JsonRpcMessage {
@@ -99,21 +113,7 @@ object JsonRpcRequest {
  *
  * @see http://www.jsonrpc.org/specification#response_object
  */
-sealed trait JsonRpcResponse extends JsonRpcMessage {
-
-  /**
-   * Adds id to this response.
-   */
-  def withId(id: Int): JsonRpcResponse = withId(Some(id))
-
-  /**
-   * Adds optional id to this response.
-   */
-  def withId(id: Option[Int]): JsonRpcResponse = this match {
-    case j: JsonRpcResult => j.copy(id = id)
-    case j: JsonRpcError => j.copy(id = id)
-  }
-}
+sealed trait JsonRpcResponse extends JsonRpcMessage
 
 /**
  * Successful JsonRpcResponse.
