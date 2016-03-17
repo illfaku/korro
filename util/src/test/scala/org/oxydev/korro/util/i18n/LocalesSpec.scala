@@ -20,25 +20,19 @@ import org.scalatest._
 import java.util.Locale
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Tests for [[org.oxydev.korro.util.i18n.Locales Locales]] object.
  */
 class LocalesSpec extends FlatSpec with Matchers {
 
-  "Locale parser" should "parse only language string" in {
+  "Locale parser" should "successfully parse string if only language part is present" in {
     Locales.parse("lang") should be (new Locale("lang"))
   }
 
-  it should "parse language and country string with underscore as separator" in {
+  it should "successfully parse string if language and country parts are present with underscore as separator" in {
     Locales.parse("lang_CNTRY") should be (new Locale("lang", "CNTRY"))
   }
 
-  it should "parse ignoring case" in {
-    Locales.parse("LANG_CNTRY") should be (new Locale("lang", "cntry"))
-  }
-
-  it should "parse HTTP header Accept-Language using first language" in {
+  it should "successfully parse string as in Accept-Language header (RFC2616) using first language" in {
     Locales.parse("en-ca,en;q=0.8,en-us;q=0.6,de-de;q=0.4,de;q=0.2") should be (new Locale("en", "ca"))
   }
 
@@ -46,7 +40,7 @@ class LocalesSpec extends FlatSpec with Matchers {
     Locales.parse("4ar124") should be (Locale.getDefault)
   }
 
-  it should "return default locale for null string" in {
+  it should "return default locale for null" in {
     Locales.parse(null) should be (Locale.getDefault)
   }
 }
