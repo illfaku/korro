@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.util.protocol.http
+package org.oxydev.korro.util.net
 
 import java.net.{URLDecoder, URLEncoder}
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Query string codec.
  */
 object QueryStringCodec {
 
   /**
    * Decodes query string to list of string pairs (name, value).
    * If name has no value (e.g., "...&name&...") then value in pair will be represented by empty string.
-   * @param query query string to decode
-   * @param enc encoding for [[java.net.URLDecoder#decode(String, String)]] function
-   * @return decoded pairs of names and values
+   *
+   * Uses <a href="http://docs.oracle.com/javase/8/docs/api/java/net/URLDecoder.html#decode-java.lang.String-java.lang.String-">
+   * `URLDecoder.decode(String, String)`</a> for decoding.
+   *
+   * @param query Query string to decode.
+   * @param enc Encoding.
+   * @return Decoded pairs of names and values.
    */
   def decode(query: String, enc: String = "UTF-8"): List[(String, String)] = {
     query.split("[&;]").map(_.split("=", 2)) map {
@@ -40,9 +42,13 @@ object QueryStringCodec {
 
   /**
    * Encodes list of string pairs to query string with '&' as separator.
-   * @param entries string pairs to encode
-   * @param enc encoding for [[java.net.URLEncoder#encode(String, String)]] function
-   * @return URL encoded query string
+   *
+   * Uses <a href="http://docs.oracle.com/javase/8/docs/api/java/net/URLEncoder.html#encode-java.lang.String-java.lang.String-">
+   * `URLEncoder.encode(String, String)`</a> for encoding.
+   *
+   * @param entries String pairs to encode.
+   * @param enc Encoding.
+   * @return URL encoded query string.
    */
   def encode(entries: List[(String, String)], enc: String = "UTF-8"): String = {
     entries map (e => URLEncoder.encode(e._1, enc) + "=" + URLEncoder.encode(e._2, enc)) mkString "&"

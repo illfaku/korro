@@ -17,7 +17,7 @@ package org.oxydev.korro.http.api
 
 import org.oxydev.korro.http.api.ContentType.DefaultCharset
 import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, TextPlain}
-import org.oxydev.korro.util.protocol.http.QueryStringCodec
+import org.oxydev.korro.util.net.QueryStringCodec
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}

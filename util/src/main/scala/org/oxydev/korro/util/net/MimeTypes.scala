@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.util.protocol.http
+package org.oxydev.korro.util.net
 
 import org.oxydev.korro.util.lang.Loan.loan
 import org.oxydev.korro.util.log.Logging
@@ -51,7 +51,7 @@ object MimeTypes extends Logging {
 
   /**
    * Returns MIME type mapped to provided file name or extension.
-   * Returns `application/octet-stream` if corresponding MIME type is not found.
+   * Or `application/octet-stream` if corresponding MIME type is not found.
    */
   def apply(s: String): String = {
     val pos = s.lastIndexOf('.')

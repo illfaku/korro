@@ -16,7 +16,7 @@
 package org.oxydev.korro.http.api
 
 import org.oxydev.korro.util.i18n.Locales
-import org.oxydev.korro.util.protocol.http.QueryStringCodec
+import org.oxydev.korro.util.net.QueryStringCodec
 
 import java.net.{MalformedURLException, URL}
 import java.util.Locale
