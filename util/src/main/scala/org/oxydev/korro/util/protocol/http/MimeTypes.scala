@@ -23,21 +23,22 @@ import java.io.{BufferedReader, InputStreamReader}
 import scala.collection.mutable.ListBuffer
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * MIME types lookup.
  */
-object MimeTypeMapping extends Logging {
+object MimeTypes extends Logging {
 
-  private lazy val mime2Ext: Map[String, List[String]] = {
+  private lazy val map: Map[String, String] =
     try {
-      loan (getClass.getClassLoader.getResource("/mime.types").openStream()) to { in =>
+      loan (getClass.getClassLoader.getResource("/META-INF/mime.types").openStream()) to { in =>
         val reader = new BufferedReader(new InputStreamReader(in))
-        val result = ListBuffer.empty[(String, List[String])]
+        val result = ListBuffer.empty[(String, String)]
         var line = reader.readLine()
         while (line != null) {
-          val parts = line.split("""\s+""")
-          if (parts.length > 1) result += (parts.head -> parts.tail.toList)
+          if (!line.startsWith("#")) {
+            val parts = line.split("""\s+""")
+            val mime = parts.head
+            parts.tail foreach (e => result += (e -> mime))
+          }
           line = reader.readLine()
         }
         result.toMap
@@ -47,17 +48,14 @@ object MimeTypeMapping extends Logging {
         log.error(e, "Failed to load mime types.")
         Map.empty
     }
-  }
 
-  private lazy val ext2mime: Map[String, List[String]] = {
-    mime2Ext.toList.flatMap(e => e._2.map(_ -> e._1)).groupBy(_._1).mapValues(_.map(_._2))
-  }
-
-  def getExtension(mimeType: String): Option[String] = mime2Ext.get(mimeType.toLowerCase).map(_.head)
-
-  def getMimeType(s: String): Option[String] = {
+  /**
+   * Returns MIME type mapped to provided file name or extension.
+   * Returns `application/octet-stream` if corresponding MIME type is not found.
+   */
+  def apply(s: String): String = {
     val pos = s.lastIndexOf('.')
-    if (pos >= 0) ext2mime.get(s.substring(pos + 1).toLowerCase).map(_.head)
-    else ext2mime.get(s.toLowerCase).map(_.head)
+    val ext = if (pos >= 0) s.substring(pos + 1) else s
+    map.getOrElse(ext.toLowerCase, "application/octet-stream")
   }
 }
