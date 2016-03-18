@@ -16,18 +16,16 @@
 package org.oxydev.korro.util.concurrent
 
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * <a href="http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadFactory.html">`ThreadFactory`</a> that
+ * creates new threads with names as `prefix-N`, where `prefix` is provided via constructor and `N` is a sequence
+ * number starting with 0.
  */
-class IncrementalThreadFactory(baseName: String) extends ThreadFactory {
+class IncrementalThreadFactory(prefix: String) extends ThreadFactory {
 
-  private var counter = -1
+  private val counter = new AtomicInteger()
 
-  override def newThread(r: Runnable): Thread = {
-    counter += 1
-    new Thread(r, s"$baseName-$counter")
-  }
+  override def newThread(r: Runnable): Thread = new Thread(r, s"$prefix-${counter.getAndIncrement}")
 }

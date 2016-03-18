@@ -23,5 +23,5 @@ import com.typesafe.config.Config
  * @author Vladimir Konstantinov
  */
 package object config {
-  implicit def wrapped(config: Config): WrappedConfig = new WrappedConfig(config)
+  implicit def wrapped(config: Config): ConfigExt = new ConfigExt(config)
 }
