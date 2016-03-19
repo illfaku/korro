@@ -16,21 +16,32 @@
 package org.oxydev.korro.util.lang
 
 /**
- * TODO: Add description.
+ * Scala implementation of <a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html">
+ * `try-with-resources`</a>.
+ * {{{
+ *   val line = loan (new BufferedReader(new FileReader(path))) to (_.readLine())
+ * }}}
  *
- * @author Vladimir Konstantinov
+ * @see http://illegalexception.schlichtherle.de/2012/07/19/try-with-resources-for-scala/
  */
 object Loan {
+
+  /**
+   * One `AutoCloseable` resource.
+   */
   def loan[A <: AutoCloseable](a: A) = new Loan1(a)
+
+  /**
+   * Two `AutoCloseable` resources.
+   */
   def loan[A <: AutoCloseable, B <: AutoCloseable](a: A, b: B) = new Loan2(a, b)
+
+  /**
+   * Three `AutoCloseable` resources.
+   */
   def loan[A <: AutoCloseable, B <: AutoCloseable, C <: AutoCloseable](a: A, b: B, c: C) = new Loan3(a, b, c)
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 sealed abstract class Loan {
   protected def manage[R](block: => R, resources: AutoCloseable*): R = {
     var t: Throwable = null
@@ -46,31 +57,16 @@ sealed abstract class Loan {
   }
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class Loan1[A <: AutoCloseable](a: A) extends Loan {
   def and[B <: AutoCloseable](b: B): Loan2[A, B] = new Loan2(a, b)
   def to[R](block: A => R): R = manage(block(a), a)
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class Loan2[A <: AutoCloseable, B <: AutoCloseable](a: A, b: B) extends Loan {
   def and[C <: AutoCloseable](c: C): Loan3[A, B, C] = new Loan3(a, b, c)
   def to[R](block: (A, B) => R) = manage(block(a, b), a, b)
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class Loan3[A <: AutoCloseable, B <: AutoCloseable, C <: AutoCloseable](a: A, b: B, c: C) extends Loan {
   def to[R](block: (A, B, C) => R) = manage(block(a, b, c), a, b, c)
 }

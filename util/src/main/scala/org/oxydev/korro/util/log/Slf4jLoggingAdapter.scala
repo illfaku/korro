@@ -18,9 +18,8 @@ package org.oxydev.korro.util.log
 import akka.event.LoggingAdapter
 
 /**
- * slf4j logging adapter with more convenient methods presented by [[akka.event.LoggingAdapter]].
- *
- * @author Vladimir Konstantinov
+ * slf4j logging adapter with more convenient methods presented by
+ * <a href="http://doc.akka.io/api/akka/2.4.2/#akka.event.LoggingAdapter">`akka.event.LoggingAdapter`</a>.
  */
 class Slf4jLoggingAdapter(logger: org.slf4j.Logger) extends LoggingAdapter with TraceLoggingAdapter {
 

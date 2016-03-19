@@ -63,6 +63,7 @@ object JsonRpcMessage {
  * Modified representation of JSON-RPC protocol request or notification (if id is missing).
  *
  * @see http://www.jsonrpc.org/specification#request_object
+ *
  * @param method Name of the method to be invoked.
  * @param version Version of the method (not present in specification).
  * @param params Parameters needed for this request processing. Can be any JSON value (object, array or even nothing).

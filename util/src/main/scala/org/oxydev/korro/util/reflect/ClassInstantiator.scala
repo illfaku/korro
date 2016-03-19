@@ -20,9 +20,7 @@ import java.lang.reflect.Constructor
 import scala.reflect._
 
 /**
- * Utility to create class instances using reflection.
- *
- * @author Vladimir Konstantinov
+ * Utility to create class instance using reflection.
  */
 object ClassInstantiator {
 
@@ -36,12 +34,13 @@ object ClassInstantiator {
     classOf[Boolean] -> java.lang.Boolean.valueOf(false)
   )
 
-  private def defaultParametersFor(constructor: Constructor[_]): Seq[AnyRef] = {
+  @inline private def defaultParametersFor(constructor: Constructor[_]): Seq[AnyRef] = {
     constructor.getParameterTypes.map(defaults.getOrElse(_, null))
   }
 
   /**
    * Creates new class instance with default constructor parameters.
+   *
    * @tparam T Class to be instantiated.
    * @return New class instance.
    */

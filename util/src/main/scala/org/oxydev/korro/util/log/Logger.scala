@@ -20,10 +20,9 @@ import org.slf4j.LoggerFactory.getLogger
 
 /**
  * Logger factory.
- *
- * @author Vladimir Konstantinov
  */
 object Logger {
+
   type Logger = LoggingAdapter with TraceLoggingAdapter
 
   def apply(clazz: Class[_]): Logger = new Slf4jLoggingAdapter(getLogger(clazz))

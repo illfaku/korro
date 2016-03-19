@@ -18,9 +18,8 @@ package org.oxydev.korro.util.log
 import akka.event.LoggingAdapter
 
 /**
- * Mixin for [[akka.event.LoggingAdapter]] with methods for trace logging.
- *
- * @author Vladimir Konstantinov
+ * Mixin for <a href="http://doc.akka.io/api/akka/2.4.2/#akka.event.LoggingAdapter">`akka.event.LoggingAdapter`</a>
+ * with methods for trace logging.
  */
 trait TraceLoggingAdapter { this: LoggingAdapter =>
 

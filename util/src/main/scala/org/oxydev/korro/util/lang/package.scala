@@ -19,20 +19,29 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
-  * TODO: Add description.
-  *
-  * @author Vladimir Konstantinov
+  * Common utilities.
   */
 package object lang {
 
+  /**
+   * Concatenates 2 extractors in a case statement.
+   */
   object & {
     def unapply[A](a: A) = Some(a, a)
   }
 
+  /**
+   * Converts <a href="http://www.scala-lang.org/api/current/#scala.util.Either">`Either`</a> which left type is
+   * subclass of `Throwable` to <a href="http://www.scala-lang.org/api/current/#scala.util.Try">`Try`</a>.
+   */
   implicit def either2try[F <: Throwable, R](either: Either[F, R]): Try[R] = either match {
     case Right(r) => Success(r)
     case Left(f) => Failure(f)
   }
 
+  /**
+   * Converts <a href="http://www.scala-lang.org/api/current/#scala.util.Either">`Either`</a> which left type is
+   * subclass of `Throwable` to <a href="http://www.scala-lang.org/api/current/#scala.concurrent.Future">`Future`</a>.
+   */
   implicit def either2future[F <: Throwable, R](either: Either[F, R]): Future[R] = Future fromTry either2try(either)
 }
