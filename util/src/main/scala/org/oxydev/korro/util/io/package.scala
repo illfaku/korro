@@ -15,25 +15,27 @@
  */
 package org.oxydev.korro.util
 
-import org.oxydev.korro.util.lang.Loan.loan
-
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
+import java.io.{ByteArrayOutputStream, InputStream, OutputStream}
 import java.nio.charset.Charset
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * IO utilities.
  */
 package object io {
 
-  private val EOF = -1
+  private [io] val EOF = -1
 
-  private val DefaultBufferSize = 4096
+  private [io] val DefaultBufferSize = 4096
 
-  private val DefaultCharset = Charset.defaultCharset.name
+  private [io] val DefaultCharset = Charset.defaultCharset.name
 
+  /**
+   * Copies bytes from one stream to another.
+   *
+   * @param input Input stream to copy from.
+   * @param output Output stream to copy to.
+   * @return Number of copied bytes.
+   */
   def copy(input: InputStream, output: OutputStream): Int = {
     val buf = new Array[Byte](DefaultBufferSize)
     var count = 0
@@ -46,25 +48,24 @@ package object io {
     count
   }
 
+  /**
+   * Reads all bytes from input stream.
+   *
+   * @param input Input stream to read.
+   * @return Bytes from stream.
+   */
   def readBytes(input: InputStream): Array[Byte] = {
     val output = new ByteArrayOutputStream(DefaultBufferSize)
     copy(input, output)
     output.toByteArray
   }
 
+  /**
+   * Reads string from input stream.
+   *
+   * @param input Input stream to read.
+   * @param charset Charset for string encoding.
+   * @return String from stream.
+   */
   def readString(input: InputStream, charset: String = DefaultCharset): String = new String(readBytes(input), charset)
-
-  def zip(bytes: Array[Byte]): Array[Byte] = {
-    val output = new ByteArrayOutputStream(DefaultBufferSize)
-    loan (new GZIPOutputStream(output)) to (_.write(bytes))
-    output.toByteArray
-  }
-
-  def zipString(s: String, charset: String = DefaultCharset): Array[Byte] = zip(s.getBytes(charset))
-
-  def unzip(input: InputStream): Array[Byte] = loan (new GZIPInputStream(input)) to readBytes
-
-  def unzip(bytes: Array[Byte]): Array[Byte] = unzip(new ByteArrayInputStream(bytes))
-
-  def unzipString(input: InputStream, charset: String = DefaultCharset): String = new String(unzip(input), charset)
 }
