@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.util.io.unzipString
+import org.oxydev.korro.util.io.Gzip.unzipString
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.buffer.ByteBufInputStream

@@ -16,7 +16,7 @@
 package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.http.internal.common.toByteBuf
-import org.oxydev.korro.util.io.zipString
+import org.oxydev.korro.util.io.Gzip.zipString
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.channel.ChannelHandler.Sharable
