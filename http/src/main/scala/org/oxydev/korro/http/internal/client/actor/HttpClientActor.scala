@@ -17,7 +17,7 @@ package org.oxydev.korro.http.internal.client.actor
 
 import org.oxydev.korro.http.api.{HttpRequest, OutgoingHttpRequest}
 import org.oxydev.korro.http.internal.client.config.ClientConfig
-import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
+import org.oxydev.korro.util.concurrent.SequenceThreadFactory
 
 import akka.actor._
 import io.netty.channel.EventLoopGroup
@@ -35,7 +35,7 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   override def preStart(): Unit = {
-    group = new NioEventLoopGroup(config.workerGroupSize, new IncrementalThreadFactory(s"korro-client-${config.name}"))
+    group = new NioEventLoopGroup(config.workerGroupSize, new SequenceThreadFactory(s"korro-client-${config.name}"))
     log.info("Started Korro HTTP client \"{}\" with URL: {}.", config.name, config.url)
   }
 

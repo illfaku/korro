@@ -18,10 +18,13 @@ package org.oxydev.korro.util
 import com.typesafe.config.Config
 
 /**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
+ * Utilities for <a href="http://typesafehub.github.io/config/">`config`</a> library.
  */
 package object config {
+
+  /**
+   * Converts <a href="http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html">`Config`</a>
+   * object to [[org.oxydev.korro.util.config.ConfigExt ConfigExt]].
+   */
   implicit def wrapped(config: Config): ConfigExt = new ConfigExt(config)
 }

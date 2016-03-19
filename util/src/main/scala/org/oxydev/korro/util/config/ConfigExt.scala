@@ -35,37 +35,37 @@ import scala.util.Try
 class ConfigExt(config: Config) {
 
   /**
-   * Searches for [[scala.Boolean]] at path.
+   * Searches for `scala.Boolean` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getBoolean-java.lang.String-
    */
   def findBoolean(path: String):Option[Boolean] = lookupValue(path, config.getBoolean)
 
   /**
-   * Searches for [[java.lang.Number]] at path.
+   * Searches for `java.lang.Number` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getNumber-java.lang.String-
    */
   def findNumber(path: String): Option[Number] = lookupValue(path, config.getNumber)
 
   /**
-   * Searches for [[scala.Int]] at path.
+   * Searches for `scala.Int` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getInt-java.lang.String-
    */
   def findInt(path: String): Option[Int] = lookupValue(path, config.getInt)
 
   /**
-   * Searches for [[scala.Long]] at path.
+   * Searches for `scala.Long` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getLong-java.lang.String-
    */
   def findLong(path: String): Option[Long] = lookupValue(path, config.getLong)
 
   /**
-   * Searches for [[scala.Double]] at path.
+   * Searches for `scala.Double` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getDouble-java.lang.String-
    */
   def findDouble(path: String): Option[Double] = lookupValue(path, config.getDouble)
 
   /**
-   * Searches for [[java.lang.String]] at path.
+   * Searches for `java.lang.String` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getString-java.lang.String-
    */
   def findString(path: String): Option[String] = lookupValue(path, config.getString)
@@ -92,32 +92,32 @@ class ConfigExt(config: Config) {
   def findValue(path: String): Option[ConfigValue] = lookupValue(path, config.getValue)
 
   /**
-   * Searches for `size in bytes` as [[scala.Long]] at path.
+   * Searches for `size in bytes` as `scala.Long` at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getBytes-java.lang.String-
    */
   def findBytes(path: String): Option[Long] = lookupValue(path, config.getBytes)
 
   /**
-   * Searches for [[scala.concurrent.duration.Duration]] at path.
+   * Searches for `scala.concurrent.duration.Duration` at path.
    */
   def findDuration(path: String): Option[Duration] = lookupStringTry(path).map(Duration.apply).toOption
 
   /**
-   * Searches for [[scala.concurrent.duration.FiniteDuration]] at path.
+   * Searches for `scala.concurrent.duration.FiniteDuration` at path.
    */
   def findFiniteDuration(path: String): Option[FiniteDuration] = {
     lookupStringTry(path).map(Duration.apply).map(d => FiniteDuration(d.length, d.unit)).toOption
   }
 
   /**
-   * Searches for [[java.net.URL]] at path.
+   * Searches for `java.net.URL` at path.
    */
   def findURL(path: String): Option[URL] = lookupStringTry(path).map(new URL(_)).toOption
 
   /**
-   * Searches for [[java.net.URI]] at path.
+   * Searches for `java.net.URI` at path.
    */
-  def findURI(path: String): Option[URI] = findString(path) flatMap { uri => Try(new URI(uri)).toOption }
+  def findURI(path: String): Option[URI] = lookupStringTry(path).map(new URI(_)).toOption
 
   /**
    * Searches for <a href="http://typesafehub.github.io/config/latest/api/com/typesafe/config/ConfigList.html">
@@ -127,37 +127,37 @@ class ConfigExt(config: Config) {
   def findList(path: String): Option[ConfigList] = lookupValue(path, config.getList)
 
   /**
-   * Searches for [[scala.Boolean]] list at path.
+   * Searches for `scala.Boolean` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getBooleanList-java.lang.String-
    */
-  def findBooleanList(path: String): List[Boolean] = lookupList(path, config.getBooleanList).map(_.booleanValue())
+  def findBooleanList(path: String): List[Boolean] = lookupList(path, config.getBooleanList).map(_.booleanValue)
 
   /**
-   * Searches for [[java.lang.Number]] list at path.
+   * Searches for `java.lang.Number` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getNumberList-java.lang.String-
    */
   def findNumberList(path: String): List[Number] = lookupList(path, config.getNumberList)
 
   /**
-   * Searches for [[scala.Int]] list at path.
+   * Searches for `scala.Int` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getIntList-java.lang.String-
    */
-  def findIntList(path: String): List[Int] = lookupList(path, config.getIntList).map(_.intValue())
+  def findIntList(path: String): List[Int] = lookupList(path, config.getIntList).map(_.intValue)
 
   /**
-   * Searches for [[scala.Long]] list at path.
+   * Searches for `scala.Long` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getLongList-java.lang.String-
    */
   def findLongList(path: String): List[Long] = lookupList(path, config.getLongList).map(_.longValue)
 
   /**
-   * Searches for [[scala.Double]] list at path.
+   * Searches for `scala.Double` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getDoubleList-java.lang.String-
    */
   def findDoubleList(path: String): List[Double] = lookupList(path, config.getDoubleList).map(_.doubleValue)
 
   /**
-   * Searches for [[java.lang.String]] list at path.
+   * Searches for `java.lang.String` list at path.
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getStringList-java.lang.String-
    */
   def findStringList(path: String): List[String] = lookupList(path, config.getStringList)

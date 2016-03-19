@@ -31,11 +31,10 @@ import scala.concurrent.duration._
  *   }
  * }}}
  *
- * When dependency is added this trait schedules <a href="http://doc.akka.io/api/akka/2.4.2/#akka.actor.Identify">
- * `Identify`</a> message to be sent to it every 1 second until
- * <a href="http://doc.akka.io/api/akka/2.4.2/#akka.actor.ActorIdentity">`ActorIdentity`</a> is received, then it
- * executes `whenResolved` callback with resolved `ActorRef`. Also this trait starts watching resolved actor and
- * when/if it terminates executes `whenTerminated` callback and schedules `Identify` messages to it again.
+ * When dependency is added this trait schedules `Identify` message to be sent to it every 1 second until
+ * `ActorIdentity` is received, then it executes `whenResolved` callback with resolved `ActorRef`.
+ * Also this trait starts watching resolved actor and when/if it terminates executes `whenTerminated` callback and
+ * schedules `Identify` messages to it again.
  *
  * This trait is not using other threads to do its logic (except for scheduling) so you can safely use actor's context
  * inside of `whenResolved` and `whenTerminated` callbacks.

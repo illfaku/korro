@@ -19,22 +19,19 @@ import java.util.Locale
 
 /**
  * Locale utilities.
- *
- * @author Vladimir Konstantinov
  */
 object Locales {
 
   private val Pattern = """^([a-zA-Z]{1,8})(?:[_-]([a-zA-Z]{1,8}))?""".r.unanchored
 
   /**
-   * Parses locale string to produce instance of [[java.util.Locale Locale]].
-   * <p>Locale string should match the following pattern:
-   * {{{
-   *   ^([a-zA-Z]{1,8})(?:[_-]([a-zA-Z]{1,8}))?
-   * }}}
+   * Parses string to produce instance of <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Locale.html">
+   * `Locale`</a>.
+   *
+   * String should match the following pattern: `^([a-zA-Z]{1,8})(?:[_-]([a-zA-Z]{1,8}))?`
    *
    * @param locale String representation of locale.
-   * @return New instance of Locale or default Locale if string is null or is not matched by any pattern.
+   * @return New instance of Locale or default Locale if string is null or is not matched by the pattern.
    */
   def parse(locale: String): Locale = locale match {
     case Pattern(language, country) => new Locale(language, Option(country).getOrElse(""))

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * creates new threads with names as `prefix-N`, where `prefix` is provided via constructor and `N` is a sequence
  * number starting with 0.
  */
-class IncrementalThreadFactory(prefix: String) extends ThreadFactory {
+class SequenceThreadFactory(prefix: String) extends ThreadFactory {
 
   private val counter = new AtomicInteger()
 

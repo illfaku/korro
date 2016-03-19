@@ -17,7 +17,7 @@ package org.oxydev.korro.http.internal.server.actor
 
 import org.oxydev.korro.http.internal.server.config.ServerConfig
 import org.oxydev.korro.http.internal.server.handler.HttpChannelInitializer
-import org.oxydev.korro.util.concurrent.IncrementalThreadFactory
+import org.oxydev.korro.util.concurrent.SequenceThreadFactory
 
 import akka.actor._
 import io.netty.bootstrap.ServerBootstrap
@@ -38,8 +38,8 @@ class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     try {
-      bossGroup = new NioEventLoopGroup(1, new IncrementalThreadFactory(s"korro-server-${config.name}-boss"))
-      workerGroup = new NioEventLoopGroup(config.workerGroupSize, new IncrementalThreadFactory(s"korro-server-${config.name}-worker"))
+      bossGroup = new NioEventLoopGroup(1, new SequenceThreadFactory(s"korro-server-${config.name}-boss"))
+      workerGroup = new NioEventLoopGroup(config.workerGroupSize, new SequenceThreadFactory(s"korro-server-${config.name}-worker"))
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
