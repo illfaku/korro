@@ -25,13 +25,20 @@ import scala.util.control.NoStackTrace
 
 class HttpParams(val entries: List[(String, String)]) {
 
-  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: entries)
+  // TODO: Optimize case ignorance.
 
-  def ++(that: HttpParams): HttpParams = new HttpParams(entries ++ that.entries)
+  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: wo(entries, entry))
 
-  def -(name: String): HttpParams = new HttpParams(entries.filter(_._1 != name))
+  def ++(that: HttpParams): HttpParams = new HttpParams(that.entries.foldLeft(entries)(wo) ++ that.entries)
 
-  def -(entry: (String, Any)): HttpParams = new HttpParams(entries.filter(e => e._1 != entry._1 || e._2 != entry._2.toString))
+  def -(name: String): HttpParams = new HttpParams(entries.filterNot(_._1 equalsIgnoreCase name))
+
+  def -(entry: (String, Any)): HttpParams = new HttpParams(wo(entries, entry))
+
+  private def wo(xs: List[(String, String)], x: (String, Any)): List[(String, String)] = {
+    xs.filterNot(e => e._1.equalsIgnoreCase(x._1) && e._2.equalsIgnoreCase(x._2.toString))
+  }
+
 
   def isEmpty: Boolean = entries.isEmpty
 
@@ -39,7 +46,7 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def get(name: String): Option[String] = all(name).headOption
 
-  def all(name: String): List[String] = entries.filter(_._1 == name).map(_._2)
+  def all(name: String): List[String] = entries.filter(_._1 equalsIgnoreCase name).map(_._2)
 
 
   import HttpParams.Extractions._
@@ -52,7 +59,7 @@ class HttpParams(val entries: List[(String, String)]) {
     entry(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
   }
 
-  private def entry(name: String): Option[(String, String)] = entries.find(_._1 == name)
+  private def entry(name: String): Option[(String, String)] = entries.find(_._1 equalsIgnoreCase name)
 
   override lazy val toString: String = entries.mkString("HttpParams(", ", ", ")")
 }
