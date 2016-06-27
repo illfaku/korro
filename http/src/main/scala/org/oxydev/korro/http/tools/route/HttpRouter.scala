@@ -38,17 +38,22 @@ trait HttpRouter extends Actor {
   private val routes = mutable.Map.empty[ActorRef, Predicate1[HttpRequest]]
 
   /**
+   * Returns optional matching route.
+   *
+   * @param req Request to match.
+   */
+  protected def findRoute(req: HttpRequest): Option[ActorRef] = routes.find(_._2(req)).map(_._1)
+
+  /**
    * Forwards [[HttpRequest]] to matching route if found, otherwise sends response with status 404 to sender.
    *
    * <p> Note: because of usage of `sender` method inside be sure to use this method only within this actor.
    *
    * @param req Request to route.
    */
-  protected def route(req: HttpRequest): Unit = {
-    routes.find(_._2(req)) match {
-      case Some((actor, _)) => actor forward req
-      case None => sender ! NotFound()
-    }
+  protected def route(req: HttpRequest): Unit = findRoute(req) match {
+    case Some(actor) => actor forward req
+    case None => sender ! NotFound()
   }
 
   override def unhandled(message: Any): Unit = message match {

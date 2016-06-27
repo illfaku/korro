@@ -37,17 +37,22 @@ trait WsRouter extends Actor {
   private val routes = mutable.Map.empty[ActorRef, Predicate1[WsConnection]]
 
   /**
+   * Returns optional matching route.
+   *
+   * @param wc Connection to match.
+   */
+  protected def findRoute(wc: WsConnection): Option[ActorRef] = routes.find(_._2(wc)).map(_._1)
+
+  /**
    * Forwards [[WsConnection]] to matching route if found, otherwise sends [[SetTarget]]`(None)` to sender.
    *
    * <p> Note: because of usage of `sender` method inside be sure to use this method only within this actor.
    *
    * @param wc Connection to route.
    */
-  protected def route(wc: WsConnection): Unit = {
-    routes.find(_._2(wc)) match {
-      case Some((actor, _)) => actor forward wc
-      case None => sender ! SetTarget(None)
-    }
+  protected def route(wc: WsConnection): Unit = findRoute(wc) match {
+    case Some(actor) => actor forward wc
+    case None => sender ! SetTarget(None)
   }
 
   override def unhandled(message: Any): Unit = message match {
