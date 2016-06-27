@@ -16,7 +16,7 @@
 package org.oxydev.korro.http.internal.client.actor
 
 import org.oxydev.korro.http.internal.client.config.ClientConfig
-import org.oxydev.korro.util.config.wrapped
+import org.oxydev.korro.util.config.extended
 
 import akka.actor.Actor
 import com.typesafe.config.Config

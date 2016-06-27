@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.config
 
-import org.oxydev.korro.util.config.wrapped
+import org.oxydev.korro.util.config.extended
 import org.oxydev.korro.util.log.Logging
 
 import com.typesafe.config.Config

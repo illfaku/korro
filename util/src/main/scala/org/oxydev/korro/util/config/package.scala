@@ -26,5 +26,5 @@ package object config {
    * Converts <a href="http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html">`Config`</a>
    * object to [[org.oxydev.korro.util.config.ConfigExt ConfigExt]].
    */
-  implicit def wrapped(config: Config): ConfigExt = new ConfigExt(config)
+  implicit def extended(config: Config): ConfigExt = new ConfigExt(config)
 }

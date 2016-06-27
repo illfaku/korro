@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.config
 
-import org.oxydev.korro.util.config.wrapped
+import org.oxydev.korro.util.config.extended
 
 import com.typesafe.config.Config
 
