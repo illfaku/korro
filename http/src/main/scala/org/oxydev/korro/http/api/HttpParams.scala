@@ -25,26 +25,26 @@ import scala.util.control.NoStackTrace
 
 class HttpParams(val entries: List[(String, String)]) {
 
-  // TODO: Optimize case ignorance.
+  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: entries)
 
-  def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: wo(entries, entry))
-
-  def ++(that: HttpParams): HttpParams = new HttpParams(that.entries.foldLeft(entries)(wo) ++ that.entries)
+  def ++(that: HttpParams): HttpParams = new HttpParams(entries ++ that.entries)
 
   def -(name: String): HttpParams = new HttpParams(entries.filterNot(_._1 equalsIgnoreCase name))
 
-  def -(entry: (String, Any)): HttpParams = new HttpParams(wo(entries, entry))
-
-  private def wo(xs: List[(String, String)], x: (String, Any)): List[(String, String)] = {
-    xs.filterNot(e => e._1.equalsIgnoreCase(x._1) && e._2.equalsIgnoreCase(x._2.toString))
+  def -(entry: (String, Any)): HttpParams = {
+    new HttpParams(entries.filterNot(e => e._1.equalsIgnoreCase(entry._1) && e._2 == entry._2.toString))
   }
 
+
+  def contains(name: String): Boolean = entries.exists(_._1 equalsIgnoreCase name)
+
+  def contains(entry: (String, Any)) = entries.exists(e => e._1.equalsIgnoreCase(entry._1) && e._2 == entry._2)
 
   def isEmpty: Boolean = entries.isEmpty
 
   def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
 
-  def get(name: String): Option[String] = all(name).headOption
+  def get(name: String): Option[String] = entries.find(_._1 equalsIgnoreCase name).map(_._2)
 
   def all(name: String): List[String] = entries.filter(_._1 equalsIgnoreCase name).map(_._2)
 
@@ -98,13 +98,13 @@ object HttpParams {
     }
 
     val asLong = asString.map(_.toLong)
-    val asInt = asLong.map(_.toInt)
-    val asShort = asLong.map(_.toShort)
-    val asByte = asLong.map(_.toByte)
+    val asInt = asString.map(_.toInt)
+    val asShort = asString.map(_.toShort)
+    val asByte = asString.map(_.toByte)
     val asBigInt = asString.map(BigInt(_))
 
     val asDouble = asString.map(_.toDouble)
-    val asFloat = asDouble.map(_.toFloat)
+    val asFloat = asString.map(_.toFloat)
     val asBigDecimal = asString.map(BigDecimal(_))
 
     val asBoolean = asString.map(_.toBoolean)
