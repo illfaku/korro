@@ -25,8 +25,8 @@ class HttpRequestParentActor(config: HttpConfig) extends Actor {
 
   override def receive = {
     case HttpRequestParentActor.NewRequest(channel, route, req) =>
-      implicit val child = context.actorOf(HttpRequestActor.props(channel, config, s"${req.method} ${req.path}"))
-      route ! req
+      val child = context.actorOf(HttpRequestActor.props(channel, config, s"${req.method} ${req.path}"))
+      route.tell(req, child)
   }
 }
 
