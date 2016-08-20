@@ -19,7 +19,7 @@ import org.oxydev.korro.util.config.extended
 import org.oxydev.korro.util.log.Logging
 
 import com.typesafe.config.Config
-import io.netty.handler.codec.http.{HttpHeaders, HttpMethod, HttpRequest}
+import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaders, HttpMethod, HttpRequest}
 
 import java.util.regex.Pattern
 
@@ -77,10 +77,10 @@ private class RouteConfig(config: Config) {
 
 
   def test(req: HttpRequest): Boolean = {
-    testMethod(req.getMethod) &&
-      testPath(req.getUri) &&
-      testPathPrefix(req.getUri) &&
-      testPathPattern(req.getUri) &&
+    testMethod(req.method) &&
+      testPath(req.uri) &&
+      testPathPrefix(req.uri) &&
+      testPathPattern(req.uri) &&
       testHost(req.headers) &&
       testHeaders(req.headers)
   }
@@ -95,7 +95,7 @@ private class RouteConfig(config: Config) {
   private def testPathPattern(uri: String): Boolean = pathPattern.forall(_.matcher(path(uri)).matches)
 
   private def testHost(h: HttpHeaders): Boolean = host forall { hst =>
-    val hh = h.get(HttpHeaders.Names.HOST)
+    val hh = h.get(HttpHeaderNames.HOST)
     hh != null && (hh == hst || hh.split(':').head == hst)
   }
 

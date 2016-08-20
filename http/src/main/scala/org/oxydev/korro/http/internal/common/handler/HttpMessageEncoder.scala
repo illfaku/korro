@@ -57,11 +57,11 @@ object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
   }
 
   private def setHeaders(message: netty.HttpMessage, msg: HttpMessage): Unit = {
-    msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(message, name, value) }
+    msg.headers.entries foreach { case (name, value) => message.headers.add(name, value) }
     if (msg.content.length > 0) {
-      netty.HttpHeaders.setContentLength(message, msg.content.length)
+      netty.HttpUtil.setContentLength(message, msg.content.length)
       msg.content.contentType foreach { contentType =>
-        netty.HttpHeaders.addHeader(message, netty.HttpHeaders.Names.CONTENT_TYPE, contentType.toString)
+        message.headers.add(netty.HttpHeaderNames.CONTENT_TYPE, contentType.toString)
       }
     }
   }

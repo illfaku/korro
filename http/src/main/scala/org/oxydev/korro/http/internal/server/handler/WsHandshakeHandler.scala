@@ -24,7 +24,7 @@ import org.oxydev.korro.util.log.Logging
 import akka.actor.ActorRef
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
-import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaders}
+import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaderNames}
 
 import java.net.{InetSocketAddress, URI}
 
@@ -46,7 +46,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   }
 
   private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
-    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
+    val location = s"ws://${req.headers.get(HttpHeaderNames.HOST)}/${new URI(req.uri).getPath}"
     val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
     Option(factory.newHandshaker(req))
   }
@@ -72,10 +72,10 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   }
 
   private def connection(channel: Channel, req: FullHttpRequest): WsConnection = {
-    val host = req.headers.get(HttpHeaders.Names.HOST)
+    val host = req.headers.get(HttpHeaderNames.HOST)
     val path = {
-      val pos = req.getUri.indexOf('?')
-      if (pos >= 0) req.getUri.substring(0, pos) else req.getUri
+      val pos = req.uri.indexOf('?')
+      if (pos >= 0) req.uri.substring(0, pos) else req.uri
     }
     val sourceIp = config.sourceIpHeader.flatMap(name => Option(req.headers.get(name))) getOrElse {
       channel.remoteAddress.asInstanceOf[InetSocketAddress].getHostString

@@ -40,14 +40,14 @@ class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleC
   private val BadRequest = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    if (!msg.headers.contains(HttpHeaders.Names.HOST)) finish(ctx, BadRequest)
+    if (!msg.headers.contains(HttpHeaderNames.HOST)) finish(ctx, BadRequest)
     else if (isHandshake(msg)) doHandshake(ctx, msg)
     else doRequest(ctx, msg)
   }
 
   private def isHandshake(msg: HttpRequest): Boolean = {
-    msg.headers.contains(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.UPGRADE, true) &&
-    msg.headers.contains(HttpHeaders.Names.UPGRADE, HttpHeaders.Values.WEBSOCKET, true)
+    msg.headers.contains(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true) &&
+    msg.headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true)
   }
 
   private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.http.routes(msg) match {

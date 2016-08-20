@@ -46,20 +46,20 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   )
 
 
-  private var message: HttpMessage = null
+  private var message: HttpMessage = _
 
-  private var byteCache: CompositeByteBuf = null
+  private var byteCache: CompositeByteBuf = _
 
 
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
-    if (msg.getDecoderResult.isFailure) {
+    if (msg.decoderResult.isFailure) {
       finish(ctx, BadRequest)
-      log.debug("Failed to decode inbound message. {}", msg.getDecoderResult.cause)
+      log.debug("Failed to decode inbound message. {}", msg.decoderResult.cause)
     } else {
       msg match {
         case m: netty.HttpMessage =>
           reset()
-          if (netty.HttpHeaders.getContentLength(m, 0) > maxSize) finish(ctx, TooBigContent)
+          if (netty.HttpUtil.getContentLength(m, 0) > maxSize) finish(ctx, TooBigContent)
           else decodeMessage(m, out)
         case m: netty.HttpContent => if (message != null) decodeContent(ctx, m, out)
       }
@@ -72,11 +72,11 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeRequest(msg: netty.HttpRequest): Unit = {
-    message = HttpRequest(Method(msg.getMethod.name), msg.getUri, decodeHeaders(msg.headers), HttpContent.empty)
+    message = HttpRequest(Method(msg.method.name), msg.uri, decodeHeaders(msg.headers), HttpContent.empty)
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
-    val status = HttpResponse.Status(msg.getStatus.code, msg.getStatus.reasonPhrase)
+    val status = HttpResponse.Status(msg.status.code, msg.status.reasonPhrase)
     message = HttpResponse(status, decodeHeaders(msg.headers), HttpContent.empty)
   }
 
