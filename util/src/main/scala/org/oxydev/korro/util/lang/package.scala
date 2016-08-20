@@ -44,4 +44,15 @@ package object lang {
    * subclass of `Throwable` to <a href="http://www.scala-lang.org/api/current/#scala.concurrent.Future">`Future`</a>.
    */
   implicit def either2future[F <: Throwable, R](either: Either[F, R]): Future[R] = Future fromTry either2try(either)
+
+  /**
+   * Implicitly adds method `toOption` to all types.
+   */
+  implicit class Optionable[T <: Any](value: T) {
+
+    /**
+     * Converts this value to `Option`.
+     */
+    def toOption: Option[T] = Option(value)
+  }
 }
