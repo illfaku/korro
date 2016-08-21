@@ -15,6 +15,9 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
+import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.api.HttpResponse.Status
+import org.oxydev.korro.http.internal.server.actor.HttpRouter.Route
 import org.oxydev.korro.http.tools.route.HttpRouter.{SetRoute, UnsetRoute}
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
@@ -34,6 +37,12 @@ class HttpRouterActor(router: HttpRouter) extends Actor {
     case Terminated(ref) =>
       router.unset(ref)
       context unwatch ref
+
+    case req: HttpRequest =>
+      router.find(req) match {
+        case Some(Route(ref)) => ref forward req
+        case None => sender ! Status.NotFound()
+      }
   }
 }
 
