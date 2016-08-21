@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.tools.route
+package org.oxydev.korro.http.api.route
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.util.lang.{Predicate, Predicate1}
 
 /**
- * Predicates for [[HttpRouter]].
+ * [[org.oxydev.korro.http.api.HttpRequest HttpRequest]] predicates.
  */
 object HttpRequestPredicate {
 

@@ -17,11 +17,19 @@ package org.oxydev.korro.http.internal.server.actor
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.api.HttpResponse.Status
+import org.oxydev.korro.http.api.route.{SetRoute, UnsetRoute}
 import org.oxydev.korro.http.internal.server.actor.HttpRouter.Route
-import org.oxydev.korro.http.tools.route.HttpRouter.{SetRoute, UnsetRoute}
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
 
+/**
+ * Internal router actor for HTTP requests.
+ * Accepts [[org.oxydev.korro.http.api.route.SetRoute SetRoute]] and
+ * [[org.oxydev.korro.http.api.route.UnsetRoute UnsetRoute]] commands.
+ *
+ * <p>It tries to find actor with predicate that matches [[org.oxydev.korro.http.api.HttpRequest HttpRequest]] message
+ * and forwards message to it, if not found it will send response with status 404 to sender.
+ */
 class HttpRouterActor(router: HttpRouter) extends Actor {
 
   override def receive = {

@@ -13,36 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.actor
+package org.oxydev.korro.http.api.route
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.util.lang.Predicate1
 
 import akka.actor.ActorRef
 
-import scala.collection.mutable
+/**
+ * Common trait for all router commands.
+ */
+sealed trait HttpRouterCommand
 
-object HttpRouter {
+/**
+ * Command for router to set your actor as handler of matched requests.
+ *
+ * @param ref Actor reference to set.
+ * @param predicate Predicate to test requests against.
+ */
+case class SetRoute(ref: ActorRef, predicate: Predicate1[HttpRequest]) extends HttpRouterCommand
 
-  case class Route(ref: ActorRef)
-
-  private [HttpRouter] case class RouteInfo(predicate: Predicate1[HttpRequest])
-}
-
-class HttpRouter {
-
-  import HttpRouter._
-
-  private val routes = mutable.Map.empty[ActorRef, RouteInfo]
-
-  def set(ref: ActorRef, predicate: Predicate1[HttpRequest]): Unit = routes += (ref -> RouteInfo(predicate))
-
-  def unset(ref: ActorRef): Unit = routes -= ref
-
-  /**
-   * Returns optional matching route.
-   *
-   * @param req Request to match.
-   */
-  def find(req: HttpRequest): Option[Route] = routes.find(_._2.predicate(req)).map(_._1).map(Route)
-}
+/**
+ * Command for router to remove your actor from handlers list.
+ *
+ * <p>It is not necessary to send this command, because when your actor terminates corresponding route will be
+ * automatically unset.
+ *
+ * @param ref Actor reference to unset.
+ */
+case class UnsetRoute(ref: ActorRef) extends HttpRouterCommand
