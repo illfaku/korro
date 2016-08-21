@@ -90,6 +90,8 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
       boss.shutdownGracefully()
       worker.shutdownGracefully()
   }
+
+  initialize()
 }
 
 object HttpServerActor {
