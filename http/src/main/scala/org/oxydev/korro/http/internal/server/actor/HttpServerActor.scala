@@ -15,6 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
+import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.server.config.ServerConfig
 import org.oxydev.korro.http.internal.server.handler.HttpChannelInitializer
 import org.oxydev.korro.util.concurrent.SequenceThreadFactory
@@ -25,56 +26,88 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{Channel, EventLoopGroup}
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class HttpServerActor(config: ServerConfig) extends Actor with ActorLogging {
+import scala.util.{Failure, Success}
 
-  private var bossGroup: EventLoopGroup = null
-  private var workerGroup: EventLoopGroup = null
-  private var channel: Channel = null
+class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
 
-  override def preStart(): Unit = {
-    try {
-      bossGroup = new NioEventLoopGroup(1, new SequenceThreadFactory(s"korro-server-${config.name}-boss"))
-      workerGroup = new NioEventLoopGroup(config.workerGroupSize, new SequenceThreadFactory(s"korro-server-${config.name}-worker"))
+  import HttpServerActor._
+
+  startWith(Starting, NoData)
+
+  when (Starting) {
+
+    case Event(config: ServerConfig, NoData) =>
+
+      val bossGroup = new NioEventLoopGroup(1, new SequenceThreadFactory(s"korro-server-${config.name}-boss"))
+      val workerGroup = new NioEventLoopGroup(
+        config.workerGroupSize, new SequenceThreadFactory(s"korro-server-${config.name}-worker")
+      )
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
         .childHandler(new HttpChannelInitializer(config, self))
 
-      channel = bootstrap.bind(config.port).sync().channel
+      bootstrap.bind(config.port) onComplete {
+        case Success(channel) => self ! channel
+        case Failure(cause) => self ! Status.Failure(cause)
+      }
 
-      log.info("Started Korro HTTP server \"{}\" on port {}.", config.name, config.port)
-    } catch {
-      case e: Throwable =>
-        log.error(e, "Failed to start Korro HTTP server \"{}\" on port {}.", config.name, config.port)
-        context.stop(self)
-    }
+      goto (Binding) using ConfigData(config, bossGroup, workerGroup)
   }
 
-  override def postStop(): Unit = {
-    if (channel != null) channel.close()
-    if (bossGroup != null) bossGroup.shutdownGracefully()
-    if (workerGroup != null) workerGroup.shutdownGracefully()
+  when (Binding) {
+
+    case Event(channel: Channel, ConfigData(config, boss, worker)) =>
+      log.debug("Started Korro HTTP server \"{}\" on port {}.", config.name, config.port)
+      goto (Working) using ChannelData(config, boss, worker, channel)
+
+    case Event(Status.Failure(cause), ConfigData(config, boss, worker)) =>
+      log.error(cause, "Failed to start Korro HTTP server \"{}\" on port {}.", config.name, config.port)
+      stop(FSM.Failure(cause))
   }
 
-  override def receive = {
-    case HttpServerActor.CreateChild(props, true) => sender ! context.actorOf(props)
-    case HttpServerActor.CreateChild(props, false) => context.actorOf(props)
+  when (Working) {
+
+    case Event(HttpServerActor.CreateChild(props, true), _) =>
+      sender ! context.actorOf(props)
+      stay()
+
+    case Event(HttpServerActor.CreateChild(props, false), _) =>
+      context.actorOf(props)
+      stay()
+  }
+
+  onTermination {
+
+    case StopEvent(FSM.Normal, Working, ChannelData(config, boss, worker, channel)) =>
+      channel.close()
+      boss.shutdownGracefully()
+      worker.shutdownGracefully()
+      log.debug("Stopped Korro HTTP server \"{}\" on port {}.", config.name, config.port)
+
+    case StopEvent(FSM.Failure(cause), Binding, ConfigData(config, boss, worker)) =>
+      boss.shutdownGracefully()
+      worker.shutdownGracefully()
   }
 }
 
 object HttpServerActor {
 
-  def create(config: ServerConfig)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(props(config), config.name)
-  }
+  sealed trait State
+  case object Starting extends State
+  case object Binding extends State
+  case object Working extends State
 
-  def props(config: ServerConfig): Props = Props(new HttpServerActor(config))
+  sealed trait Data
+  case object NoData extends Data
+  case class ConfigData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup) extends Data
+  case class ChannelData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, channel: Channel) extends Data
+
+
+  def create(name: String)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(Props[HttpServerActor], name)
+  }
 
   case class CreateChild(props: Props, returnRef: Boolean)
 }

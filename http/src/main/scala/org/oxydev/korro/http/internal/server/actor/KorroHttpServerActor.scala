@@ -27,13 +27,12 @@ import scala.collection.JavaConversions._
 
 /**
  * The main actor that starts all configured http servers as its child actors.
- *
- * @author Vladimir Konstantinov
  */
 class KorroHttpServerActor(config: Config) extends Actor {
 
   config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    HttpServerActor.create(new ServerConfig(name, config.getConfig(s"korro.server.$name")))
+    val serverConfig = new ServerConfig(name, config.getConfig(s"korro.server.$name"))
+    HttpServerActor.create(name) ! serverConfig
   }
 
   override def receive = Actor.emptyBehavior
