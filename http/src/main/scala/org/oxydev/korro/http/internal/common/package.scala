@@ -15,8 +15,10 @@
  */
 package org.oxydev.korro.http.internal
 
-import io.netty.buffer.{Unpooled, ByteBuf}
-import io.netty.channel.{ChannelFuture, ChannelFutureListener}
+import io.netty.buffer.{ByteBuf, Unpooled}
+import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Common utilities and channel handlers used in both server and client implementations.
@@ -24,7 +26,7 @@ import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 package object common {
 
   /**
-   * Additional methods for [[ChannelFuture]] that make work with it a bit easier and more pretty.
+   * Additional methods for [[ChannelFuture]] which make work with it a bit easier and more pretty.
    *
    * @param future Original [[ChannelFuture]] object.
    */
@@ -38,6 +40,16 @@ package object common {
     def foreach(op: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
       override def operationComplete(f: ChannelFuture): Unit = op(f)
     })
+
+    /**
+     * Adds listener to this future to execute provided function when the future completes.
+     *
+     * @param op Function to execute.
+     */
+    def onComplete(op: Try[Channel] => Unit): Unit = foreach { f =>
+      val t = if (f.isSuccess) Success(f.channel) else Failure(f.cause)
+      op(t)
+    }
 
     /**
      * Adds listener to this future to execute provided function when the future successfully completes.
