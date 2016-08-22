@@ -15,28 +15,26 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.internal.server.config.ServerConfig
-import org.oxydev.korro.http.internal.server.util.HttpRequestRouter
+import org.oxydev.korro.http.internal.server.util.Keys
 
-import akka.actor.ActorRef
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.{HttpContentCompressor, HttpServerCodec}
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
-class HttpChannelInitializer(
-  config: ServerConfig, reqParent: ActorRef, reqRouter: HttpRequestRouter
-) extends ChannelInitializer[SocketChannel] {
+class HttpChannelInitializer extends ChannelInitializer[SocketChannel] {
 
-  private val httpHandler = new HttpChannelHandler(config, reqParent)
-  private val loggingHandler = new LoggingHandler(config.http.logger, LogLevel.TRACE)
+  private val httpHandler = new HttpChannelHandler
   private val lastHandler = new LastChannelHandler
 
   override def initChannel(ch: SocketChannel): Unit = {
+
+    val config = ch.attr(Keys.config).get
+
     val pipeline = ch.pipeline
     pipeline.addLast("netty-codec", new HttpServerCodec)
     config.http.compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
-    pipeline.addLast("logging", loggingHandler)
+    pipeline.addLast("logging", new LoggingHandler(config.http.logger, LogLevel.TRACE))
     pipeline.addLast("http", httpHandler)
     pipeline.addLast("last", lastHandler)
   }

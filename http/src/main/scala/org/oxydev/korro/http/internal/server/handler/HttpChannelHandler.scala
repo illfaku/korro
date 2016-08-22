@@ -17,9 +17,8 @@ package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler.HttpMessageCodec
-import org.oxydev.korro.http.internal.server.config.ServerConfig
+import org.oxydev.korro.http.internal.server.util.Keys
 
-import akka.actor.ActorRef
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
@@ -28,12 +27,9 @@ import io.netty.handler.codec.http._
  * Modifies channel pipeline according to request type (common HTTP request or WebSocket handshake).
  * Also makes some validation of request and searches for route using provided config
  * (if not found sends response with status code 404).
- *
- * @param config Server configuration.
- * @param parent Reference of associated HttpServerActor.
  */
 @Sharable
-class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleChannelInboundHandler[HttpRequest] {
+class HttpChannelHandler extends SimpleChannelInboundHandler[HttpRequest] {
 
   private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
 
@@ -50,25 +46,33 @@ class HttpChannelHandler(config: ServerConfig, parent: ActorRef) extends SimpleC
     msg.headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true)
   }
 
-  private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.http.routes(msg) match {
-    case Some(route) =>
-      if (ctx.pipeline.get("http-codec") == null) {
-        ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(config.http.maxContentLength))
-      }
-      if (ctx.pipeline.get("http-request") != null) {
-        ctx.pipeline.remove("http-request")
-      }
-      ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, parent, route))
-      ctx.fireChannelRead(msg)
-    case None => finish(ctx, NotFound)
+  private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    val config = ctx.channel.attr(Keys.config).get
+    val parent = ctx.channel.attr(Keys.Req.parent).get
+    config.http.routes(msg) match {
+      case Some(route) =>
+        if (ctx.pipeline.get("http-codec") == null) {
+          ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(config.http.maxContentLength))
+        }
+        if (ctx.pipeline.get("http-request") != null) {
+          ctx.pipeline.remove("http-request")
+        }
+        ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, parent, route))
+        ctx.fireChannelRead(msg)
+      case None => finish(ctx, NotFound)
+    }
   }
 
-  private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = config.ws.routes(msg) match {
-    case Some(route) =>
-      ctx.pipeline.addAfter(ctx.name, "http-aggregator", new HttpObjectAggregator(8192))
-      ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
-      ctx.fireChannelRead(msg)
-    case None => finish(ctx, NotFound)
+  private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    val config = ctx.channel.attr(Keys.config).get
+    val parent = ctx.channel.attr(Keys.Req.parent).get
+    config.ws.routes(msg) match {
+      case Some(route) =>
+        ctx.pipeline.addAfter(ctx.name, "http-aggregator", new HttpObjectAggregator(8192))
+        ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
+        ctx.fireChannelRead(msg)
+      case None => finish(ctx, NotFound)
+    }
   }
 
   private def finish(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {

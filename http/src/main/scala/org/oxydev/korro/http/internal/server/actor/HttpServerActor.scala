@@ -18,7 +18,7 @@ package org.oxydev.korro.http.internal.server.actor
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.server.config.ServerConfig
 import org.oxydev.korro.http.internal.server.handler.HttpChannelInitializer
-import org.oxydev.korro.http.internal.server.util.HttpRequestRouter
+import org.oxydev.korro.http.internal.server.util.{HttpRequestRouter, Keys}
 import org.oxydev.korro.util.concurrent.SequenceThreadFactory
 
 import akka.actor._
@@ -46,47 +46,45 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
 
       val reqRouter = new HttpRequestRouter
       HttpRequestRouterActor.create(reqRouter)
-      val reqParent = HttpRequestParentActor.create(config.http)
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
-        .childHandler(new HttpChannelInitializer(config, reqParent, reqRouter))
+        .childHandler(new HttpChannelInitializer)
+        .childAttr(Keys.config, config)
+        .childAttr(Keys.Req.router, reqRouter)
+        .childAttr(Keys.Req.parent, HttpRequestParentActor.create(config.http))
 
       bootstrap.bind(config.port) onComplete {
         case Success(channel) => self ! channel
         case Failure(cause) => self ! Status.Failure(cause)
       }
 
-      goto (Binding) using ConfigData(config, bossGroup, workerGroup, reqParent)
+      goto (Binding) using ConfigData(config, bossGroup, workerGroup)
   }
 
   when (Binding) {
 
-    case Event(channel: Channel, ConfigData(config, boss, worker, reqParent)) =>
+    case Event(channel: Channel, ConfigData(config, boss, worker)) =>
       log.debug("Started Korro HTTP server \"{}\" on port {}.", config.name, config.port)
-      goto (Working) using ChannelData(config, boss, worker, channel, reqParent)
+      goto (Working) using ChannelData(config, boss, worker, channel)
 
-    case Event(Status.Failure(cause), ConfigData(config, boss, worker, reqParent)) =>
+    case Event(Status.Failure(cause), ConfigData(config, boss, worker)) =>
       log.error(cause, "Failed to start Korro HTTP server \"{}\" on port {}.", config.name, config.port)
       stop(FSM.Failure(cause))
   }
 
-  when (Working) {
-    case Event(cmd: HttpServerActor.CreateChild, ChannelData(config, boss, worker, channel, reqParent)) =>
-      reqParent forward cmd
-      stay()
-  }
+  when (Working) (FSM.NullFunction)
 
   onTermination {
 
-    case StopEvent(FSM.Normal, Working, ChannelData(config, boss, worker, channel, reqParent)) =>
+    case StopEvent(FSM.Normal, Working, ChannelData(config, boss, worker, channel)) =>
       channel.close()
       boss.shutdownGracefully()
       worker.shutdownGracefully()
       log.debug("Stopped Korro HTTP server \"{}\" on port {}.", config.name, config.port)
 
-    case StopEvent(FSM.Failure(cause), Binding, ConfigData(config, boss, worker, reqParent)) =>
+    case StopEvent(FSM.Failure(cause), Binding, ConfigData(config, boss, worker)) =>
       boss.shutdownGracefully()
       worker.shutdownGracefully()
   }
@@ -103,12 +101,8 @@ object HttpServerActor {
 
   sealed trait Data
   case object NoData extends Data
-  case class ConfigData(
-    config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, reqParent: ActorRef
-  ) extends Data
-  case class ChannelData(
-    config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, channel: Channel, reqParent: ActorRef
-  ) extends Data
+  case class ConfigData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup) extends Data
+  case class ChannelData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, channel: Channel) extends Data
 
 
   def create(name: String)(implicit factory: ActorRefFactory): ActorRef = {
