@@ -20,8 +20,6 @@ import org.oxydev.korro.util.lang.Predicate1
 
 import akka.actor.ActorRef
 
-import scala.collection.mutable
-
 object HttpRequestRouter {
 
   case class Route(ref: ActorRef)
@@ -33,11 +31,12 @@ class HttpRequestRouter {
 
   import HttpRequestRouter._
 
-  private val routes = mutable.Map.empty[ActorRef, RouteInfo]
+  @volatile
+  private var routes = Map.empty[ActorRef, RouteInfo]
 
-  def set(ref: ActorRef, predicate: Predicate1[HttpRequest]): Unit = routes += (ref -> RouteInfo(predicate))
+  def set(ref: ActorRef, predicate: Predicate1[HttpRequest]): Unit = routes = routes + (ref -> RouteInfo(predicate))
 
-  def unset(ref: ActorRef): Unit = routes -= ref
+  def unset(ref: ActorRef): Unit = routes = routes - ref
 
   /**
    * Returns optional matching route.
