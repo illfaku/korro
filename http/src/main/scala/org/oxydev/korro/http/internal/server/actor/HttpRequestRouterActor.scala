@@ -15,17 +15,15 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.api.HttpResponse.Status
 import org.oxydev.korro.http.api.route.{SetRoute, UnsetRoute}
 import org.oxydev.korro.http.internal.server.util.HttpRequestRouter
-import org.oxydev.korro.http.internal.server.util.HttpRequestRouter.Route
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
 
 /**
  * Internal router actor for HTTP requests.
- * Accepts [[org.oxydev.korro.http.api.route.SetRoute SetRoute]] and
+ *
+ * <p>Accepts [[org.oxydev.korro.http.api.route.SetRoute SetRoute]] and
  * [[org.oxydev.korro.http.api.route.UnsetRoute UnsetRoute]] commands.
  *
  * <p>It tries to find actor with predicate that matches [[org.oxydev.korro.http.api.HttpRequest HttpRequest]] message
@@ -46,12 +44,6 @@ class HttpRequestRouterActor(router: HttpRequestRouter) extends Actor {
     case Terminated(ref) =>
       router.unset(ref)
       context unwatch ref
-
-    case req: HttpRequest =>
-      router.find(req) match {
-        case Some(Route(ref)) => ref forward req
-        case None => sender ! Status.NotFound()
-      }
   }
 }
 
