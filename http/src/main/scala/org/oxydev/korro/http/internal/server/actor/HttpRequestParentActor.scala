@@ -24,9 +24,13 @@ import io.netty.channel.Channel
 class HttpRequestParentActor(config: HttpConfig) extends Actor {
 
   override def receive = {
+
     case HttpRequestParentActor.NewRequest(channel, route, req) =>
       val child = context.actorOf(HttpRequestActor.props(channel, config, s"${req.method} ${req.path}"))
       route.tell(req, child)
+
+    case HttpServerActor.CreateChild(props, true) => sender ! context.actorOf(props)
+    case HttpServerActor.CreateChild(props, false) => context.actorOf(props)
   }
 }
 

@@ -18,7 +18,8 @@ package org.oxydev.korro.http.internal.server.actor
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.api.HttpResponse.Status
 import org.oxydev.korro.http.api.route.{SetRoute, UnsetRoute}
-import org.oxydev.korro.http.internal.server.actor.HttpRouter.Route
+import org.oxydev.korro.http.internal.server.util.HttpRequestRouter
+import org.oxydev.korro.http.internal.server.util.HttpRequestRouter.Route
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
 
@@ -30,7 +31,7 @@ import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
  * <p>It tries to find actor with predicate that matches [[org.oxydev.korro.http.api.HttpRequest HttpRequest]] message
  * and forwards message to it, if not found it will send response with status 404 to sender.
  */
-class HttpRouterActor(router: HttpRouter) extends Actor {
+class HttpRequestRouterActor(router: HttpRequestRouter) extends Actor {
 
   override def receive = {
 
@@ -54,9 +55,9 @@ class HttpRouterActor(router: HttpRouter) extends Actor {
   }
 }
 
-object HttpRouterActor {
+object HttpRequestRouterActor {
 
-  def create(router: HttpRouter)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(props(router), "router")
+  def create(router: HttpRequestRouter)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(props(router), "router")
 
-  def props(router: HttpRouter): Props = Props(new HttpRouterActor(router))
+  def props(router: HttpRequestRouter): Props = Props(new HttpRequestRouterActor(router))
 }

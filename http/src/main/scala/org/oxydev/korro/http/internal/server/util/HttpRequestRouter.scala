@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.actor
+package org.oxydev.korro.http.internal.server.util
 
 import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.util.lang.Predicate1
@@ -22,16 +22,16 @@ import akka.actor.ActorRef
 
 import scala.collection.mutable
 
-object HttpRouter {
+object HttpRequestRouter {
 
   case class Route(ref: ActorRef)
 
-  private [HttpRouter] case class RouteInfo(predicate: Predicate1[HttpRequest])
+  private [HttpRequestRouter] case class RouteInfo(predicate: Predicate1[HttpRequest])
 }
 
-class HttpRouter {
+class HttpRequestRouter {
 
-  import HttpRouter._
+  import HttpRequestRouter._
 
   private val routes = mutable.Map.empty[ActorRef, RouteInfo]
 
