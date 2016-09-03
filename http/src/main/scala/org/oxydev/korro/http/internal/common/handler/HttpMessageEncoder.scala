@@ -46,14 +46,13 @@ object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
     setHeaders(message, msg)
     out add message
 
-    if (msg.content.length > 0) out add encodeContent(msg.content)
+    msg.content match {
+      case c: MemoryHttpContent => out add new netty.DefaultHttpContent(c.bytes)
+      case c: FileHttpContent => out add new DefaultFileRegion(new File(c.path), 0, c.length)
+      case NoHttpContent => ()
+    }
 
     out add netty.LastHttpContent.EMPTY_LAST_CONTENT
-  }
-
-  private def encodeContent(content: HttpContent): AnyRef = content match {
-    case c: MemoryHttpContent => new netty.DefaultHttpContent(c.bytes)
-    case c: FileHttpContent => new DefaultFileRegion(new File(c.path), 0, c.length)
   }
 
   private def setHeaders(message: netty.HttpMessage, msg: HttpMessage): Unit = {

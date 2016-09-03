@@ -59,6 +59,17 @@ sealed trait HttpContent {
 }
 
 /**
+ * Empty HTTP message body representation.
+ */
+object NoHttpContent extends HttpContent {
+  override val contentType: Option[ContentType] = None
+  override val length: Long = 0
+  override val bytes: Array[Byte] = Array.emptyByteArray
+  override val string: String = ""
+  override def string(charset: Charset): String = ""
+}
+
+/**
  * HTTP message body representation stored in memory.
  *
  * @param bytes Binary data.
@@ -96,12 +107,13 @@ class FileHttpContent(val path: String, val contentType: Option[ContentType], va
  */
 object HttpContent {
 
-  val empty: HttpContent = new MemoryHttpContent(Array.emptyByteArray, None)
+  val empty: HttpContent = NoHttpContent
 
   def memory(bytes: Array[Byte]): HttpContent = memory(bytes, None)
   def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = memory(bytes, Some(contentType))
   def memory(bytes: Array[Byte], contentType: Option[ContentType]): HttpContent = {
-    new MemoryHttpContent(bytes, contentType)
+    if (bytes.length > 0) new MemoryHttpContent(bytes, contentType)
+    else NoHttpContent
   }
 
   def file(path: String): HttpContent = file(path, None)
@@ -110,7 +122,8 @@ object HttpContent {
   def file(path: String, length: Long): HttpContent = file(path, None, length)
   def file(path: String, contentType: ContentType, length: Long): HttpContent = file(path, Some(contentType), length)
   def file(path: String, contentType: Option[ContentType], length: Long): HttpContent = {
-    new FileHttpContent(path, contentType, length)
+    if (length > 0) new FileHttpContent(path, contentType, length)
+    else NoHttpContent
   }
 
 
