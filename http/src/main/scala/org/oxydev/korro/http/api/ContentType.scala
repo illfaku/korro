@@ -22,8 +22,9 @@ import scala.util.Try
 /**
  * Content-Type header representation.
  */
-case class ContentType(mime: String, charset: Option[Charset]) {
-  override lazy val toString = charset.map(ch => s"$mime; charset=${ch.name.toLowerCase}").getOrElse(mime)
+case class ContentType(mime: String, charsetName: Option[String]) {
+  lazy val charset: Option[Charset] = charsetName.flatMap(ch => Try(Charset.forName(ch)).toOption)
+  override lazy val toString = charsetName.map(ch => s"$mime; charset=$ch").getOrElse(mime)
 }
 
 object ContentType {
@@ -33,6 +34,7 @@ object ContentType {
    */
   object Names {
     val TextPlain = "text/plain"
+    val TextCsv = "text/csv"
     val ApplicationJson = "application/json"
     val FormUrlEncoded = "application/x-www-form-urlencoded"
     val OctetStream = "application/octet-stream"
@@ -44,20 +46,18 @@ object ContentType {
   val DefaultCharset = Charset.forName("UTF-8")
 
 
-  private val regex = """([^;]+)(?:; charset=([\w-]+))?""".r
+  private val regex = """([^; ]+) *(?:; *charset=([\w-]+))?""".r
 
   /**
    * Tries to extract mime type and charset from Content-Type header.
    */
-  def parse(header: String): Option[ContentType] = regex.unapplySeq(header) map { l =>
-    val mime = l.head
-    val charset = l.drop(1).headOption.flatMap(toCharset)
-    ContentType(mime, charset)
+  def parse(header: String): Option[ContentType] = regex.unapplySeq(header.trim) map { l =>
+    ContentType(l.head, l.drop(1).headOption)
   }
 
-  private def toCharset(name: String): Option[Charset] = Try(Charset.forName(name)).toOption
+  def apply(mime: String): ContentType = ContentType(mime, None)
 
-  def apply(mime: String): ContentType = apply(mime, None)
+  def apply(mime: String, charset: String): ContentType = ContentType(mime, Option(charset))
 
-  def apply(mime: String, charset: Charset): ContentType = apply(mime, Some(charset))
+  def apply(mime: String, charset: Charset): ContentType = ContentType(mime, Option(charset).map(_.name))
 }
