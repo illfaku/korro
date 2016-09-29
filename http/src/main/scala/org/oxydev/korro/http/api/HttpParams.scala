@@ -21,7 +21,8 @@ import java.time.format.DateTimeFormatter.{ISO_LOCAL_DATE_TIME, ISO_OFFSET_DATE_
 import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.control.NoStackTrace
+import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.{Failure, Success, Try}
 
 class HttpParams(val entries: List[(String, String)]) {
 
@@ -44,24 +45,25 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def isEmpty: Boolean = entries.isEmpty
 
-  def apply(name: String): String = get(name).getOrElse(throw new NoSuchElementException(name))
+  def apply(name: String): String = getOrElse(name, throw new NoSuchElementException(name))
 
   def get(name: String): Option[String] = entries.find(_._1 equalsIgnoreCase name).map(_._2)
+
+  def getOrElse(name: String, default: => String): String = get(name).getOrElse(default)
 
   def all(name: String): List[String] = entries.filter(_._1 equalsIgnoreCase name).map(_._2)
 
 
   import HttpParams.Extractions._
 
-  def mandatory[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, V] = {
-    entry(name).map(Right(_)).getOrElse(Left(Absent(name))).right.flatMap(f)
-  }
+  def mandatory[V](name: String, f: Extraction[V]): Try[V] = entry(name).map(f).getOrElse(Failure(Absent(name)))
 
-  def optional[V](name: String)(f: Extraction[V]): Either[ExtractionFailure, Option[V]] = {
-    entry(name).map(f.andThen(_.right.map(Some(_)))).getOrElse(Right(None))
+  def optional[V](name: String, f: Extraction[V]): Try[Option[V]] = {
+    entry(name).map(f.andThen(_.map(Option(_)))).getOrElse(Success(None))
   }
 
   private def entry(name: String): Option[(String, String)] = entries.find(_._1 equalsIgnoreCase name)
+
 
   override lazy val toString: String = entries.mkString("HttpParams(", ", ", ")")
 }
@@ -82,14 +84,12 @@ object HttpParams {
       override lazy val toString = s"Invalid parameter: $name=$value. Cause: ${cause.getMessage}"
     }
 
-    trait Extraction[V] extends (((String, String)) => Either[ExtractionFailure, V]) { self =>
+    trait Extraction[V] extends (((String, String)) => Try[V]) { self =>
       def map[U](f: V => U): Extraction[U] = new Extraction[U] {
-        override def apply(v: (String, String)): Either[ExtractionFailure, U] = {
+        override def apply(v: (String, String)): Try[U] = {
           val (name, value) = v
-          try {
-            self.apply(v).right.map(f)
-          } catch {
-            case cause: Throwable => Left(Malformed(name, value, cause))
+          self(v).map(f) recoverWith {
+            case NonFatal(cause) => Failure(Malformed(name, value, cause))
           }
         }
       }
@@ -120,7 +120,7 @@ object HttpParams {
 
     val asIsoDuration = asString.map(java.time.Duration.parse)
 
-    val asDuration = asString.map(Duration.create)
+    val asDuration = asString.map(Duration.apply)
     val asFiniteDuration = asDuration.map(d => FiniteDuration(d.length, d.unit))
   }
 }
