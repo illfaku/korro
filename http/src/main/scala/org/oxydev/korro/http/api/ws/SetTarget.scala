@@ -18,8 +18,8 @@ package org.oxydev.korro.http.api.ws
 import akka.actor.ActorRef
 
 /**
- * Command to tell HTTP server which actor will process [[WsMessage]]s.
+ * Command to tell HTTP server which actor will process [[org.oxydev.korro.http.api.ws.WsFrame WsFrame]]s.
  *
- * @param ref `Some` actor reference or `None` if there is no actor for that.
+ * @param ref Actor reference.
  */
-case class SetTarget(ref: Option[ActorRef])
+case class SetTarget(ref: ActorRef)

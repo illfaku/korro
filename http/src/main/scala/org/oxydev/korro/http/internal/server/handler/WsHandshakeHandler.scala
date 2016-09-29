@@ -15,6 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
+import org.oxydev.korro.http.api.HttpParams
 import org.oxydev.korro.http.api.ws.WsConnection
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler._
@@ -26,7 +27,9 @@ import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaderNames}
 
-import java.net.{InetSocketAddress, URI}
+import java.net.URI
+
+import scala.collection.JavaConversions._
 
 /**
  * Completes WebSocket handshake with client and modifies channel pipeline to handle WebSocket frames.
@@ -72,14 +75,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
   }
 
   private def connection(channel: Channel, req: FullHttpRequest): WsConnection = {
-    val host = req.headers.get(HttpHeaderNames.HOST)
-    val path = {
-      val pos = req.uri.indexOf('?')
-      if (pos >= 0) req.uri.substring(0, pos) else req.uri
-    }
-    val sourceIp = config.sourceIpHeader.flatMap(name => Option(req.headers.get(name))) getOrElse {
-      channel.remoteAddress.asInstanceOf[InetSocketAddress].getHostString
-    }
-    WsConnection(host, path, sourceIp)
+    val headers = for (header <- req.headers) yield header.getKey -> header.getValue
+    WsConnection(req.uri, HttpParams(headers.toSeq: _*))
   }
 }

@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.api.ws.{WsConnection, WsMessage}
+import org.oxydev.korro.http.api.ws.{WsConnection, WsFrame}
 import org.oxydev.korro.http.internal.server.actor.{HttpServerActor, WsMessageActor}
 import org.oxydev.korro.util.log.Logging
 
@@ -31,11 +31,11 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class WsChannelHandler(parent: ActorRef, connection: WsConnection, route: String)
-  extends SimpleChannelInboundHandler[WsMessage] with Logging {
+  extends SimpleChannelInboundHandler[WsFrame] with Logging {
 
   private var sender: Option[ActorRef] = None
 
-  private val stash = ListBuffer.empty[WsMessage]
+  private val stash = ListBuffer.empty[WsFrame]
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     implicit val ec: ExecutionContext = ctx.channel.eventLoop
@@ -53,7 +53,7 @@ class WsChannelHandler(parent: ActorRef, connection: WsConnection, route: String
     }
   }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = sender match {
+  override def channelRead0(ctx: ChannelHandlerContext, msg: WsFrame): Unit = sender match {
     case Some(ref) => ref ! WsMessageActor.Inbound(msg)
     case None => stash += msg
   }

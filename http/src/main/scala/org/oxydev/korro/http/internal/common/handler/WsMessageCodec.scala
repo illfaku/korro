@@ -15,28 +15,31 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.http.api.ws.{BinaryWsMessage, TextWsMessage, WsMessage}
+import org.oxydev.korro.http.api.ws._
 import org.oxydev.korro.http.internal.common.{toByteBuf, toBytes}
 import org.oxydev.korro.util.log.Logging
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
-import io.netty.handler.codec.http.websocketx.{BinaryWebSocketFrame, TextWebSocketFrame, WebSocketFrame}
+import io.netty.handler.codec.http.websocketx._
 
 import java.util
 
 @Sharable
-object WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
+object WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsFrame] with Logging {
 
-  override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: util.List[AnyRef]): Unit = msg match {
-    case TextWsMessage(text) => out add new TextWebSocketFrame(text)
-    case BinaryWsMessage(bytes) => out add new BinaryWebSocketFrame(bytes)
+  override def encode(ctx: ChannelHandlerContext, msg: WsFrame, out: util.List[AnyRef]): Unit = msg match {
+    case CloseWsFrame(status, reason) => out add new CloseWebSocketFrame(status, reason)
+    case PingWsFrame(bytes) => out add new PingWebSocketFrame(bytes)
+    case PongWsFrame(bytes) => out add new PongWebSocketFrame(bytes)
+    case TextWsFrame(text) => out add new TextWebSocketFrame(text)
+    case BinaryWsFrame(bytes) => out add new BinaryWebSocketFrame(bytes)
   }
 
   override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
-    case frame: BinaryWebSocketFrame => out add BinaryWsMessage(frame.content)
-    case frame: TextWebSocketFrame => out add TextWsMessage(frame.text)
+    case frame: BinaryWebSocketFrame => out add BinaryWsFrame(frame.content)
+    case frame: TextWebSocketFrame => out add TextWsFrame(frame.text)
     case frame => log.warning("Unexpected frame: {}.", frame)
   }
 }

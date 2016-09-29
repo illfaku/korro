@@ -15,12 +15,12 @@
  */
 package org.oxydev.korro.http.api.ws
 
+import org.oxydev.korro.http.api.HttpParams
+
 /**
  * Message about new WebSocket connection.
- * HTTP server will send it to configured route and wait for [[SetTarget]] command to complete handshake.
  *
- * @param host Host header.
- * @param path Path without query string.
- * @param sourceIp Client IP address extracted from configured header (`source-ip-header`) or from channel.
+ * @param uri URI of a handshake request.
+ * @param headers HTTP headers of a handshake request.
  */
-case class WsConnection(host: String, path: String, sourceIp: String)
+case class WsConnection(uri: String, headers: HttpParams)

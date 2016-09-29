@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.api.ws.{SetTarget, WsConnection, WsMessage}
+import org.oxydev.korro.http.api.ws.{SetTarget, WsConnection, WsFrame}
 
 import akka.actor._
 import io.netty.channel.Channel
@@ -37,23 +37,18 @@ class WsMessageActor(channel: Channel, route: String, init: WsConnection) extend
 
     case _: WsMessageActor.Inbound => stash()
 
-    case SetTarget(Some(ref)) =>
+    case SetTarget(ref) =>
       setTargetTimeout.cancel()
       context watch ref
       unstashAll()
       context become {
         case WsMessageActor.Inbound(msg) => ref ! msg
-        case msg: WsMessage => channel.writeAndFlush(msg)
+        case msg: WsFrame => channel.writeAndFlush(msg)
         case Terminated(`ref`) => disconnect()
       }
 
-    case SetTarget(None) =>
-      setTargetTimeout.cancel()
-      log.error("No actor for {}. Closing connection...", init)
-      disconnect()
-
     case ReceiveTimeout =>
-      log.error("SetTarget command was not received in 5 seconds. Closing connection...", route)
+      log.warning("SetTarget command was not received in 5 seconds. Closing connection...", route)
       disconnect()
   }
 
@@ -69,6 +64,6 @@ object WsMessageActor {
 
   def props(channel: Channel, route: String, init: WsConnection): Props = Props(new WsMessageActor(channel, route, init))
 
-  case class Inbound(msg: WsMessage)
+  case class Inbound(msg: WsFrame)
   case object Disconnect
 }
