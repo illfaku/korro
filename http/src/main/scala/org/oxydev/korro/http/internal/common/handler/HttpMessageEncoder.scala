@@ -22,7 +22,7 @@ import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}
 import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 
-import java.io.File
+import java.nio.file.{Files, Paths}
 import java.util
 
 /**
@@ -43,25 +43,36 @@ object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
           netty.HttpVersion.HTTP_1_1, new netty.HttpResponseStatus(res.status.code, res.status.reason)
         )
     }
-    setHeaders(message, msg)
-    out add message
 
-    msg.content match {
-      case c: MemoryHttpContent => out add new netty.DefaultHttpContent(c.bytes)
-      case c: FileHttpContent => out add new DefaultFileRegion(new File(c.path), 0, c.length)
-      case NoHttpContent => ()
+    setHeaders(message, msg)
+
+    val content = msg.content match {
+
+      case c: MemoryHttpContent if c.length > 0 =>
+        netty.HttpUtil.setContentLength(message, c.length)
+        setContentType(message, msg)
+        Some(new netty.DefaultHttpContent(c.bytes))
+
+      case c: FileHttpContent =>
+        val path = Paths.get(c.path)
+        val size = Files.size(path)
+        netty.HttpUtil.setContentLength(message, size)
+        setContentType(message, msg)
+        Some(new DefaultFileRegion(path.toFile, 0, size))
+
+      case _ => None
     }
 
+    out add message
+    content.foreach(out.add)
     out add netty.LastHttpContent.EMPTY_LAST_CONTENT
+  }
+
+  private def setContentType(message: netty.HttpMessage, msg: HttpMessage): Unit = {
+    msg.content.contentType foreach { t => message.headers.add(netty.HttpHeaderNames.CONTENT_TYPE, t.toString) }
   }
 
   private def setHeaders(message: netty.HttpMessage, msg: HttpMessage): Unit = {
     msg.headers.entries foreach { case (name, value) => message.headers.add(name, value) }
-    if (msg.content.length > 0) {
-      netty.HttpUtil.setContentLength(message, msg.content.length)
-      msg.content.contentType foreach { contentType =>
-        message.headers.add(netty.HttpHeaderNames.CONTENT_TYPE, contentType.toString)
-      }
-    }
   }
 }

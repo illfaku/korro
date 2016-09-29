@@ -15,7 +15,6 @@
  */
 package org.oxydev.korro.http.internal.common.handler
 
-import org.oxydev.korro.http.api.ContentType.DefaultCharset
 import org.oxydev.korro.http.api.HttpRequest.Method
 import org.oxydev.korro.http.api._
 import org.oxydev.korro.http.internal.common.{ChannelFutureExt, toBytes}
@@ -25,6 +24,7 @@ import io.netty.buffer.{CompositeByteBuf, Unpooled}
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 
+import java.nio.charset.StandardCharsets
 import java.util
 
 import scala.collection.JavaConversions._
@@ -42,7 +42,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private lazy val TooBigContent = new netty.DefaultFullHttpResponse(
     netty.HttpVersion.HTTP_1_1, netty.HttpResponseStatus.BAD_REQUEST,
-    Unpooled.copiedBuffer(s"Content length is too big. Limit is $maxSize bytes.", DefaultCharset)
+    Unpooled.copiedBuffer(s"Content length is too big. Limit is $maxSize bytes.", StandardCharsets.UTF_8)
   )
 
 

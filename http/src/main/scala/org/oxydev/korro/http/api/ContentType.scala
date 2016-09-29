@@ -23,7 +23,7 @@ import scala.util.Try
  * Content-Type header representation.
  */
 case class ContentType(mime: String, charsetName: Option[String]) {
-  lazy val charset: Option[Charset] = charsetName.flatMap(ch => Try(Charset.forName(ch)).toOption)
+  def charset: Option[Charset] = charsetName.flatMap(ch => Try(Charset.forName(ch)).toOption)
   override lazy val toString = charsetName.map(ch => s"$mime; charset=$ch").getOrElse(mime)
 }
 
@@ -40,16 +40,14 @@ object ContentType {
     val OctetStream = "application/octet-stream"
   }
 
-  /**
-   * Constant for default charset (UTF-8).
-   */
-  val DefaultCharset = Charset.forName("UTF-8")
-
 
   private val regex = """([^; ]+) *(?:; *charset=([\w-]+))?""".r
 
   /**
-   * Tries to extract mime type and charset from Content-Type header.
+   * Tries to extract mime type and charset from Content-Type header using regular expression
+   * {{{
+   *   ([^; ]+) *(?:; *charset=([\w-]+))?
+   * }}}
    */
   def parse(header: String): Option[ContentType] = regex.unapplySeq(header.trim) map { l =>
     ContentType(l.head, l.drop(1).headOption)
