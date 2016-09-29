@@ -15,13 +15,10 @@
  */
 package org.oxydev.korro.http.api.route
 
-import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.util.lang.Predicate1
-
 import akka.actor.ActorRef
 
 /**
- * Common trait for all router commands.
+ * Marker trait for all router commands.
  */
 sealed trait HttpRouterCommand
 
@@ -31,7 +28,7 @@ sealed trait HttpRouterCommand
  * @param ref Actor reference to set.
  * @param predicate Predicate to test requests against.
  */
-case class SetRoute(ref: ActorRef, predicate: Predicate1[HttpRequest]) extends HttpRouterCommand
+case class SetRoute(ref: ActorRef, predicate: RoutePredicate) extends HttpRouterCommand
 
 /**
  * Command for router to remove your actor from handlers list.

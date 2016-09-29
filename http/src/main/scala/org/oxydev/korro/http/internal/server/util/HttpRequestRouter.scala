@@ -16,6 +16,7 @@
 package org.oxydev.korro.http.internal.server.util
 
 import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.api.route.RoutePredicate
 import org.oxydev.korro.util.lang.Predicate1
 
 import akka.actor.ActorRef
@@ -24,7 +25,7 @@ object HttpRequestRouter {
 
   case class Route(ref: ActorRef)
 
-  private [HttpRequestRouter] case class RouteInfo(predicate: Predicate1[HttpRequest])
+  private [HttpRequestRouter] case class RouteInfo(predicate: RoutePredicate)
 }
 
 class HttpRequestRouter {
@@ -34,7 +35,7 @@ class HttpRequestRouter {
   @volatile
   private var routes = Map.empty[ActorRef, RouteInfo]
 
-  def set(ref: ActorRef, predicate: Predicate1[HttpRequest]): Unit = routes = routes + (ref -> RouteInfo(predicate))
+  def set(ref: ActorRef, predicate: RoutePredicate): Unit = routes = routes + (ref -> RouteInfo(predicate))
 
   def unset(ref: ActorRef): Unit = routes = routes - ref
 
@@ -43,5 +44,19 @@ class HttpRequestRouter {
    *
    * @param req Request to match.
    */
-  def find(req: HttpRequest): Option[Route] = routes.find(_._2.predicate(req)).map(_._1).map(Route)
+  def find(req: HttpRequest): Option[Route] = routes.find(r => check(req, r._2.predicate)).map(_._1).map(Route)
+
+  private def check(req: HttpRequest, predicate: RoutePredicate): Boolean = predicate match {
+    case RoutePredicate.MethodIs(method) => req.method == method
+    case RoutePredicate.PathIs(path) => req.path == path
+    case RoutePredicate.PathStartsWith(prefix) => req.path startsWith prefix
+    case RoutePredicate.PathEndsWith(suffix) => req.path endsWith suffix
+    case RoutePredicate.PathMatch(regexp) => regexp.r.findFirstIn(req.path).isDefined
+    case RoutePredicate.HasQueryParam(name) => req.parameters.contains(name)
+    case RoutePredicate.HasQueryParamValue(name, value) => req.parameters.contains(name, value)
+    case RoutePredicate.HasHeader(name) => req.headers.contains(name)
+    case RoutePredicate.HasHeaderValue(name, value) => req.headers.contains(name, value)
+    case RoutePredicate.Or(a, b) => check(req, a) || check(req, b)
+    case RoutePredicate.And(a, b) => check(req, a) && check(req, b)
+  }
 }

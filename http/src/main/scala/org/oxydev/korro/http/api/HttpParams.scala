@@ -38,7 +38,9 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def contains(name: String): Boolean = entries.exists(_._1 equalsIgnoreCase name)
 
-  def contains(entry: (String, Any)) = entries.exists(e => e._1.equalsIgnoreCase(entry._1) && e._2 == entry._2)
+  def contains(entry: (String, Any)): Boolean = contains(entry._1, entry._2)
+
+  def contains(name: String, value: Any): Boolean = entries.exists(e => e._1.equalsIgnoreCase(name) && e._2 == value)
 
   def isEmpty: Boolean = entries.isEmpty
 
