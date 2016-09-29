@@ -96,7 +96,7 @@ object HttpParams {
     }
 
     val asString: Extraction[String] = new Extraction[String] {
-      override def apply(v: (String, String)): Either[ExtractionFailure, String] = Right(v._2)
+      override def apply(v: (String, String)): Try[String] = Success(v._2)
     }
 
     val asLong = asString.map(_.toLong)

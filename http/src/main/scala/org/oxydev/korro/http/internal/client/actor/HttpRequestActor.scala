@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.client.actor
 
-import org.oxydev.korro.http.api.{HttpResponse, OutgoingHttpRequest}
+import org.oxydev.korro.http.api.{HttpRequest, HttpResponse}
 import org.oxydev.korro.http.internal.client.config.ClientConfig
 import org.oxydev.korro.http.internal.client.handler.HttpChannelInitializer
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
@@ -28,18 +28,13 @@ import io.netty.channel.socket.nio.NioSocketChannel
 
 import scala.concurrent.Promise
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Actor {
 
   import context.dispatcher
 
   override def receive = {
 
-    case OutgoingHttpRequest(req, url) =>
+    case HttpRequest.Outgoing(req, url) =>
 
       val port =
         if (url.getPort == -1) {

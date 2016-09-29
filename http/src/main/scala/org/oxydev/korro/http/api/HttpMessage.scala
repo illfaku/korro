@@ -55,22 +55,23 @@ case class HttpRequest(
   lazy val parameters: HttpParams = new HttpParams(QueryStringCodec.decode(queryString))
 
   /**
-   * Locale parsed from Accept-Language header using [[Locales#parse]].
+   * Locale parsed from `Accept-Language` header using [[org.oxydev.korro.util.i18n.Locales#parse Locales.parse]].
    */
   implicit val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
 
   /**
-   * Creates [[OutgoingHttpRequest]] for HTTP client. Adds Host header extracted from provided URL and
-   * if [[path]] is empty in this request then also extracts it from URL and sets it.
+   * Creates [[org.oxydev.korro.http.api.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
+   * Adds Host header extracted from provided URL and if `path` is empty in this request then also extracts it from
+   * URL and sets it.
    */
-  def to(url: URL): OutgoingHttpRequest = {
+  def to(url: URL): HttpRequest.Outgoing = {
     val req =
       if (url.getPath != "" && (uri == "" || uri.startsWith("?"))) this.copy(uri = url.getPath + uri)
       else this
     val host =
       if (url.getPort == -1) url.getHost
       else url.getHost + ":" + url.getPort
-    OutgoingHttpRequest(req.copy(headers = req.headers + ("Host" -> host)), url)
+    new HttpRequest.Outgoing(req.copy(headers = req.headers + ("Host" -> host)), url)
   }
 
   /**
@@ -78,10 +79,19 @@ case class HttpRequest(
    * @throws java.net.MalformedURLException If URL is malformed.
    */
   @throws(classOf[MalformedURLException])
-  def to(url: String): OutgoingHttpRequest = to(new URL(url))
+  def to(url: String): HttpRequest.Outgoing = to(new URL(url))
 }
 
 object HttpRequest {
+
+  /**
+   * Command for HTTP client created by `HttpRequest#to` methods.
+   */
+  class Outgoing private [http] (val req: HttpRequest, val url: URL)
+
+  private [http] object Outgoing {
+    def unapply(out: Outgoing): Option[(HttpRequest, URL)] = Some(out.req, out.url)
+  }
 
   /**
    * HTTP request methods as constructors and handy extractors of request.

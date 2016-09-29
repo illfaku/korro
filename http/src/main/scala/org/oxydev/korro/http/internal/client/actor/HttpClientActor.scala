@@ -15,7 +15,7 @@
  */
 package org.oxydev.korro.http.internal.client.actor
 
-import org.oxydev.korro.http.api.{HttpRequest, OutgoingHttpRequest}
+import org.oxydev.korro.http.api.HttpRequest
 import org.oxydev.korro.http.internal.client.config.ClientConfig
 import org.oxydev.korro.util.concurrent.SequenceThreadFactory
 
@@ -23,14 +23,9 @@ import akka.actor._
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
-  private var group: EventLoopGroup = null
+  private var group: EventLoopGroup = _
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -50,7 +45,7 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
-    case outgoing: OutgoingHttpRequest => HttpRequestActor.create(config, group) forward outgoing
+    case outgoing: HttpRequest.Outgoing => HttpRequestActor.create(config, group) forward outgoing
   }
 }
 
