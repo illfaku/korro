@@ -33,7 +33,7 @@ class HttpRequestRouterActor(router: HttpRequestRouter) extends Actor {
 
   override def receive = {
 
-    case SetRoute(ref, predicate) =>
+    case SetRoute(ref, predicate, instructions) =>
       router.set(ref, predicate)
       context watch ref
 

@@ -18,17 +18,18 @@ package org.oxydev.korro.http.api.route
 import akka.actor.ActorRef
 
 /**
- * Marker trait for all router commands.
+ * Marker trait for all route commands.
  */
-sealed trait HttpRouterCommand
+sealed trait RouteCommand
 
 /**
  * Command for router to set your actor as handler of matched requests.
  *
  * @param ref Actor reference to set.
  * @param predicate Predicate to test requests against.
+ * @param instructions Set of instructions for request handling.
  */
-case class SetRoute(ref: ActorRef, predicate: RoutePredicate) extends HttpRouterCommand
+case class SetRoute(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction]) extends RouteCommand
 
 /**
  * Command for router to remove your actor from handlers list.
@@ -38,4 +39,4 @@ case class SetRoute(ref: ActorRef, predicate: RoutePredicate) extends HttpRouter
  *
  * @param ref Actor reference to unset.
  */
-case class UnsetRoute(ref: ActorRef) extends HttpRouterCommand
+case class UnsetRoute(ref: ActorRef) extends RouteCommand
