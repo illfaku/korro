@@ -29,7 +29,11 @@ sealed trait RouteCommand
  * @param predicate Predicate to test requests against.
  * @param instructions Set of instructions for request handling.
  */
-case class SetRoute(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction]) extends RouteCommand
+case class SetRoute(
+  ref: ActorRef,
+  predicate: RoutePredicate = RoutePredicate.True,
+  instructions: List[RouteInstruction] = Nil
+) extends RouteCommand
 
 /**
  * Command for router to remove your actor from handlers list.

@@ -52,6 +52,12 @@ object RoutePredicate {
 
 
   /**
+   * Will pass all checks.
+   */
+  case object True extends RoutePredicate
+
+
+  /**
    * Checks request method equality.
    */
   case class MethodIs(method: HttpRequest.Method) extends RoutePredicate

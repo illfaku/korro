@@ -24,7 +24,7 @@ import io.netty.handler.codec.http.HttpRequest
 
 object HttpRequestRouter {
 
-  case class RouteInfo(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction])
+  case class RouteInfo(ref: ActorRef, predicate: RoutePredicate, instructions: List[RouteInstruction])
 }
 
 class HttpRequestRouter {
@@ -34,7 +34,7 @@ class HttpRequestRouter {
   @volatile
   private var routes = List.empty[RouteInfo]
 
-  def set(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction]): Unit = {
+  def set(ref: ActorRef, predicate: RoutePredicate, instructions: List[RouteInstruction]): Unit = {
     routes = RouteInfo(ref, predicate, instructions) :: routes
   }
 
@@ -56,6 +56,7 @@ class HttpRequestRouter {
 
   private def check(req: HttpRequest, reqPath: String, reqParams: HttpParams, predicate: RoutePredicate): Boolean = {
     predicate match {
+      case RoutePredicate.True => true
       case RoutePredicate.MethodIs(method) => req.method.name == method.name
       case RoutePredicate.PathIs(path) => reqPath == path
       case RoutePredicate.PathStartsWith(prefix) => reqPath startsWith prefix

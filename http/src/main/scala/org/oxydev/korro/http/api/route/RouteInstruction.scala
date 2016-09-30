@@ -15,13 +15,23 @@
  */
 package org.oxydev.korro.http.api.route
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 sealed trait RouteInstruction
 
 object RouteInstruction {
 
-  case class ContentAsFile(removeDelay: Duration) extends RouteInstruction
+  case class RequestTimeout(duration: FiniteDuration) extends RouteInstruction
 
   case class MaxContentLength(length: Long) extends RouteInstruction
+
+  case class ContentAsFile(value: Boolean) extends RouteInstruction
+
+  case class FileContentRemoveDelay(delay: Duration) extends RouteInstruction
+
+  case class ResponseCompressionLevel(level: Int) extends RouteInstruction
+
+  case class WsLogger(name: String) extends RouteInstruction
+
+  case class MaxWsFramePayloadLength(length: Int) extends RouteInstruction
 }
