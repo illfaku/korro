@@ -15,17 +15,16 @@
  */
 package org.oxydev.korro.http.internal.server.util
 
-import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.api.route.RoutePredicate
-import org.oxydev.korro.util.lang.Predicate1
+import org.oxydev.korro.http.api.HttpParams
+import org.oxydev.korro.http.api.route.{RouteInstruction, RoutePredicate}
+import org.oxydev.korro.util.net.QueryStringCodec
 
 import akka.actor.ActorRef
+import io.netty.handler.codec.http.HttpRequest
 
 object HttpRequestRouter {
 
-  case class Route(ref: ActorRef)
-
-  private [HttpRequestRouter] case class RouteInfo(predicate: RoutePredicate)
+  case class RouteInfo(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction])
 }
 
 class HttpRequestRouter {
@@ -33,30 +32,41 @@ class HttpRequestRouter {
   import HttpRequestRouter._
 
   @volatile
-  private var routes = Map.empty[ActorRef, RouteInfo]
+  private var routes = List.empty[RouteInfo]
 
-  def set(ref: ActorRef, predicate: RoutePredicate): Unit = routes = routes + (ref -> RouteInfo(predicate))
+  def set(ref: ActorRef, predicate: RoutePredicate, instructions: Set[RouteInstruction]): Unit = {
+    routes = RouteInfo(ref, predicate, instructions) :: routes
+  }
 
-  def unset(ref: ActorRef): Unit = routes = routes - ref
+  def unset(ref: ActorRef): Unit = routes = routes.filterNot(_.ref == ref)
 
   /**
    * Returns optional matching route.
    *
    * @param req Request to match.
    */
-  def find(req: HttpRequest): Option[Route] = routes.find(r => check(req, r._2.predicate)).map(_._1).map(Route)
+  def find(req: HttpRequest): Option[RouteInfo] = {
+    val (path: String, queryString: String) = {
+      val pos = req.uri.indexOf('?')
+      if (pos == -1) (req.uri, "") else (req.uri.substring(0, pos), req.uri.substring(pos + 1))
+    }
+    val params = new HttpParams(QueryStringCodec.decode(queryString))
+    routes.find(r => check(req, path, params, r.predicate))
+  }
 
-  private def check(req: HttpRequest, predicate: RoutePredicate): Boolean = predicate match {
-    case RoutePredicate.MethodIs(method) => req.method == method
-    case RoutePredicate.PathIs(path) => req.path == path
-    case RoutePredicate.PathStartsWith(prefix) => req.path startsWith prefix
-    case RoutePredicate.PathEndsWith(suffix) => req.path endsWith suffix
-    case RoutePredicate.PathMatch(regexp) => regexp.r.findFirstIn(req.path).isDefined
-    case RoutePredicate.HasQueryParam(name) => req.parameters.contains(name)
-    case RoutePredicate.HasQueryParamValue(name, value) => req.parameters.contains(name, value)
-    case RoutePredicate.HasHeader(name) => req.headers.contains(name)
-    case RoutePredicate.HasHeaderValue(name, value) => req.headers.contains(name, value)
-    case RoutePredicate.Or(a, b) => check(req, a) || check(req, b)
-    case RoutePredicate.And(a, b) => check(req, a) && check(req, b)
+  private def check(req: HttpRequest, reqPath: String, reqParams: HttpParams, predicate: RoutePredicate): Boolean = {
+    predicate match {
+      case RoutePredicate.MethodIs(method) => req.method.name == method.name
+      case RoutePredicate.PathIs(path) => reqPath == path
+      case RoutePredicate.PathStartsWith(prefix) => reqPath startsWith prefix
+      case RoutePredicate.PathEndsWith(suffix) => reqPath endsWith suffix
+      case RoutePredicate.PathMatch(regexp) => regexp.r.findFirstIn(reqPath).isDefined
+      case RoutePredicate.HasQueryParam(name) => reqParams.contains(name)
+      case RoutePredicate.HasQueryParamValue(name, value) => reqParams.contains(name, value)
+      case RoutePredicate.HasHeader(name) => req.headers.contains(name)
+      case RoutePredicate.HasHeaderValue(name, value) => req.headers.contains(name, value, false)
+      case RoutePredicate.Or(a, b) => check(req, reqPath, reqParams, a) || check(req, reqPath, reqParams, b)
+      case RoutePredicate.And(a, b) => check(req, reqPath, reqParams, a) && check(req, reqPath, reqParams, b)
+    }
   }
 }
