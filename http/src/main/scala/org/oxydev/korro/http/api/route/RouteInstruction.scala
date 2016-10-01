@@ -21,17 +21,21 @@ sealed trait RouteInstruction
 
 object RouteInstruction {
 
-  case class RequestTimeout(duration: FiniteDuration) extends RouteInstruction
+  case class RequestTimeout(timeout: FiniteDuration) extends RouteInstruction
 
   case class MaxContentLength(length: Long) extends RouteInstruction
 
-  case class ContentAsFile(value: Boolean) extends RouteInstruction
+  case class ContentAsFile(enabled: Boolean) extends RouteInstruction
 
   case class FileContentRemoveDelay(delay: Duration) extends RouteInstruction
 
+  case class ResponseCompression(enabled: Boolean) extends RouteInstruction
+
   case class ResponseCompressionLevel(level: Int) extends RouteInstruction
+
+  case class MaxWsFramePayloadLength(length: Int) extends RouteInstruction
 
   case class WsLogger(name: String) extends RouteInstruction
 
-  case class MaxWsFramePayloadLength(length: Int) extends RouteInstruction
+  case class SimpleWsLogging(enabled: Boolean) extends RouteInstruction
 }

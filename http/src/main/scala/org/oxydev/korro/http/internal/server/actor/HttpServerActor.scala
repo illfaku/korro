@@ -44,7 +44,7 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
         config.workerGroupSize, new SequenceThreadFactory(s"korro-server-${config.name}-worker")
       )
 
-      val reqRouter = new HttpRequestRouter
+      val reqRouter = new HttpRequestRouter(???)
       HttpRequestRouterActor.create(reqRouter)
 
       val bootstrap = new ServerBootstrap()

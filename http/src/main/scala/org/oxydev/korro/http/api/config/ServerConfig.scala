@@ -38,7 +38,6 @@ object ServerConfig {
     val port: Int = 8080
     val workerGroupSize: Int = 1
     val logger: String = "korro-server"
-    val requestTimeout: FiniteDuration = 5 seconds
   }
 
   def extract(name: String, config: Config): ServerConfig = {
@@ -58,42 +57,59 @@ object ServerConfig {
       config.findBytes("max-content-length").map(RouteInstruction.MaxContentLength),
       config.findBoolean("content-as-file").map(RouteInstruction.ContentAsFile),
       config.findDuration("file-content-remove-delay").map(RouteInstruction.FileContentRemoveDelay),
-      config.findInt("response-compression").map(RouteInstruction.ResponseCompressionLevel),
+      config.findBoolean("response-compression").map(RouteInstruction.ResponseCompression),
+      config.findInt("response-compression-level").map(RouteInstruction.ResponseCompressionLevel),
+      config.findInt("max-ws-frame-payload-length").map(RouteInstruction.MaxWsFramePayloadLength),
       config.findString("ws-logger").map(RouteInstruction.WsLogger),
-      config.findInt("max-ws-frame-payload-length").map(RouteInstruction.MaxWsFramePayloadLength)
+      config.findBoolean("simple-ws-logging").map(RouteInstruction.SimpleWsLogging)
     ).flatten
   }
 
   private def extractRoute(config: Config): RouteConfig = {
     RouteConfig(
       config.getString("actor"),
-      config.findConfig("predicate").map(extractPredicate(_, _ && _)).getOrElse(RoutePredicate.True),
+      config.findConfig("predicate").map(extractPredicate(_, andReduce)).getOrElse(RoutePredicate.True),
       config.findConfig("instructions").map(extractInstructions).getOrElse(Nil)
     )
   }
 
   private def extractPredicate(config: Config, op: (RoutePredicate, RoutePredicate) => RoutePredicate): RoutePredicate = {
-    val predicates = List[Iterable[RoutePredicate]](
+    val predicates = List(
       config.findString("method-is").map(HttpRequest.Method(_)).map(RoutePredicate.MethodIs),
       config.findString("path-is").map(RoutePredicate.PathIs),
       config.findString("path-starts-with").map(RoutePredicate.PathStartsWith),
       config.findString("path-ends-with").map(RoutePredicate.PathEndsWith),
       config.findString("path-match").map(RoutePredicate.PathMatch),
-      config.findString("has-query-param").map(extractParamPredicate(_, "=")),
-      config.findStringList("has-query-params").map(extractParamPredicate(_, "=")),
-      config.findString("has-header").map(extractParamPredicate(_, ":")),
-      config.findStringList("has-headers").map(extractParamPredicate(_, ":")),
-      config.findConfig("or").map(extractPredicate(_, _ || _)),
-      config.findConfig("and").map(extractPredicate(_, _ && _))
+      config.findString("has-query-param").map(extractQueryPredicate),
+      config.findStringList("has-any-query-param").map(extractQueryPredicate).reduceOption(orReduce),
+      config.findStringList("has-all-query-params").map(extractQueryPredicate).reduceOption(andReduce),
+      config.findString("has-header").map(extractHeaderPredicate),
+      config.findStringList("has-any-header").map(extractHeaderPredicate).reduceOption(orReduce),
+      config.findStringList("has-all-headers").map(extractHeaderPredicate).reduceOption(andReduce),
+      config.findBoolean("is-ws-handshake").map(RoutePredicate.IsWsHandshake),
+      config.findConfig("or").map(extractPredicate(_, orReduce)),
+      config.findConfig("and").map(extractPredicate(_, andReduce))
     )
     predicates.flatten.reduceOption(op) getOrElse RoutePredicate.True
   }
 
-  private def extractParamPredicate(config: String, separator: String): RoutePredicate = {
-    val parts = config.split(separator, 2)
+  private def extractQueryPredicate(config: String): RoutePredicate = {
+    val parts = config.split("=", 2)
     val name = parts.head.trim
     parts.drop(1).headOption.map(_.trim)
       .map(RoutePredicate.HasQueryParamValue(name, _))
       .getOrElse(RoutePredicate.HasQueryParam(name))
   }
+
+  private def extractHeaderPredicate(config: String): RoutePredicate = {
+    val parts = config.split(":", 2)
+    val name = parts.head.trim
+    parts.drop(1).headOption.map(_.trim)
+      .map(RoutePredicate.HasHeaderValue(name, _))
+      .getOrElse(RoutePredicate.HasHeader(name))
+  }
+
+  private val orReduce: (RoutePredicate, RoutePredicate) => RoutePredicate = _ || _
+
+  private val andReduce: (RoutePredicate, RoutePredicate) => RoutePredicate = _ && _
 }

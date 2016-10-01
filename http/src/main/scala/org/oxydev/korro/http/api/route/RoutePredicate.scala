@@ -101,4 +101,9 @@ object RoutePredicate {
    * Checks that request has header with given name and value.
    */
   case class HasHeaderValue(name: String, value: String) extends RoutePredicate
+
+  /**
+   * Checks if request is a WebSocket handshake or not.
+   */
+  case class IsWsHandshake(value: Boolean) extends RoutePredicate
 }

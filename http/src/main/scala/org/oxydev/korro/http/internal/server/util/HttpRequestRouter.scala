@@ -16,26 +16,22 @@
 package org.oxydev.korro.http.internal.server.util
 
 import org.oxydev.korro.http.api.HttpParams
+import org.oxydev.korro.http.api.config.ServerConfig
 import org.oxydev.korro.http.api.route.{RouteInstruction, RoutePredicate}
 import org.oxydev.korro.util.net.QueryStringCodec
 
 import akka.actor.ActorRef
-import io.netty.handler.codec.http.HttpRequest
+import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaderValues, HttpRequest}
 
-object HttpRequestRouter {
+class HttpRequestRouter(config: ServerConfig) {
 
-  case class RouteInfo(ref: ActorRef, predicate: RoutePredicate, instructions: List[RouteInstruction])
-}
-
-class HttpRequestRouter {
-
-  import HttpRequestRouter._
+  private val infoBuilder = RouteInfoBuilder(config.instructions)
 
   @volatile
-  private var routes = List.empty[RouteInfo]
+  private var routes = config.routes.map(infoBuilder.prepare)
 
   def set(ref: ActorRef, predicate: RoutePredicate, instructions: List[RouteInstruction]): Unit = {
-    routes = RouteInfo(ref, predicate, instructions) :: routes
+    routes = infoBuilder.prepare(ref, predicate, instructions) :: routes
   }
 
   def unset(ref: ActorRef): Unit = routes = routes.filterNot(_.ref == ref)
@@ -66,6 +62,9 @@ class HttpRequestRouter {
       case RoutePredicate.HasQueryParamValue(name, value) => reqParams.contains(name, value)
       case RoutePredicate.HasHeader(name) => req.headers.contains(name)
       case RoutePredicate.HasHeaderValue(name, value) => req.headers.contains(name, value, false)
+      case RoutePredicate.IsWsHandshake(value) => value ==
+        req.headers.contains(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true) &&
+        req.headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true)
       case RoutePredicate.Or(a, b) => check(req, reqPath, reqParams, a) || check(req, reqPath, reqParams, b)
       case RoutePredicate.And(a, b) => check(req, reqPath, reqParams, a) && check(req, reqPath, reqParams, b)
     }
