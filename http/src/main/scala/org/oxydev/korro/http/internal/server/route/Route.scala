@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.util
+package org.oxydev.korro.http.internal.server.route
 
-import org.oxydev.korro.http.api.route.RoutePredicate
+import akka.actor.ActorRef
 
-case class RouteInfo(ref: Route, predicate: RoutePredicate, instructions: MergedRouteInstructions)
+sealed trait Route
+case class ActorRefRoute(ref: ActorRef) extends Route
+case class ActorPathRoute(path: String) extends Route

@@ -41,16 +41,16 @@ class WsChannelHandler(parent: ActorRef, connection: WsConnection, route: String
     implicit val ec: ExecutionContext = ctx.channel.eventLoop
     implicit val timeout = Timeout(5 seconds)
     val props = WsMessageActor.props(ctx.channel, route, connection)
-    (parent ? HttpServerActor.CreateChild(props, returnRef = true)).mapTo[ActorRef] onComplete {
-      case Success(ref) if ctx.channel.isActive =>
-        stash foreach (ref ! WsMessageActor.Inbound(_))
-        stash.clear()
-        sender = Some(ref)
-      case Success(ref) => ref ! PoisonPill
-      case Failure(cause) =>
-        log.error(cause, "Failed to instantiate WsMessageActor.")
-        ctx.close()
-    }
+//    (parent ? HttpServerActor.CreateChild(props, returnRef = true)).mapTo[ActorRef] onComplete {
+//      case Success(ref) if ctx.channel.isActive =>
+//        stash foreach (ref ! WsMessageActor.Inbound(_))
+//        stash.clear()
+//        sender = Some(ref)
+//      case Success(ref) => ref ! PoisonPill
+//      case Failure(cause) =>
+//        log.error(cause, "Failed to instantiate WsMessageActor.")
+//        ctx.close()
+//    }
   }
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: WsFrame): Unit = sender match {

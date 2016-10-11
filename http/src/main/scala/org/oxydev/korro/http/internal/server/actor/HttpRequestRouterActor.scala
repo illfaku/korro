@@ -16,7 +16,7 @@
 package org.oxydev.korro.http.internal.server.actor
 
 import org.oxydev.korro.http.api.route.{SetRoute, UnsetRoute}
-import org.oxydev.korro.http.internal.server.util.HttpRequestRouter
+import org.oxydev.korro.http.internal.server.route.HttpRequestRouter
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props, Terminated}
 
@@ -46,7 +46,9 @@ class HttpRequestRouterActor(router: HttpRequestRouter) extends Actor {
 
 object HttpRequestRouterActor {
 
-  def create(router: HttpRequestRouter)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(props(router), "router")
+  def create(router: HttpRequestRouter)(implicit factory: ActorRefFactory): ActorRef = {
+    factory.actorOf(props(router), "router")
+  }
 
   def props(router: HttpRequestRouter): Props = Props(new HttpRequestRouterActor(router))
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.util
+package org.oxydev.korro.http.internal.server.route
 
 import org.oxydev.korro.http.api.HttpParams
 import org.oxydev.korro.http.api.config.ServerConfig
@@ -34,7 +34,7 @@ class HttpRequestRouter(config: ServerConfig) {
     routes = infoBuilder.prepare(ref, predicate, instructions) :: routes
   }
 
-  def unset(ref: ActorRef): Unit = routes = routes.filterNot(_.ref == ref)
+  def unset(ref: ActorRef): Unit = routes = routes.filterNot(_.dst == ref)
 
   /**
    * Returns optional matching route.
@@ -47,7 +47,7 @@ class HttpRequestRouter(config: ServerConfig) {
       if (pos == -1) (req.uri, "") else (req.uri.substring(0, pos), req.uri.substring(pos + 1))
     }
     val params = new HttpParams(QueryStringCodec.decode(queryString))
-    routes.find(r => check(req, path, params, r.predicate))
+    routes.reverse.find(r => check(req, path, params, r.predicate))
   }
 
   private def check(req: HttpRequest, reqPath: String, reqParams: HttpParams, predicate: RoutePredicate): Boolean = {

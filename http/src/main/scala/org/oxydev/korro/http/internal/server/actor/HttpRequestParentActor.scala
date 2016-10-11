@@ -16,31 +16,29 @@
 package org.oxydev.korro.http.internal.server.actor
 
 import org.oxydev.korro.http.api.HttpRequest
-import org.oxydev.korro.http.internal.server.config.HttpConfig
+import org.oxydev.korro.http.internal.server.route.{ActorPathRoute, ActorRefRoute, RouteInfo}
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import io.netty.channel.Channel
 
-class HttpRequestParentActor(config: HttpConfig) extends Actor {
+class HttpRequestParentActor extends Actor {
 
   override def receive = {
 
     case HttpRequestParentActor.NewRequest(channel, route, req) =>
-      val child = context.actorOf(HttpRequestActor.props(channel, config, s"${req.method} ${req.path}"))
-      route.tell(req, child)
-
-    case HttpServerActor.CreateChild(props, true) => sender ! context.actorOf(props)
-    case HttpServerActor.CreateChild(props, false) => context.actorOf(props)
+      val child = context.actorOf(HttpRequestActor.props(channel, route.instructions, s"${req.method} ${req.path}"))
+      route.dst match {
+        case ActorRefRoute(ref) => ref tell (req, child)
+        case ActorPathRoute(path) => context.actorSelection(path) tell (req, child)
+      }
   }
 }
 
 object HttpRequestParentActor {
 
-  def create(config: HttpConfig)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(props(config), "request")
-  }
+  def create()(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(props, "req")
 
-  def props(config: HttpConfig): Props = Props(new HttpRequestParentActor(config))
+  def props: Props = Props(new HttpRequestParentActor)
 
-  case class NewRequest(channel: Channel, route: ActorRef, req: HttpRequest)
+  case class NewRequest(channel: Channel, route: RouteInfo, req: HttpRequest)
 }

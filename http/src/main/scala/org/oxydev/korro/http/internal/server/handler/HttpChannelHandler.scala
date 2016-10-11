@@ -17,7 +17,8 @@ package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler.HttpMessageCodec
-import org.oxydev.korro.http.internal.server.util.Keys
+import org.oxydev.korro.http.internal.server.Keys
+import org.oxydev.korro.http.internal.server.route.RouteInfo
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
@@ -47,29 +48,29 @@ class HttpChannelHandler extends SimpleChannelInboundHandler[HttpRequest] {
   }
 
   private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    val config = ctx.channel.attr(Keys.config).get
-    val parent = ctx.channel.attr(Keys.Req.parent).get
-    config.http.routes(msg) match {
+    val router = ctx.channel.attr(Keys.router).get
+    val parent = ctx.channel.attr(Keys.reqParent).get
+    router.find(msg) match {
       case Some(route) =>
         if (ctx.pipeline.get("http-codec") == null) {
-          ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(config.http.maxContentLength))
+          ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(route.instructions.maxContentLength))
         }
         if (ctx.pipeline.get("http-request") != null) {
           ctx.pipeline.remove("http-request")
         }
-        ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(config.http, parent, route))
+        ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(parent, route))
         ctx.fireChannelRead(msg)
       case None => finish(ctx, NotFound)
     }
   }
 
   private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    val config = ctx.channel.attr(Keys.config).get
-    val parent = ctx.channel.attr(Keys.Req.parent).get
-    config.ws.routes(msg) match {
+    val router = ctx.channel.attr(Keys.router).get
+    val parent = ctx.channel.attr(Keys.wsParent).get
+    router.find(msg) match {
       case Some(route) =>
         ctx.pipeline.addAfter(ctx.name, "http-aggregator", new HttpObjectAggregator(8192))
-        ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(config.ws, parent, route))
+        ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(parent, route))
         ctx.fireChannelRead(msg)
       case None => finish(ctx, NotFound)
     }

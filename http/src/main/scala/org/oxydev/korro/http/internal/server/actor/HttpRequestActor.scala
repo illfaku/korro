@@ -18,14 +18,15 @@ package org.oxydev.korro.http.internal.server.actor
 import org.oxydev.korro.http.api.HttpResponse
 import org.oxydev.korro.http.api.HttpResponse.Status.{RequestTimeout, ServerError}
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
-import org.oxydev.korro.http.internal.server.config.HttpConfig
+import org.oxydev.korro.http.internal.server.route.MergedRouteInstructions
 
 import akka.actor.{Actor, ActorLogging, Props, ReceiveTimeout, Status}
 import io.netty.channel.Channel
 
-class HttpRequestActor(channel: Channel, config: HttpConfig, info: String) extends Actor with ActorLogging {
+class HttpRequestActor(channel: Channel, instructions: MergedRouteInstructions, info: String)
+  extends Actor with ActorLogging {
 
-  context.setReceiveTimeout(config.requestTimeout)
+  context.setReceiveTimeout(instructions.requestTimeout)
 
   override def receive = {
     case res: HttpResponse => send(res)
@@ -45,8 +46,8 @@ class HttpRequestActor(channel: Channel, config: HttpConfig, info: String) exten
 }
 
 object HttpRequestActor {
-  def props(channel: Channel, config: HttpConfig, info: String): Props = {
-    Props(new HttpRequestActor(channel, config, info))
+  def props(channel: Channel, instructions: MergedRouteInstructions, info: String): Props = {
+    Props(new HttpRequestActor(channel, instructions, info))
   }
 }
 

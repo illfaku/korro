@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.util
+package org.oxydev.korro.http.internal.server
+
+import org.oxydev.korro.http.api.config.ServerConfig
+import org.oxydev.korro.http.internal.server.route.HttpRequestRouter
 
 import akka.actor.ActorRef
+import io.netty.util.AttributeKey
 
-sealed trait Route
-case class ActorRefRoute(ref: ActorRef) extends Route
-case class ActorPathRoute(path: String) extends Route
+object Keys {
+
+  val config = AttributeKey.valueOf[ServerConfig]("server-config")
+  val router = AttributeKey.valueOf[HttpRequestRouter]("req-router")
+
+  val reqParent = AttributeKey.valueOf[ActorRef]("req-parent")
+  val wsParent = AttributeKey.valueOf[ActorRef]("ws-parent")
+}

@@ -15,10 +15,15 @@
  */
 package org.oxydev.korro.http
 
+import org.oxydev.korro.http.api.config.ServerConfig
 import org.oxydev.korro.http.internal.server.actor.KorroHttpServerActor
 
 import akka.actor.Props
 import com.typesafe.config.Config
+
+import java.util.Collections.emptySet
+import scala.collection.JavaConversions._
+import org.oxydev.korro.util.config.extended
 
 /**
  * Props provider for the main actor that starts all configured http servers as its child actors.
@@ -30,5 +35,16 @@ object KorroHttpServers {
    * @param config Configuration of all HTTP servers that need to be started.
    * @return Props for actor creation.
    */
-  def props(config: Config): Props = Props(new KorroHttpServerActor(config))
+  def props(config: Config): Props = {
+    val configs = config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) map { name =>
+      ServerConfig.extract(name, config.getConfig(s"korro.server.$name"))
+    }
+    props(configs.toList)
+  }
+
+  def props(name: String, config: Config): Props = props(ServerConfig.extract(name, config))
+
+  def props(config: ServerConfig): Props = props(List(config))
+
+  def props(configs: List[ServerConfig]): Props = Props(new KorroHttpServerActor(configs))
 }

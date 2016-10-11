@@ -15,25 +15,16 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
-import org.oxydev.korro.http.internal.server.config.ServerConfig
-import org.oxydev.korro.util.config.extended
+import org.oxydev.korro.http.api.config.ServerConfig
 
 import akka.actor.Actor
-import com.typesafe.config.Config
-
-import java.util.Collections.emptySet
-
-import scala.collection.JavaConversions._
 
 /**
  * The main actor that starts all configured http servers as its child actors.
  */
-class KorroHttpServerActor(config: Config) extends Actor {
+class KorroHttpServerActor(configs: List[ServerConfig]) extends Actor {
 
-  config.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
-    val serverConfig = new ServerConfig(name, config.getConfig(s"korro.server.$name"))
-    HttpServerActor.create(name) ! serverConfig
-  }
+  configs foreach { c => HttpServerActor.create(c.name) ! c}
 
   override def receive = Actor.emptyBehavior
 }

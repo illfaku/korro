@@ -13,23 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.oxydev.korro.http.internal.server.util
+package org.oxydev.korro.http.internal.server.route
 
-import org.oxydev.korro.http.internal.server.config.ServerConfig
+import org.oxydev.korro.http.api.route.RoutePredicate
 
-import akka.actor.ActorRef
-import io.netty.util.AttributeKey
-
-object Keys {
-
-  val config = AttributeKey.valueOf[ServerConfig]("server-config")
-
-  object Req {
-    val router = AttributeKey.valueOf[HttpRequestRouter]("req-router")
-    val parent = AttributeKey.valueOf[ActorRef]("req-parent")
-  }
-
-  object Ws {
-    // TODO: add WS router and parent
-  }
-}
+case class RouteInfo(dst: Route, predicate: RoutePredicate, instructions: MergedRouteInstructions)

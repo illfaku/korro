@@ -15,10 +15,11 @@
  */
 package org.oxydev.korro.http.internal.server.actor
 
+import org.oxydev.korro.http.api.config.ServerConfig
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
-import org.oxydev.korro.http.internal.server.config.ServerConfig
+import org.oxydev.korro.http.internal.server.Keys
 import org.oxydev.korro.http.internal.server.handler.HttpChannelInitializer
-import org.oxydev.korro.http.internal.server.util.{HttpRequestRouter, Keys}
+import org.oxydev.korro.http.internal.server.route.HttpRequestRouter
 import org.oxydev.korro.util.concurrent.SequenceThreadFactory
 
 import akka.actor._
@@ -44,16 +45,16 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
         config.workerGroupSize, new SequenceThreadFactory(s"korro-server-${config.name}-worker")
       )
 
-      val reqRouter = new HttpRequestRouter(???)
-      HttpRequestRouterActor.create(reqRouter)
+      val router = new HttpRequestRouter(config)
+      HttpRequestRouterActor.create(router)
 
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
         .childHandler(new HttpChannelInitializer)
         .childAttr(Keys.config, config)
-        .childAttr(Keys.Req.router, reqRouter)
-        .childAttr(Keys.Req.parent, HttpRequestParentActor.create(config.http))
+        .childAttr(Keys.router, router)
+        .childAttr(Keys.reqParent, HttpRequestParentActor.create())
 
       bootstrap.bind(config.port) onComplete {
         case Success(channel) => self ! channel
@@ -105,9 +106,5 @@ object HttpServerActor {
   case class ChannelData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, channel: Channel) extends Data
 
 
-  def create(name: String)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(Props[HttpServerActor], name)
-  }
-
-  case class CreateChild(props: Props, returnRef: Boolean)
+  def create(name: String)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props[HttpServerActor], name)
 }

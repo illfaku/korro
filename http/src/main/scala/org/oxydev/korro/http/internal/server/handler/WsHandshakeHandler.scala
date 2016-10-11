@@ -20,6 +20,7 @@ import org.oxydev.korro.http.api.ws.WsConnection
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler._
 import org.oxydev.korro.http.internal.server.config.WsConfig
+import org.oxydev.korro.http.internal.server.route.RouteInfo
 import org.oxydev.korro.util.log.Logging
 
 import akka.actor.ActorRef
@@ -34,11 +35,10 @@ import scala.collection.JavaConversions._
 /**
  * Completes WebSocket handshake with client and modifies channel pipeline to handle WebSocket frames.
  *
- * @param config Server WebSocket configuration.
  * @param parent Reference of associated HttpServerActor.
  * @param route Path to actor to which WsMessages will be sent.
  */
-class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
+class WsHandshakeHandler(parent: ActorRef, route: RouteInfo)
   extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
@@ -50,7 +50,7 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
 
   private def newHandshaker(req: FullHttpRequest): Option[WebSocketServerHandshaker] = {
     val location = s"ws://${req.headers.get(HttpHeaderNames.HOST)}/${new URI(req.uri).getPath}"
-    val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
+    val factory = new WebSocketServerHandshakerFactory(location, null, true, route.instructions.maxWsFramePayloadLength)
     Option(factory.newHandshaker(req))
   }
 
@@ -59,13 +59,11 @@ class WsHandshakeHandler(config: WsConfig, parent: ActorRef, route: String)
       if (future.isSuccess) {
         val pipeline = channel.pipeline
         pipeline.remove("http")
-        pipeline.addBefore("logging", "ws-aggregator", new WebSocketFrameAggregator(config.maxFramePayloadLength))
-        if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
-        if (config.decompression) pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
-        pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(config.logger))
+        pipeline.addBefore("logging", "ws-aggregator", new WebSocketFrameAggregator(route.instructions.maxWsFramePayloadLength))
+        pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(route.instructions.wsLogger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, connection(channel, req), route))
+        //pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, connection(channel, req), route))
         pipeline.remove(this)
       } else {
         log.error(future.cause, "Error during handshake.")
