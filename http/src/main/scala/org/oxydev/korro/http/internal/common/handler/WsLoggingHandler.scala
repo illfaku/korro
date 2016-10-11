@@ -17,19 +17,13 @@ package org.oxydev.korro.http.internal.common.handler
 
 import org.oxydev.korro.util.log.Logger
 
-import io.netty.channel.{ChannelPromise, ChannelHandlerContext, ChannelDuplexHandler}
-import io.netty.handler.codec.http.websocketx._
+import io.netty.channel.{ChannelDuplexHandler, ChannelHandlerContext, ChannelPromise}
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class WsLoggingHandler(name: String) extends ChannelDuplexHandler {
 
   private val logger = Logger(name)
 
-  private var id: String = null
+  private var id: String = _
 
   private def enabled: Boolean = logger.isTraceEnabled
 
@@ -49,21 +43,12 @@ class WsLoggingHandler(name: String) extends ChannelDuplexHandler {
   }
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = {
-    if (enabled) text(msg) foreach { t => log(">>> " + t) }
+    if (enabled) log(">>> " + msg)
     super.channelRead(ctx, msg)
   }
 
   override def write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise): Unit = {
-    if (enabled) text(msg) foreach { t => log("<<< " + t) }
+    if (enabled) log("<<< " + msg)
     super.write(ctx, msg, promise)
-  }
-
-  private def text(msg: Any): Option[String] = msg match {
-    case m: TextWebSocketFrame => Some(m.text)
-    case m: BinaryWebSocketFrame => Some(s"BINARY(${m.content.readableBytes}B)")
-    case m: CloseWebSocketFrame => Some(s"CLOSE(${m.statusCode}, ${m.reasonText})")
-    case m: PingWebSocketFrame => Some(s"PING(${m.content.readableBytes}B)")
-    case m: PongWebSocketFrame => Some(s"PONG(${m.content.readableBytes}B)")
-    case _ => None
   }
 }

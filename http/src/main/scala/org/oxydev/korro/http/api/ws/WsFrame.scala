@@ -34,21 +34,27 @@ sealed trait ControlWsFrame extends WsFrame
  *
  * @see https://tools.ietf.org/html/rfc6455#section-5.5.1
  */
-case class CloseWsFrame(status: Int, reason: String) extends ControlWsFrame
+case class CloseWsFrame(status: Int, reason: String) extends ControlWsFrame {
+  override val toString = s"CLOSE($status, $reason)"
+}
 
 /**
  * WebSocket ping frame representations.
  *
  * @see https://tools.ietf.org/html/rfc6455#section-5.5.2
  */
-case class PingWsFrame(bytes: Array[Byte]) extends ControlWsFrame
+case class PingWsFrame(bytes: Array[Byte]) extends ControlWsFrame {
+  override val toString = s"PING(${bytes.length}B)"
+}
 
 /**
  * WebSocket pong frame representations.
  *
  * @see https://tools.ietf.org/html/rfc6455#section-5.5.3
  */
-case class PongWsFrame(bytes: Array[Byte]) extends ControlWsFrame
+case class PongWsFrame(bytes: Array[Byte]) extends ControlWsFrame {
+  override val toString = s"PONG(${bytes.length}B)"
+}
 
 /**
  * Marker trait for WebSocket data frame representations.
@@ -62,11 +68,15 @@ sealed trait DataWsFrame extends WsFrame
  *
  * @see https://tools.ietf.org/html/rfc6455#section-5.6
  */
-case class TextWsFrame(text: String) extends DataWsFrame
+case class TextWsFrame(text: String) extends DataWsFrame {
+  override val toString = text
+}
 
 /**
  * WebSocket binary frame representation.
  *
  * @see https://tools.ietf.org/html/rfc6455#section-5.6
  */
-case class BinaryWsFrame(bytes: Array[Byte]) extends DataWsFrame
+case class BinaryWsFrame(bytes: Array[Byte]) extends DataWsFrame {
+  override val toString = s"BINARY(${bytes.length}B)"
+}
