@@ -19,11 +19,9 @@ import org.oxydev.korro.http.api.HttpParams
 import org.oxydev.korro.http.api.ws.WsConnection
 import org.oxydev.korro.http.internal.common.ChannelFutureExt
 import org.oxydev.korro.http.internal.common.handler._
-import org.oxydev.korro.http.internal.server.config.WsConfig
 import org.oxydev.korro.http.internal.server.route.RouteInfo
 import org.oxydev.korro.util.log.Logging
 
-import akka.actor.ActorRef
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx._
 import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaderNames}
@@ -35,10 +33,9 @@ import scala.collection.JavaConversions._
 /**
  * Completes WebSocket handshake with client and modifies channel pipeline to handle WebSocket frames.
  *
- * @param parent Reference of associated HttpServerActor.
  * @param route Path to actor to which WsMessages will be sent.
  */
-class WsHandshakeHandler(parent: ActorRef, route: RouteInfo)
+class WsHandshakeHandler(route: RouteInfo)
   extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpRequest): Unit = {
@@ -63,6 +60,7 @@ class WsHandshakeHandler(parent: ActorRef, route: RouteInfo)
         pipeline.addAfter("logging", "ws-logging", new WsLoggingHandler(route.instructions.wsLogger))
         pipeline.addAfter("ws-logging", "ws-standard", WsStandardBehaviorHandler)
         pipeline.addAfter("ws-standard", "ws-codec", WsMessageCodec)
+        //val parent = ctx.channel.attr(Keys.wsParent).get
         //pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(parent, connection(channel, req), route))
         pipeline.remove(this)
       } else {

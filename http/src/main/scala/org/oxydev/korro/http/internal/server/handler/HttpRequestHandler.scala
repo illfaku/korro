@@ -16,15 +16,16 @@
 package org.oxydev.korro.http.internal.server.handler
 
 import org.oxydev.korro.http.api.HttpRequest
+import org.oxydev.korro.http.internal.server.Keys
 import org.oxydev.korro.http.internal.server.actor.HttpRequestParentActor
 import org.oxydev.korro.http.internal.server.route.RouteInfo
 
-import akka.actor.ActorRef
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
-class HttpRequestHandler(parent: ActorRef, route: RouteInfo) extends SimpleChannelInboundHandler[HttpRequest] {
+class HttpRequestHandler(route: RouteInfo) extends SimpleChannelInboundHandler[HttpRequest] {
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    val parent = ctx.channel.attr(Keys.reqParent).get
     parent ! HttpRequestParentActor.NewRequest(ctx.channel, route, msg)
   }
 }

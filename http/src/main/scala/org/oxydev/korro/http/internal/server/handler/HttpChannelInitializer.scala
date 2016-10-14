@@ -15,27 +15,18 @@
  */
 package org.oxydev.korro.http.internal.server.handler
 
-import org.oxydev.korro.http.internal.server.Keys
+import org.oxydev.korro.http.api.config.ServerConfig
 
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
-class HttpChannelInitializer extends ChannelInitializer[SocketChannel] {
-
-  private val httpHandler = new HttpChannelHandler
-  private val lastHandler = new LastChannelHandler
+class HttpChannelInitializer(config: ServerConfig) extends ChannelInitializer[SocketChannel] {
 
   override def initChannel(ch: SocketChannel): Unit = {
-
-    val config = ch.attr(Keys.config).get
-
-    val pipeline = ch.pipeline
-    pipeline.addLast("netty-codec", new HttpServerCodec)
-    //config.http.compressionLevel.map(new HttpContentCompressor(_)).foreach(pipeline.addLast("http-compressor", _))
-    pipeline.addLast("logging", new LoggingHandler(config.logger, LogLevel.TRACE))
-    pipeline.addLast("http", httpHandler)
-    pipeline.addLast("last", lastHandler)
+    ch.pipeline.addLast("netty-codec", new HttpServerCodec)
+    ch.pipeline.addLast("logging", new LoggingHandler(config.logger, LogLevel.TRACE))
+    ch.pipeline.addLast("http", HttpChannelHandler)
   }
 }

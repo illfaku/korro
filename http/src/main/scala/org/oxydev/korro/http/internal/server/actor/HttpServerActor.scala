@@ -51,7 +51,7 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
       val bootstrap = new ServerBootstrap()
         .group(bossGroup, workerGroup)
         .channel(classOf[NioServerSocketChannel])
-        .childHandler(new HttpChannelInitializer)
+        .childHandler(new HttpChannelInitializer(config))
         .childAttr(Keys.config, config)
         .childAttr(Keys.router, router)
         .childAttr(Keys.reqParent, HttpRequestParentActor.create())

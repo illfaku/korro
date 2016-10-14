@@ -30,50 +30,40 @@ import io.netty.handler.codec.http._
  * (if not found sends response with status code 404).
  */
 @Sharable
-class HttpChannelHandler extends SimpleChannelInboundHandler[HttpRequest] {
+object HttpChannelHandler extends SimpleChannelInboundHandler[HttpRequest] {
 
   private val NotFound = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
 
   private val BadRequest = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST)
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    if (!msg.headers.contains(HttpHeaderNames.HOST)) finish(ctx, BadRequest)
-    else if (isHandshake(msg)) doHandshake(ctx, msg)
-    else doRequest(ctx, msg)
+
+    Option(ctx.pipeline.get("http-codec")).foreach(ctx.pipeline.remove)
+    Option(ctx.pipeline.get("http-request")).foreach(ctx.pipeline.remove)
+
+    if (!msg.headers.contains(HttpHeaderNames.HOST)) {
+      finish(ctx, BadRequest)
+    } else {
+      ctx.channel.attr(Keys.router).get.find(msg) match {
+
+        case Some(route) =>
+          if (isHandshake(msg)) {
+            ctx.pipeline.addLast("http-aggregator", new HttpObjectAggregator(8192))
+            ctx.pipeline.addLast("ws-handshake", new WsHandshakeHandler(route))
+          } else {
+            ctx.pipeline.addLast("http-codec", new HttpMessageCodec(route.instructions.maxContentLength))
+            ctx.pipeline.addLast("http-request", new HttpRequestHandler(route))
+          }
+          ctx.fireChannelRead(msg)
+
+        case None => finish(ctx, NotFound)
+      }
+    }
   }
 
   private def isHandshake(msg: HttpRequest): Boolean = {
     msg.headers.contains(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true) &&
     msg.headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true)
-  }
-
-  private def doRequest(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    val router = ctx.channel.attr(Keys.router).get
-    val parent = ctx.channel.attr(Keys.reqParent).get
-    router.find(msg) match {
-      case Some(route) =>
-        if (ctx.pipeline.get("http-codec") == null) {
-          ctx.pipeline.addAfter(ctx.name, "http-codec", new HttpMessageCodec(route.instructions.maxContentLength))
-        }
-        if (ctx.pipeline.get("http-request") != null) {
-          ctx.pipeline.remove("http-request")
-        }
-        ctx.pipeline.addAfter("http-codec", "http-request", new HttpRequestHandler(parent, route))
-        ctx.fireChannelRead(msg)
-      case None => finish(ctx, NotFound)
-    }
-  }
-
-  private def doHandshake(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
-    val router = ctx.channel.attr(Keys.router).get
-    val parent = ctx.channel.attr(Keys.wsParent).get
-    router.find(msg) match {
-      case Some(route) =>
-        ctx.pipeline.addAfter(ctx.name, "http-aggregator", new HttpObjectAggregator(8192))
-        ctx.pipeline.addAfter("http-aggregator", "ws-handshake", new WsHandshakeHandler(parent, route))
-        ctx.fireChannelRead(msg)
-      case None => finish(ctx, NotFound)
-    }
   }
 
   private def finish(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
