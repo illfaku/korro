@@ -28,7 +28,7 @@ import io.netty.handler.codec.http.{FullHttpRequest, HttpHeaderNames}
 
 import java.net.URI
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * Completes WebSocket handshake with client and modifies channel pipeline to handle WebSocket frames.
@@ -71,7 +71,7 @@ class WsHandshakeHandler(route: RouteInfo)
   }
 
   private def connection(channel: Channel, req: FullHttpRequest): WsConnection = {
-    val headers = for (header <- req.headers) yield header.getKey -> header.getValue
+    val headers = req.headers.asScala.map(header => header.getKey -> header.getValue)
     WsConnection(req.uri, HttpParams(headers.toSeq: _*))
   }
 }

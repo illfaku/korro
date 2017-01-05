@@ -20,7 +20,7 @@ import com.typesafe.config._
 import java.net.{URI, URL}
 import java.util
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Try
 
@@ -168,7 +168,7 @@ class ConfigExt(config: Config) {
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getObjectList-java.lang.String-
    */
   def findObjectList(path: String): List[_ <: ConfigObject] = {
-    lookupValue(path, config.getObjectList).map(_.toList).getOrElse(Nil)
+    lookupValue(path, config.getObjectList).map(_.asScala.toList).getOrElse(Nil)
   }
 
   /**
@@ -177,14 +177,14 @@ class ConfigExt(config: Config) {
    * @see http://typesafehub.github.io/config/latest/api/com/typesafe/config/Config.html#getConfigList-java.lang.String-
    */
   def findConfigList(path: String): List[_ <: Config] = {
-    lookupValue(path, config.getConfigList).map(_.toList).getOrElse(Nil)
+    lookupValue(path, config.getConfigList).map(_.asScala.toList).getOrElse(Nil)
   }
 
 
   @inline private def lookupValue[V](path: String, f: (String) => V): Option[V] = Try(f(path)).toOption
 
   @inline private def lookupList[V](path: String, f: (String) => util.List[V]): List[V] = {
-    lookupValue(path, f).map(_.toList).getOrElse(Nil)
+    lookupValue(path, f).map(_.asScala.toList).getOrElse(Nil)
   }
 
   @inline private def lookupStringTry(path: String): Try[String] = Try(config.getString(path))

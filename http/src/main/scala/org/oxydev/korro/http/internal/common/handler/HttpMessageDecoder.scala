@@ -27,7 +27,7 @@ import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 import java.nio.charset.StandardCharsets
 import java.util
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * Aggregates Netty's HttpObjects (HttpMessage and HttpContents up to LastHttpContent) to Korro's HttpMessage.
@@ -81,7 +81,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
-    val result = for (header <- headers) yield header.getKey -> header.getValue
+    val result = headers.asScala.map(header => header.getKey -> header.getValue)
     HttpParams(result.toSeq: _*)
   }
 

@@ -23,7 +23,7 @@ import com.typesafe.config.Config
 
 import java.util.Collections.emptySet
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * The main actor that starts all configured http clients as its child actors.
@@ -32,7 +32,7 @@ import scala.collection.JavaConversions._
  */
 class KorroHttpClientActor(config: Config) extends Actor {
 
-  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
+  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet).asScala foreach { name =>
     HttpClientActor.create(new ClientConfig(name, config.getConfig(s"korro.client.$name")))
   }
 
