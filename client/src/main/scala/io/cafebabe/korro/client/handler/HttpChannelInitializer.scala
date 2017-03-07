@@ -18,6 +18,7 @@ package io.cafebabe.korro.client.handler
 
 import io.cafebabe.korro.api.http.HttpRequest
 import io.cafebabe.korro.internal.handler.{HttpMessageDecoder, HttpMessageEncoder, LoggingChannelHandler}
+import io.cafebabe.korro.util.config.wrapped
 import io.cafebabe.korro.util.log.Logger
 
 import akka.actor.ActorRef
@@ -53,7 +54,7 @@ class HttpChannelInitializer(config: Config, url: URL, req: HttpRequest, sender:
     pipeline.addLast("http-codec", new HttpClientCodec)
     pipeline.addLast("logging", loggingHandler)
     pipeline.addLast("korro-encoder", korroEncoder)
-    pipeline.addLast("korro-decoder", new HttpMessageDecoder(65536L))
+    pipeline.addLast("korro-decoder", new HttpMessageDecoder(config.findBytes("maxContentLength").getOrElse(65536L)))
     pipeline.addLast("http", new HttpChannelHandler(url, req, sender))
   }
 }
