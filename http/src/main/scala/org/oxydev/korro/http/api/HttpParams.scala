@@ -17,14 +17,14 @@ package org.oxydev.korro.http.api
 
 import java.text.DateFormat
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatter.{ISO_LOCAL_DATE_TIME, ISO_OFFSET_DATE_TIME, ISO_ZONED_DATE_TIME}
+import java.time.temporal.TemporalAccessor
 import java.time.{LocalDateTime, OffsetDateTime, ZonedDateTime}
+import java.util.Date
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.control.{NoStackTrace, NonFatal}
-import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 
-class HttpParams(val entries: List[(String, String)]) {
+class HttpParams private (val entries: List[(String, String)]) {
 
   def +(entry: (String, Any)): HttpParams = new HttpParams((entry._1 -> entry._2.toString) :: entries)
 
@@ -32,16 +32,22 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def -(name: String): HttpParams = new HttpParams(entries.filterNot(_._1 equalsIgnoreCase name))
 
-  def -(entry: (String, Any)): HttpParams = {
-    new HttpParams(entries.filterNot(e => e._1.equalsIgnoreCase(entry._1) && e._2 == entry._2.toString))
+  def -(entry: (String, Any), ignoreCase: Boolean = false): HttpParams = this - (entry._1, entry._2, ignoreCase)
+
+  def -(name: String, value: Any, ignoreCase: Boolean = false): HttpParams = {
+    new HttpParams(entries filterNot { e =>
+      e._1.equalsIgnoreCase(name) && (if (ignoreCase) e._2.equalsIgnoreCase(value.toString) else e._2 == value.toString)
+    })
   }
 
 
   def contains(name: String): Boolean = entries.exists(_._1 equalsIgnoreCase name)
 
-  def contains(entry: (String, Any)): Boolean = contains(entry._1, entry._2)
+  def contains(entry: (String, Any), ignoreCase: Boolean = false): Boolean = contains(entry._1, entry._2, ignoreCase)
 
-  def contains(name: String, value: Any): Boolean = entries.exists(e => e._1.equalsIgnoreCase(name) && e._2 == value)
+  def contains(name: String, value: Any, ignoreCase: Boolean = false): Boolean = entries exists { e =>
+    e._1.equalsIgnoreCase(name) && (if (ignoreCase) e._2.equalsIgnoreCase(value.toString) else e._2 == value.toString)
+  }
 
   def isEmpty: Boolean = entries.isEmpty
 
@@ -51,76 +57,92 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def getOrElse(name: String, default: => String): String = get(name).getOrElse(default)
 
-  def all(name: String): List[String] = entries.filter(_._1 equalsIgnoreCase name).map(_._2)
+  def getAll(name: String): List[String] = entries.filter(_._1 equalsIgnoreCase name).map(_._2)
 
 
-  import HttpParams.Extractions._
-
-  def mandatory[V](name: String, f: Extraction[V]): Try[V] = entry(name).map(f).getOrElse(Failure(Absent(name)))
-
-  def optional[V](name: String, f: Extraction[V]): Try[Option[V]] = {
-    entry(name).map(f.andThen(_.map(Option(_)))).getOrElse(Success(None))
+  def extract(name: String*): HttpParams.Extraction[String] = {
+    new HttpParams.Extraction(name, name.flatMap(getAll), identity)
   }
 
-  private def entry(name: String): Option[(String, String)] = entries.find(_._1 equalsIgnoreCase name)
 
-
-  override lazy val toString: String = entries.mkString("HttpParams(", ", ", ")")
+  override lazy val toString: String = entries.map(e => e._1 + " = " + e._2).mkString("HttpParams(", ", ", ")")
 }
 
 object HttpParams {
 
   val empty: HttpParams = new HttpParams(Nil)
 
-  def apply(entries: (String, Any)*): HttpParams = new HttpParams(entries.map(e => e._1 -> e._2.toString).toList)
+  def apply(entries: (String, Any)*): HttpParams = {
+    new HttpParams(entries.map(e => e._1 -> e._2.toString).toList)
+  }
 
-  object Extractions {
 
-    sealed abstract class ExtractionFailure extends Throwable with NoStackTrace
-    case class Absent(name: String) extends ExtractionFailure {
-      override lazy val toString = s"Missing parameter: $name."
+  sealed trait ExtractionFailure
+  case class Absent(name: String) extends ExtractionFailure
+  case class Malformed(name: String, value: String, cause: Throwable) extends ExtractionFailure
+
+  type Extractor[V] = String => V
+
+  class Extraction[V](names: Seq[String], values: Seq[String], extractor: Extractor[V]) {
+
+    def mandatory: Either[ExtractionFailure, V] = {
+      optional.right.flatMap(_.map(Right(_)).getOrElse(Left(Absent(names.head))))
     }
-    case class Malformed(name: String, value: String, cause: Throwable) extends ExtractionFailure {
-      override lazy val toString = s"Invalid parameter: $name=$value. Cause: ${cause.getMessage}"
+
+    def optional: Either[ExtractionFailure, Option[V]] = {
+      values.headOption map { value =>
+        try {
+          Right(Option(extractor(value)))
+        } catch {
+          case NonFatal(cause) => Left(Malformed(names.head, value, cause))
+        }
+      } getOrElse Right(None)
     }
 
-    trait Extraction[V] extends (((String, String)) => Try[V]) { self =>
-      def map[U](f: V => U): Extraction[U] = new Extraction[U] {
-        override def apply(v: (String, String)): Try[U] = {
-          val (name, value) = v
-          self(v).map(f) recoverWith {
-            case NonFatal(cause) => Failure(Malformed(name, value, cause))
+    def list: Either[ExtractionFailure, List[V]] = {
+      val it = values.iterator
+      def loop(result: List[V]): Either[ExtractionFailure, List[V]] = {
+        if (it.hasNext) {
+          val value = it.next
+          try {
+            loop(extractor(value) :: result)
+          } catch {
+            case NonFatal(cause) => Left(Malformed(names.head, value, cause))
           }
+        } else {
+          Right(result)
         }
       }
+      loop(Nil)
     }
 
-    val asString: Extraction[String] = new Extraction[String] {
-      override def apply(v: (String, String)): Try[String] = Success(v._2)
-    }
+    def map[U](f: V => U): Extraction[U] = new Extraction(names, values, extractor andThen f)
+  }
 
-    val asLong = asString.map(_.toLong)
-    val asInt = asString.map(_.toInt)
-    val asShort = asString.map(_.toShort)
-    val asByte = asString.map(_.toByte)
-    val asBigInt = asString.map(BigInt(_))
+  object Extractors {
 
-    val asDouble = asString.map(_.toDouble)
-    val asFloat = asString.map(_.toFloat)
-    val asBigDecimal = asString.map(BigDecimal(_))
+    val asLong: Extractor[Long] = _.toLong
+    val asInt: Extractor[Int] = _.toInt
+    val asShort: Extractor[Short] = _.toShort
+    val asByte: Extractor[Byte] = _.toByte
+    val asBigInt: Extractor[BigInt] = BigInt(_)
 
-    val asBoolean = asString.map(_.toBoolean)
+    val asDouble: Extractor[Double] = _.toDouble
+    val asFloat: Extractor[Float] = _.toFloat
+    val asBigDecimal: Extractor[BigDecimal] = BigDecimal(_)
 
-    def asDate(format: DateFormat) = asString.map(format.parse)
-    def asTemporalAccessor(format: DateTimeFormatter) = asString.map(format.parse)
+    val asBoolean: Extractor[Boolean] = _.toBoolean
 
-    val asIsoLocalDateTime = asTemporalAccessor(ISO_LOCAL_DATE_TIME).map(LocalDateTime.from)
-    val asIsoOffsetDateTime = asTemporalAccessor(ISO_OFFSET_DATE_TIME).map(OffsetDateTime.from)
-    val asIsoZonedDateTime = asTemporalAccessor(ISO_ZONED_DATE_TIME).map(ZonedDateTime.from)
+    def asDate(format: DateFormat): Extractor[Date] = format.parse
+    def asTemporalAccessor(format: DateTimeFormatter): Extractor[TemporalAccessor] = format.parse
 
-    val asIsoDuration = asString.map(java.time.Duration.parse)
+    val asIsoZonedDateTime: Extractor[ZonedDateTime] = ZonedDateTime.parse
+    val asIsoOffsetDateTime: Extractor[OffsetDateTime] = OffsetDateTime.parse
+    val asIsoLocalDateTime: Extractor[LocalDateTime] = LocalDateTime.parse
 
-    val asDuration = asString.map(Duration.apply)
-    val asFiniteDuration = asDuration.map(d => FiniteDuration(d.length, d.unit))
+    val asIsoDuration: Extractor[java.time.Duration] = java.time.Duration.parse
+
+    val asDuration: Extractor[Duration] = Duration(_)
+    val asFiniteDuration: Extractor[FiniteDuration] = asDuration.andThen(d => FiniteDuration(d.length, d.unit))
   }
 }

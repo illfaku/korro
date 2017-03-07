@@ -24,7 +24,7 @@ import scala.util.Try
  */
 case class ContentType(mime: String, charsetName: Option[String]) {
   def charset: Option[Charset] = charsetName.flatMap(ch => Try(Charset.forName(ch)).toOption)
-  override lazy val toString = charsetName.map(ch => s"$mime; charset=$ch").getOrElse(mime)
+  override val toString = charsetName.map(ch => s"$mime; charset=$ch").getOrElse(mime)
 }
 
 object ContentType {

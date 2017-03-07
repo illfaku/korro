@@ -16,13 +16,14 @@
 package org.oxydev.korro.http.api
 
 import org.oxydev.korro.http.api.ContentType.Names.{ApplicationJson, FormUrlEncoded, TextPlain}
-import org.oxydev.korro.util.net.QueryStringCodec
+import org.oxydev.korro.util.net.{MimeTypes, QueryStringCodec}
 
 import org.json4s.JValue
 import org.json4s.native.JsonMethods.{compact, render}
 import org.json4s.native.JsonParser.parseOpt
 
 import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.file.{Files, Paths}
 
 /**
  * HTTP message body representation.
@@ -41,7 +42,7 @@ sealed trait HttpContent {
  * @param bytes Binary data.
  * @param contentType Optional content type from/for HTTP message headers.
  */
-class MemoryHttpContent(val bytes: Array[Byte], val contentType: Option[ContentType]) extends HttpContent {
+case class MemoryHttpContent(bytes: Array[Byte], contentType: Option[ContentType]) extends HttpContent {
 
   /**
    * Length of this content.
@@ -58,7 +59,7 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: Option[ContentT
    */
   def string(charset: Charset): String = new String(bytes, charset)
 
-  override lazy val toString: String = s"MemoryHttpContent(contentType=$contentType, length=$length)"
+  override val toString = s"MemoryHttpContent(contentType=$contentType, length=$length)"
 }
 
 /**
@@ -67,8 +68,12 @@ class MemoryHttpContent(val bytes: Array[Byte], val contentType: Option[ContentT
  * @param path Path to file storing data of HTTP content.
  * @param contentType Optional content type from/for HTTP message headers.
  */
-class FileHttpContent(val path: String, val contentType: Option[ContentType]) extends HttpContent {
-  override lazy val toString: String = s"FileHttpContent(contentType=$contentType, path=$path)"
+case class FileHttpContent(path: String, length: Long, contentType: Option[ContentType]) extends HttpContent {
+  override val toString = s"FileHttpContent(contentType=$contentType, path=$path)"
+}
+
+case class ChunkedHttpContent(id: Int, contentType: Option[ContentType]) extends HttpContent {
+  override val toString = s"ChunkedHttpContent(contentType=$contentType, id=$id)"
 }
 
 /**
@@ -76,28 +81,29 @@ class FileHttpContent(val path: String, val contentType: Option[ContentType]) ex
  */
 object HttpContent {
 
-  val empty: HttpContent = memory(Array.emptyByteArray)
+  val empty: HttpContent = Memory(Array.emptyByteArray)
 
-  def memory(bytes: Array[Byte]): HttpContent = memory(bytes, None)
-  def memory(bytes: Array[Byte], contentType: ContentType): HttpContent = memory(bytes, Some(contentType))
-  def memory(bytes: Array[Byte], contentType: Option[ContentType]): HttpContent = {
-    new MemoryHttpContent(bytes, contentType)
+  object Memory {
+    def apply(bytes: Array[Byte]): HttpContent = apply(bytes, None)
+    def apply(bytes: Array[Byte], contentType: ContentType): HttpContent = apply(bytes, Option(contentType))
+    def apply(bytes: Array[Byte], contentType: Option[ContentType]): HttpContent = {
+      MemoryHttpContent(bytes, contentType)
+    }
+    def unapply(msg: HttpMessage): Option[Array[Byte]] = msg.content match {
+      case c: MemoryHttpContent => Option(c.bytes)
+      case _ => None
+    }
   }
-
-  def file(path: String): HttpContent = file(path, None)
-  def file(path: String, contentType: ContentType): HttpContent = file(path, Some(contentType))
-  def file(path: String, contentType: Option[ContentType]): HttpContent = new FileHttpContent(path, contentType)
-
 
   /**
    * Factory and extractor for content of type `text/plain`.
    */
   object Text {
     def apply(text: String, charset: Charset = StandardCharsets.UTF_8): HttpContent = {
-      memory(text.getBytes(charset), ContentType(TextPlain, charset))
+      Memory(text.getBytes(charset), ContentType(TextPlain, charset))
     }
     def unapply(msg: HttpMessage): Option[String] = msg.content match {
-      case c: MemoryHttpContent => Some(c.string)
+      case c: MemoryHttpContent => Option(c.string)
       case _ => None
     }
   }
@@ -107,7 +113,7 @@ object HttpContent {
    */
   object Json {
     def apply(json: JValue, charset: Charset = StandardCharsets.UTF_8): HttpContent = {
-      memory(compact(render(json)).getBytes(charset), ContentType(ApplicationJson, charset))
+      Memory(compact(render(json)).getBytes(charset), ContentType(ApplicationJson, charset))
     }
     def unapply(msg: HttpMessage): Option[JValue] = Text.unapply(msg).flatMap(parseOpt)
   }
@@ -118,11 +124,40 @@ object HttpContent {
   object Form {
     def apply(entries: (String, Any)*): HttpContent = {
       val encoded = QueryStringCodec.encode(entries.map(e => e._1 -> e._2.toString).toList)
-      memory(encoded.getBytes(StandardCharsets.UTF_8), ContentType(FormUrlEncoded))
+      Memory(encoded.getBytes(StandardCharsets.UTF_8), ContentType(FormUrlEncoded))
     }
     def unapply(msg: HttpMessage): Option[HttpParams] = Text.unapply(msg) map { body =>
       val decoded = QueryStringCodec.decode(body)
       new HttpParams(decoded)
+    }
+  }
+
+  object File {
+    def apply(path: String): HttpContent = apply(path, ContentType(MimeTypes(path)))
+    def apply(path: String, contentType: ContentType): HttpContent = apply(path, Option(contentType))
+    def apply(path: String, contentType: Option[ContentType]): HttpContent = {
+      apply(path, Files.size(Paths.get(path)), contentType)
+    }
+    def apply(path: String, length: Long): HttpContent = apply(path, length, ContentType(MimeTypes(path)))
+    def apply(path: String, length: Long, contentType: ContentType): HttpContent = apply(path, length, Option(contentType))
+    def apply(path: String, length: Long, contentType: Option[ContentType]): HttpContent = {
+      FileHttpContent(path, length, contentType)
+    }
+    def unapply(msg: HttpMessage): Option[String] = msg.content match {
+      case c: FileHttpContent => Option(c.path)
+      case _ => None
+    }
+  }
+
+  object Chunked {
+    def apply(id: Int): HttpContent = apply(id, None)
+    def apply(id: Int, contentType: ContentType): HttpContent = apply(id, Option(contentType))
+    def apply(id: Int, contentType: Option[ContentType]): HttpContent = {
+      ChunkedHttpContent(id, contentType)
+    }
+    def unapply(msg: HttpMessage): Option[Int] = msg.content match {
+      case c: ChunkedHttpContent => Option(c.id)
+      case _ => None
     }
   }
 }

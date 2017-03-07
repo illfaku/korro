@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2016-2017 Vladimir Konstantinov, Yuriy Gintsyak
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,29 +18,37 @@ package org.oxydev.korro.http.api
 import org.oxydev.korro.util.i18n.Locales
 import org.oxydev.korro.util.net.QueryStringCodec
 
-import java.net.{MalformedURLException, URL}
+import java.net.{MalformedURLException, URL, URLEncoder}
 import java.util.Locale
+
+sealed trait HttpObject
 
 /**
  * HTTP message representation.
  */
-sealed trait HttpMessage {
+sealed trait HttpMessage extends HttpObject {
+
+  /**
+   * HTTP version.
+   */
+  val version: HttpVersion
 
   /**
    * HTTP headers.
    */
-  def headers: HttpParams
+  val headers: HttpParams
 
   /**
-   * Message body.
+   * HTTP message body.
    */
-  def content: HttpContent
+  val content: HttpContent
 }
 
 /**
  * HTTP request representation.
  */
 case class HttpRequest(
+  version: HttpVersion,
   method: HttpRequest.Method,
   uri: String,
   headers: HttpParams,
@@ -59,19 +67,17 @@ case class HttpRequest(
    */
   implicit val locale: Locale = headers.get("Accept-Language").map(Locales.parse).getOrElse(Locale.getDefault)
 
+
   /**
    * Creates [[org.oxydev.korro.http.api.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
-   * Adds Host header extracted from provided URL and if `path` is empty in this request then also extracts it from
-   * URL and sets it.
+   * Adds Host header extracted from provided URL and concatenates path from it with uri from this request.
    */
   def to(url: URL): HttpRequest.Outgoing = {
-    val req =
-      if (url.getPath != "" && (uri == "" || uri.startsWith("?"))) this.copy(uri = url.getPath + uri)
-      else this
     val host =
       if (url.getPort == -1) url.getHost
       else url.getHost + ":" + url.getPort
-    new HttpRequest.Outgoing(req.copy(headers = req.headers + ("Host" -> host)), url)
+    val req = copy(uri = url.getPath + uri, headers = headers + ("Host" -> host))
+    new HttpRequest.Outgoing(req, url)
   }
 
   /**
@@ -141,12 +147,13 @@ object HttpRequest {
 
     def apply(
       path: String = "",
-      parameters: HttpParams = HttpParams.empty,
+      params: HttpParams = HttpParams.empty,
       content: HttpContent = HttpContent.empty,
-      headers: HttpParams = HttpParams.empty
+      headers: HttpParams = HttpParams.empty,
+      version: HttpVersion = HttpVersion.Http11
     ): HttpRequest = {
-      val query = if (parameters.isEmpty) "" else "?" + QueryStringCodec.encode(parameters.entries)
-      new HttpRequest(this, s"$path$query", headers, content)
+      val query = if (params.isEmpty) "" else "?" + QueryStringCodec.encode(params.entries)
+      HttpRequest(version, this, path + query, headers, content)
     }
 
     def unapply(req: HttpRequest): Option[HttpRequest] = if (this == req.method) Some(req) else None
@@ -160,6 +167,25 @@ object HttpRequest {
     override lazy val hashCode = name.hashCode
 
     override val toString = name
+  }
+
+
+  object Uri {
+
+    def apply(path: String, params: HttpParams): Uri = {
+      Option(params).filter(_.isEmpty)
+      val query = if (params.isEmpty) "" else QueryStringCodec.encode(params.entries)
+      Uri(path, Some(query))
+    }
+  }
+
+  /**
+   * HTTP request URI representation.
+   * @param path path
+   * @param query URL-encoded query
+   */
+  case class Uri(path: String, query: Option[String]) {
+    lazy val params = new HttpParams(QueryStringCodec.decode(query))
   }
 
   /**
@@ -176,42 +202,10 @@ object HttpRequest {
   }
 
   /**
-   * Checks that path of HttpRequest starts with prefix.
-   * {{{
-   *   val req: HttpRequest = ...
-   *   val ApiPrefix = new PathPrefix("/api")
-   *   req match {
-   *     case ApiPrefix() => ...
-   *   }
-   * }}}
-   *
-   * @param prefix Path prefix to test against HttpRequest.
-   */
-  class PathPrefix(prefix: String) {
-    def unapply(req: HttpRequest): Boolean = req.path startsWith prefix
-  }
-
-  /**
-   * Checks that path of HttpRequest ends with suffix.
-   * {{{
-   *   val req: HttpRequest = ...
-   *   val PetCountSuffix = new PathSuffix("/pet/count")
-   *   req match {
-   *     case PetCountSuffix() => ...
-   *   }
-   * }}}
-   *
-   * @param suffix Path suffix to test against HttpRequest.
-   */
-  class PathSuffix(suffix: String) {
-    def unapply(req: HttpRequest): Boolean = req.path endsWith suffix
-  }
-
-  /**
    * Extracts segments of a path.
    * {{{
-   *   "/a/b/c/d/e" match {
-   *     case "/a/b" / v1 / "d" / v2 => v1 + "-" + v2   // c-e
+   *   Get("/a/b/c/d/e") match {
+   *     case Path("/a/b" / x / "d" / y) => x + "-" + y   // c-e
    *   }
    * }}}
    */
@@ -222,12 +216,43 @@ object HttpRequest {
       else None
     }
   }
+
+  /**
+   * Matches path of HttpRequest against a pattern and extracts matching groups from it.
+   * {{{
+   *   val req: HttpRequest = ...
+   *   val ApiRegex = new PathRegex("/api/(\\d\\.\\d)/.*")
+   *   req match {
+   *     case ApiRegex("1.0") => ...
+   *   }
+   * }}}
+   *
+   * @param pattern Path prefix to test against HttpRequest.
+   */
+  class PathRegex(pattern: String) {
+    private val re = pattern.r
+    def unapplySeq(req: HttpRequest): Option[List[String]] = re.unapplySeq(req.path)
+  }
+
+  /**
+   * String interpolation for paths. It allows to extract path's segments.
+   * {{{
+   *   import HttpRequest.PathInterpolation
+   *   Get("/a/b/c/d/e") match {
+   *     case path"/a/b/$x/d/$y" => x + "-" + y   // c-e
+   *   }
+   * }}}
+   */
+  implicit class PathInterpolation(sc: StringContext) {
+    def path = new PathRegex(sc.parts.mkString("([^/]+)"))
+  }
 }
 
 /**
  * HTTP response representation.
  */
 case class HttpResponse(
+  version: HttpVersion,
   status: HttpResponse.Status,
   headers: HttpParams,
   content: HttpContent
@@ -275,8 +300,12 @@ object HttpResponse {
    */
   class Status(val code: Int, val reason: String) {
 
-    def apply(content: HttpContent = HttpContent.empty, headers: HttpParams = HttpParams.empty): HttpResponse = {
-      new HttpResponse(this, headers, content)
+    def apply(
+      content: HttpContent = HttpContent.empty,
+      headers: HttpParams = HttpParams.empty,
+      version: HttpVersion = HttpVersion.Http11
+    ): HttpResponse = {
+      HttpResponse(version, this, headers, content)
     }
 
     def unapply(res: HttpResponse): Option[HttpResponse] = if (this == res.status) Some(res) else None
@@ -292,3 +321,5 @@ object HttpResponse {
     override lazy val toString = s"$code $reason"
   }
 }
+
+case class HttpChunk(id: Int, bytes: Array[Byte]) extends HttpObject

@@ -34,10 +34,14 @@ object QueryStringCodec {
    * @return Decoded pairs of names and values.
    */
   def decode(query: String, enc: String = "UTF-8"): List[(String, String)] = {
-    query.split("[&;]").map(_.split("=", 2)) map {
-      case Array(n, v) => URLDecoder.decode(n, enc) -> URLDecoder.decode(v, enc)
-      case Array(n) => URLDecoder.decode(n, enc) -> ""
-    } toList
+    if (query.trim.isEmpty) {
+      Nil
+    } else {
+      query.split("[&;]").map(_.split("=", 2)) map {
+        case Array(n, v) => URLDecoder.decode(n, enc) -> URLDecoder.decode(v, enc)
+        case Array(n) => URLDecoder.decode(n, enc) -> ""
+      } toList
+    }
   }
 
   /**
