@@ -64,5 +64,9 @@ Configuration example (HOCON):
             // Number of workers to process outgoing messages.
             // 1 by default.
             workerGroupSize = 2
+            
+            // Maximal length of HTTP response content.
+            // 65536 bytes by default.
+            maxContentLength = 2M
         }
     }
