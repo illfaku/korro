@@ -21,16 +21,10 @@ import com.typesafe.config._
 import java.net.{URI, URL}
 import java.util
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Try
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- * @author Yuriy Gintsyak
- */
 class WrappedConfig(config: Config) {
 
   // Value retrieval
@@ -65,12 +59,12 @@ class WrappedConfig(config: Config) {
   def findStringList(path: String): Iterable[String] = lookupIterable(path, config.getStringList)
 
   def findObjectList(path: String): Iterable[_ <: ConfigObject] = lookupValue(path, config.getObjectList) match {
-    case Some(x) => x.toIterable
+    case Some(x) => x.asScala
     case None => Iterable.empty
   }
 
   def findConfigList(path: String): Iterable[_ <: Config] = lookupValue(path, config.getConfigList) match {
-    case Some(x) => x.toIterable
+    case Some(x) => x.asScala
     case None => Iterable.empty
   }
 
@@ -86,7 +80,7 @@ class WrappedConfig(config: Config) {
 
   @inline private def lookupIterable[V](path: String, f: (String) => util.List[V]): Iterable[V] = {
     lookupValue(path, f) match {
-      case Some(x) => x.toIterable
+      case Some(x) => x.asScala
       case None => Iterable.empty
     }
   }

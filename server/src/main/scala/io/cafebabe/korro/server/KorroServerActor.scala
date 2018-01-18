@@ -26,12 +26,10 @@ import com.typesafe.config.Config
 
 import java.util.Collections.emptySet
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * The main actor that starts all configured http servers as its child actors.
- *
- * @author Vladimir Konstantinov
  */
 object KorroServerActor {
 
@@ -45,7 +43,7 @@ private [server] class KorroServerActor(config: Config) extends Actor with NoRec
 
   private val cfg = Option(config).getOrElse(context.system.settings.config)
 
-  cfg.findObject("korro.server").map(_.keySet).getOrElse(emptySet) foreach { name =>
+  cfg.findObject("korro.server").map(_.keySet).getOrElse(emptySet).asScala foreach { name =>
     HttpServerActor.create(new KorroConfig(name, cfg.getConfig(s"korro.server.$name")))
   }
 }

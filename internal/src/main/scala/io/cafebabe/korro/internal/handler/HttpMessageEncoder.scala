@@ -25,11 +25,6 @@ import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 
 import java.util
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 @Sharable
 class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
@@ -66,10 +61,10 @@ class HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
   }
 
   private def setHeaders(nettyMsg: netty.HttpMessage, msg: HttpMessage): Unit = {
-    msg.headers.entries foreach { case (name, value) => netty.HttpHeaders.addHeader(nettyMsg, name, value) }
+    msg.headers.entries foreach { case (name, value) => nettyMsg.headers.add(name, value) }
     if (msg.content.length > 0) {
-      netty.HttpHeaders.setContentLength(nettyMsg, msg.content.length)
-      netty.HttpHeaders.addHeader(nettyMsg, netty.HttpHeaders.Names.CONTENT_TYPE, msg.content.contentType.toString)
+      netty.HttpUtil.setContentLength(nettyMsg, msg.content.length)
+      nettyMsg.headers.add(netty.HttpHeaderNames.CONTENT_TYPE, msg.content.contentType.toString)
     }
   }
 }

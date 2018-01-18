@@ -24,11 +24,6 @@ import io.netty.handler.codec.http.{HttpHeaders, HttpMethod, HttpRequest}
 
 import java.util.regex.Pattern
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 object RoutesConfig extends Logging {
   def apply(configs: Iterable[Config]): RoutesConfig = {
     val routes = configs.filter(_.hasPath("actor")).map(new RouteConfig(_))
@@ -36,11 +31,6 @@ object RoutesConfig extends Logging {
   }
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class RoutesConfig(routes: List[RouteConfig]) {
   def apply(req: HttpRequest): Option[String] = {
     def find(tail: List[RouteConfig]): Option[String] = tail match {
@@ -51,11 +41,6 @@ class RoutesConfig(routes: List[RouteConfig]) {
   }
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 private class RouteConfig(config: Config) {
 
   val actor = config.getString("actor")
@@ -74,7 +59,7 @@ private class RouteConfig(config: Config) {
 
 
   def test(req: HttpRequest): Boolean = {
-    testMethod(req.getMethod) && testPath(req.getUri) && testUri(req.getUri) && testHeaders(req.headers)
+    testMethod(req.method) && testPath(req.uri) && testUri(req.uri) && testHeaders(req.headers)
   }
 
 

@@ -15,7 +15,7 @@ object HttpBuild extends Build {
       "-Xlint:unchecked", "-Xlint:deprecation", "-source", "1.8", "-target", "1.8"
     ),
     scalacOptions ++= Seq(
-      "-encoding", "UTF-8", "-deprecation", "-unchecked", "-optimize", "-feature",
+      "-encoding", "UTF-8", "-deprecation", "-unchecked", "-feature",
       "-language:implicitConversions", "-language:postfixOps", "-target:jvm-1.8"
     )
   )
@@ -118,8 +118,8 @@ object Dependency {
 
   object V {
     val Scala = "2.12.2"
-    val Akka = "2.5.3"
-    val Netty = "4.0.34.Final"
+    val Akka = "2.5.4"
+    val Netty = "4.1.19.Final"
   }
 
   val akka = "com.typesafe.akka" %% "akka-actor" % V.Akka

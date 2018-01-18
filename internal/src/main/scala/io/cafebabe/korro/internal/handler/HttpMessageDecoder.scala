@@ -29,14 +29,9 @@ import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 import java.nio.charset.Charset
 import java.util
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.HttpObject] with Logging {
 
   private val BadRequest = new netty.DefaultFullHttpResponse(
@@ -62,9 +57,9 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
 
   override def decode(ctx: ChannelHandlerContext, msg: netty.HttpObject, out: util.List[AnyRef]): Unit = {
-    if (msg.getDecoderResult.isFailure) {
+    if (msg.decoderResult.isFailure) {
       ctx.writeAndFlush(BadRequest.retain()).addListener(ChannelFutureListener.CLOSE)
-      log.error(msg.getDecoderResult.cause, "Failed to decode inbound message.")
+      log.error(msg.decoderResult.cause, "Failed to decode inbound message.")
     } else msg match {
 
       case m: netty.HttpMessage =>
@@ -86,22 +81,22 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   }
 
   private def decodeRequest(msg: netty.HttpRequest): Unit = {
-    val decoder = new netty.QueryStringDecoder(msg.getUri)
+    val decoder = new netty.QueryStringDecoder(msg.uri)
     val path = decoder.path
-    val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
+    val params = decoder.parameters.asScala flatMap { case (name, values) => values.asScala.map(name -> _) }
     message = HttpRequest(
-      msg.getMethod.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
+      msg.method.name, path, HttpParams(params.toSeq: _*), decodeHeaders(msg.headers), HttpContent.empty
     )
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
   private def decodeResponse(msg: netty.HttpResponse): Unit = {
-    message = HttpResponse(msg.getStatus.code, decodeHeaders(msg.headers), HttpContent.empty)
+    message = HttpResponse(msg.status.code, decodeHeaders(msg.headers), HttpContent.empty)
     contentType = ContentType.parse(msg.headers.get(netty.HttpHeaders.Names.CONTENT_TYPE))
   }
 
   private def decodeHeaders(headers: netty.HttpHeaders): HttpParams = {
-    val result = for (header <- headers) yield header.getKey -> header.getValue
+    val result = for (header <- headers.asScala) yield header.getKey -> header.getValue
     HttpParams(result.toSeq: _*)
   }
 
@@ -134,7 +129,7 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
 
   private def decodeParametersFromBody(charset: Charset): HttpParams = {
     val decoder = new netty.QueryStringDecoder(byteCache.toString(charset), false)
-    val params = decoder.parameters flatMap { case (name, values) => values.map(name -> _) }
+    val params = decoder.parameters.asScala flatMap { case (name, values) => values.asScala.map(name -> _) }
     HttpParams(params.toSeq: _*)
   }
 

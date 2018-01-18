@@ -16,23 +16,17 @@
  */
 package io.cafebabe.korro.server.handler
 
+import akka.actor.ActorContext
 import io.cafebabe.korro.internal.ChannelFutureExt
 import io.cafebabe.korro.internal.handler.{WsCompressionDecoder, WsCompressionEncoder, WsMessageCodec}
 import io.cafebabe.korro.server.config.WsConfig
 import io.cafebabe.korro.util.log.Logging
-
-import akka.actor.ActorContext
 import io.netty.channel._
 import io.netty.handler.codec.http.websocketx.{WebSocketServerHandshaker, WebSocketServerHandshakerFactory}
-import io.netty.handler.codec.http.{HttpHeaders, HttpRequest}
+import io.netty.handler.codec.http.{HttpHeaderNames, HttpRequest}
 
 import java.net.{InetSocketAddress, URI}
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
@@ -44,7 +38,7 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
   }
 
   private def newHandshaker(req: HttpRequest): Option[WebSocketServerHandshaker] = {
-    val location = s"ws://${req.headers.get(HttpHeaders.Names.HOST)}/${new URI(req.getUri).getPath}"
+    val location = s"ws://${req.headers.get(HttpHeaderNames.HOST)}/${new URI(req.uri).getPath}"
     val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
     Option(factory.newHandshaker(req))
   }

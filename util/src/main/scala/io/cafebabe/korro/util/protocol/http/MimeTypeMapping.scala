@@ -23,20 +23,15 @@ import java.io.{BufferedReader, InputStreamReader}
 import java.nio.file.Path
 import java.util.stream.Collectors
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 object MimeTypeMapping extends Logging {
 
   private lazy val mime2Ext: Map[String, List[String]] = {
     try {
       loan (getClass.getClassLoader.getResource("/mime.types").openStream()) to { in =>
         val reader = new BufferedReader(new InputStreamReader(in))
-        reader.lines.collect(Collectors.toList[String]).toStream
+        reader.lines.collect(Collectors.toList[String]).asScala.toStream
           .map(_.split(" ", 2)).filter(_.length == 2)
           .map(l => l(0) -> l(1).split(" ").toList).toMap
       }

@@ -24,13 +24,8 @@ import akka.actor.{Actor, Props}
 
 import java.util.Collections.emptySet
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 object KorroClientActor {
   val props: Props = Props(new KorroClientActor)
 }
@@ -39,7 +34,7 @@ private [client] class KorroClientActor extends Actor with NoReceiveActor {
 
   private val config = context.system.settings.config
 
-  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet) foreach { name =>
+  config.findObject("korro.client").map(_.keySet).getOrElse(emptySet).asScala foreach { name =>
     context.actorOf(HttpClientActor.props(name, config.getConfig(s"korro.client.$name")), name)
   }
 }
