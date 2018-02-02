@@ -17,16 +17,13 @@
 package io.cafebabe.korro.internal.handler
 
 import io.cafebabe.korro.api.http.ContentType.DefaultCharset
-import io.cafebabe.korro.api.http.ContentType.Names.FormUrlEncoded
 import io.cafebabe.korro.api.http._
 import io.cafebabe.korro.internal.ByteBufUtils.toBytes
 import io.cafebabe.korro.util.log.Logging
-
 import io.netty.buffer.{CompositeByteBuf, Unpooled}
 import io.netty.channel.{ChannelFutureListener, ChannelHandlerContext}
 import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
 
-import java.nio.charset.Charset
 import java.util
 
 import scala.collection.JavaConverters._
@@ -114,23 +111,12 @@ class HttpMessageDecoder(maxSize: Long) extends MessageToMessageDecoder[netty.Ht
   private def composeMessage(out: util.List[AnyRef]): Unit = {
     if (byteCache.isReadable) {
       message = message match {
-        case m: HttpRequest =>
-          contentType match {
-            case ContentType(FormUrlEncoded, charset) =>
-              m.copy(parameters = m.parameters ++ decodeParametersFromBody(charset.getOrElse(DefaultCharset)))
-            case _ => m.copy(content = HttpContent.memory(byteCache, contentType))
-          }
+        case m: HttpRequest => m.copy(content = HttpContent.memory(byteCache, contentType))
         case m: HttpResponse => m.copy(content = HttpContent.memory(byteCache, contentType))
       }
     }
     out add message
     reset()
-  }
-
-  private def decodeParametersFromBody(charset: Charset): HttpParams = {
-    val decoder = new netty.QueryStringDecoder(byteCache.toString(charset), false)
-    val params = decoder.parameters.asScala flatMap { case (name, values) => values.asScala.map(name -> _) }
-    HttpParams(params.toSeq: _*)
   }
 
   private def getContentLength(msg: netty.HttpMessage): Long = {
