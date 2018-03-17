@@ -4,7 +4,9 @@ lazy val commonSettings = Seq(
 
   organization := "org.oxydev",
   version := "0.3.0-SNAPSHOT",
-  scalaVersion := "2.12.1",
+  scalaVersion := "2.12.4",
+
+  resolvers += Resolver.sbtPluginRepo("releases"),
 
   licenses := Seq("Apache 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
   homepage := Some(url("https://github.com/oxy-development/korro")),
@@ -47,58 +49,60 @@ lazy val compileJdkSettings = Seq(
 
 // Dependencies --------------------------------------------------------------------------------------------------------
 
-val reflect = "org.scala-lang" % "scala-reflect" % "2.12.1"
+val reflect = "org.scala-lang" % "scala-reflect" % "2.12.4"
 
-val akka = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
+val akka = "com.typesafe.akka" %% "akka-actor" % "2.5.11"
 
-val typesafeConfig = "com.typesafe" % "config" % "1.3.1"
-val json4s = "org.json4s" %% "json4s-native" % "3.5.0"
-val slf4j = "org.slf4j" % "slf4j-api" % "1.7.22"
+val typesafeConfig = "com.typesafe" % "config" % "1.3.3"
+val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
 
-val nettyCommon = "io.netty" % "netty-common" % "4.1.6.Final"
-val nettyBuffer = "io.netty" % "netty-buffer" % "4.1.6.Final"
-val nettyTransport = "io.netty" % "netty-transport" % "4.1.6.Final"
-val nettyHandler = "io.netty" % "netty-handler" % "4.1.6.Final"
-val nettyCodec = "io.netty" % "netty-codec" % "4.1.6.Final"
-val nettyHttp = "io.netty" % "netty-codec-http" % "4.1.6.Final"
+val nettyCommon = "io.netty" % "netty-common" % "4.1.22.Final"
+val nettyBuffer = "io.netty" % "netty-buffer" % "4.1.22.Final"
+val nettyTransport = "io.netty" % "netty-transport" % "4.1.22.Final"
+val nettyHandler = "io.netty" % "netty-handler" % "4.1.22.Final"
+val nettyCodec = "io.netty" % "netty-codec" % "4.1.22.Final"
+val nettyHttp = "io.netty" % "netty-codec-http" % "4.1.22.Final"
 
-val scalatest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
+val scalatest = "org.scalatest" %% "scalatest" % "3.0.5" % Test
 
 
 // Projects ------------------------------------------------------------------------------------------------------------
 
-lazy val root = Project(
-  id = "korro",
-  base = file("."),
-  settings = commonSettings ++ Seq(publishArtifact := false),
-  aggregate = Seq(http, util)
-)
+lazy val root = Project("korro", file("."))
+  .settings(commonSettings ++ Seq(publishArtifact := false))
+  .aggregate(http, util)
 
-lazy val http = Project(
-  id = "korro-http",
-  base = file("http"),
-  dependencies = Seq(util),
-  settings = commonSettings ++ compileJdkSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq(
-      "org.oxydev.korro.http",
-      "org.oxydev.korro.http.api.*",
-      "org.oxydev.korro.http.tools.*"
-    ),
-    OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.internal.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro HTTP")
-  ) ++ Seq(libraryDependencies ++= Seq(
-    akka, typesafeConfig, json4s, slf4j, scalatest,
-    nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
-  ))
-).enablePlugins(SbtOsgi)
+lazy val http = Project("korro-http", file("http"))
+  .dependsOn(util)
+  .settings(
+    commonSettings ++
+    compileJdkSettings ++
+    Seq(
+      OsgiKeys.exportPackage := Seq(
+        "org.oxydev.korro.http",
+        "org.oxydev.korro.http.api.*",
+        "org.oxydev.korro.http.tools.*"
+      ),
+      OsgiKeys.privatePackage := Seq("org.oxydev.korro.http.internal.*"),
+      OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro HTTP")
+    ) ++
+    Seq(libraryDependencies ++= Seq(
+      akka, typesafeConfig, slf4j, scalatest,
+      nettyCommon, nettyBuffer, nettyTransport, nettyHandler, nettyCodec, nettyHttp
+    ))
+  )
+  .enablePlugins(SbtOsgi)
 
-lazy val util = Project(
-  id = "korro-util",
-  base = file("util"),
-  settings = commonSettings ++ compileJdkSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("org.oxydev.korro.util.*"),
-    OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Utilities")
-  ) ++ Seq(libraryDependencies ++= Seq(
-    akka, typesafeConfig, json4s, slf4j, scalatest
-  ))
-).enablePlugins(SbtOsgi)
+lazy val util = Project("korro-util", file("util"))
+  .settings(
+    commonSettings ++
+    compileJdkSettings ++
+    Seq(
+      OsgiKeys.exportPackage := Seq("org.oxydev.korro.util.*"),
+      OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro Utilities")
+    ) ++
+    Seq(libraryDependencies ++= Seq(
+      akka, typesafeConfig, slf4j, scalatest
+    ))
+  )
+  .enablePlugins(SbtOsgi)
