@@ -29,14 +29,8 @@ libraryDependencies ++= Seq(
 
 enablePlugins(SbtOsgi)
 osgiSettings
-OsgiKeys.exportPackage := Seq(
-  "org.oxydev.korro",
-  "org.oxydev.korro.api.*",
-  "org.oxydev.korro.tools.*",
-  "org.oxydev.korro.util.*"
-)
-OsgiKeys.privatePackage := Seq("org.oxydev.korro.internal.*")
-OsgiKeys.additionalHeaders := Map("Bundle-Name" -> "Korro")
+OsgiKeys.exportPackage := Seq("com.github.illfaku.korro.*")
+OsgiKeys.privatePackage := Seq.empty
 
 
 licenses := Seq("Apache 2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0"))

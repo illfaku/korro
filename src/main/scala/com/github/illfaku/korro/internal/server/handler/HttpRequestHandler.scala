@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.github.illfaku.korro.internal.server.handler
 
-import com.github.illfaku.korro.api.HttpRequest
+import com.github.illfaku.korro.dto.HttpRequest
 import com.github.illfaku.korro.internal.server.Keys
 import com.github.illfaku.korro.internal.server.actor.HttpRequestParentActor
 import com.github.illfaku.korro.internal.server.route.RouteInfo

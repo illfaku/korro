@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.oxydev.korro.internal.common.ChannelFutureExt
 import com.github.illfaku.korro.internal.server.Keys
 import com.github.illfaku.korro.internal.server.handler.HttpChannelInitializer
 import com.github.illfaku.korro.internal.server.route.HttpRequestRouter
-import com.github.illfaku.korro.util.concurrent.SequenceThreadFactory
+import com.github.illfaku.korro.util.SequenceThreadFactory
 
 import akka.actor._
 import io.netty.bootstrap.ServerBootstrap

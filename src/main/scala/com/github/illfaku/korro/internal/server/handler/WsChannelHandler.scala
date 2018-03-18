@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ package com.github.illfaku.korro.internal.server.handler
 
 import org.oxydev.korro.api.ws.WsFrame
 import com.github.illfaku.korro.internal.server.actor.{HttpServerActor, WsMessageActor}
-import com.github.illfaku.korro.util.log.Logging
+import com.github.illfaku.korro.util.logging.Logging
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.illfaku.korro.api.ws.{WsConnection, WsFrame}
+import com.github.illfaku.korro.dto.ws.{WsHandshakeRequest, WsFrame}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
 
 import scala.collection.mutable.ListBuffer

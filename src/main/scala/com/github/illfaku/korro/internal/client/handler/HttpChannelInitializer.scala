@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package com.github.illfaku.korro.internal.client.handler
 
-import com.github.illfaku.korro.api.{HttpRequest, HttpResponse}
-import com.github.illfaku.korro.internal.client.config.ClientConfig
+import com.github.illfaku.korro.config.ClientConfig
+import com.github.illfaku.korro.dto.{HttpRequest, HttpResponse}
+
 import org.oxydev.korro.api.HttpResponse
 import com.github.illfaku.korro.internal.common.handler.HttpMessageCodec
+
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.HttpClientCodec

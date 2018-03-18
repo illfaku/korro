@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.github.illfaku.korro.internal.server.actor
 
 import com.github.illfaku.korro.internal.server.route.{ActorPathRoute, ActorRefRoute, RouteInfo}
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
-import com.github.illfaku.korro.api.HttpRequest
+import com.github.illfaku.korro.dto.HttpRequest
 import io.netty.channel.Channel
 
 class HttpRequestParentActor extends Actor {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import org.oxydev.korro.api.HttpResponse.Status.{RequestTimeout, ServerError}
 import org.oxydev.korro.internal.common.ChannelFutureExt
 import com.github.illfaku.korro.internal.server.route.MergedRouteInstructions
 import akka.actor.{Actor, ActorLogging, Props, ReceiveTimeout, Status}
-import com.github.illfaku.korro.api.HttpResponse
+import com.github.illfaku.korro.dto.HttpResponse
 import io.netty.channel.Channel
 
 class HttpRequestActor(channel: Channel, instructions: MergedRouteInstructions, info: String)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,19 @@
 package com.github.illfaku.korro.internal.server.config
 
 import com.github.illfaku.korro.util.config.extended
-import com.github.illfaku.korro.util.log.Logging
 
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaders, HttpMethod, HttpRequest}
 
 import java.util.regex.Pattern
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-object RoutesConfig extends Logging {
+object RoutesConfig {
   def apply(configs: Iterable[Config]): RoutesConfig = {
     val routes = configs.filter(_.hasPath("actor")).map(new RouteConfig(_))
     new RoutesConfig(routes.toList)
   }
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class RoutesConfig(routes: List[RouteConfig]) {
   def apply(req: HttpRequest): Option[String] = {
     def find(tail: List[RouteConfig]): Option[String] = tail match {

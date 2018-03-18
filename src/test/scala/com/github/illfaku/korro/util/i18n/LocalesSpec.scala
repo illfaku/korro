@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package com.github.illfaku.korro.util.i18n
 
+import com.github.illfaku.korro.util.Locales
+
 import org.scalatest._
 
 import java.util.Locale
 
 /**
- * Tests for [[com.github.illfaku.korro.util.i18n.Locales Locales]] object.
+ * Tests for [[Locales Locales]] object.
  */
 class LocalesSpec extends FlatSpec with Matchers {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package com.github.illfaku.korro.internal.server.route
 
 import org.oxydev.korro.api.config.ServerConfig
 import org.oxydev.korro.api.route.{RouteInstruction, RoutePredicate}
-import com.github.illfaku.korro.util.net.QueryStringCodec
 import akka.actor.ActorRef
-import com.github.illfaku.korro.api.HttpParams
+import com.github.illfaku.korro.dto.HttpParams
+import com.github.illfaku.korro.util.QueryStringCodec
+
 import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaderValues, HttpRequest}
 
 class HttpRequestRouter(config: ServerConfig) {

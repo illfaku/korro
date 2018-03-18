@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Vladimir Konstantinov, Yuriy Gintsyak
+ * Copyright 2018 Vladimir Konstantinov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.github.illfaku.korro.internal.common.handler
 
-import com.github.illfaku.korro.api._
+import com.github.illfaku.korro.dto._
 import org.oxydev.korro.api._
 import org.oxydev.korro.internal.common.toByteBuf
 import io.netty.channel.ChannelHandler.Sharable
@@ -48,8 +48,8 @@ object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
     val content = msg.content match {
 
-      case c: MemoryHttpContent if c.length > 0 =>
-        netty.HttpUtil.setContentLength(message, c.length)
+      case c: BytesHttpContent if c.size > 0 =>
+        netty.HttpUtil.setContentLength(message, c.size)
         setContentType(message, msg)
         Some(new netty.DefaultHttpContent(c.bytes))
 
