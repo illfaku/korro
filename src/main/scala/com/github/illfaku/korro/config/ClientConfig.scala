@@ -23,6 +23,8 @@ import java.net.URL
 
 case class ClientConfig(
   url: Option[URL] = None,
+  nettyDispatcher: Option[String] = None,
+  nettyThreads: Int = ClientConfig.Defaults.nettyThreads,
   logger: String = ClientConfig.Defaults.logger,
   instructions: List[HttpInstruction] = Nil
 )
@@ -30,12 +32,15 @@ case class ClientConfig(
 object ClientConfig {
 
   object Defaults {
+    val nettyThreads: Int = 1
     val logger: String = "korro-client"
   }
 
   def extract(config: Config): ClientConfig = {
     ClientConfig(
       config.findURL("url"),
+      config.findString("netty-dispatcher"),
+      config.findInt("netty-threads").getOrElse(Defaults.nettyThreads),
       config.findString("logger").getOrElse(Defaults.logger),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
     )

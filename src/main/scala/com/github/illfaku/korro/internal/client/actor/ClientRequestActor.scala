@@ -15,6 +15,10 @@
  */
 package com.github.illfaku.korro.internal.client.actor
 
+import com.github.illfaku.korro.config.ClientConfig
+import com.github.illfaku.korro.dto.{HttpRequest, HttpResponse}
+import com.github.illfaku.korro.internal.client.handler.HttpChannelInitializer
+
 import akka.actor._
 import akka.pattern.pipe
 import io.netty.bootstrap.Bootstrap
@@ -23,13 +27,13 @@ import io.netty.channel.socket.nio.NioSocketChannel
 
 import scala.concurrent.Promise
 
-class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Actor {
+class ClientRequestActor(config: ClientConfig, group: EventLoopGroup) extends Actor {
 
   import context.dispatcher
 
   override def receive = {
 
-    case HttpRequest.Outgoing(req, url) =>
+    case HttpRequest.Outgoing(req, url, instructions) =>
 
       val port =
         if (url.getPort == -1) {
@@ -49,11 +53,7 @@ class HttpRequestActor(config: ClientConfig, group: EventLoopGroup) extends Acto
   }
 }
 
-object HttpRequestActor {
+object ClientRequestActor {
 
-  def create(config: ClientConfig, group: EventLoopGroup)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(props(config, group))
-  }
-
-  def props(config: ClientConfig, group: EventLoopGroup): Props = Props(new HttpRequestActor(config, group))
+  def props(config: ClientConfig, group: EventLoopGroup): Props = Props(new ClientRequestActor(config, group))
 }

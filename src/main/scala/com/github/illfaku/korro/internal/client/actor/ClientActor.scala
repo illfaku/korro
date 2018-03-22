@@ -15,19 +15,25 @@
  */
 package com.github.illfaku.korro.internal.client.actor
 
+import com.github.illfaku.korro.config.ClientConfig
+import com.github.illfaku.korro.dto.HttpRequest
+import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
+
 import akka.actor._
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 
-class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
-
-  private var group: EventLoopGroup = _
+class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
+  private val executor = config.nettyDispatcher.map(context.system.dispatchers.lookup).getOrElse(context.dispatcher)
+
+  private var group: EventLoopGroup = _
+
   override def preStart(): Unit = {
-    group = new NioEventLoopGroup(config.workerGroupSize, new SequenceThreadFactory(s"korro-client-${config.name}"))
-    log.info("Started Korro HTTP client \"{}\" with URL: {}.", config.name, config.url)
+    group = new NioEventLoopGroup(config.nettyThreads, executor)
+    log.debug("Korro | Started client at path {}.", self.path.toStringWithoutAddress)
   }
 
   override def postStop(): Unit = {
@@ -41,15 +47,15 @@ class HttpClientActor(config: ClientConfig) extends Actor with ActorLogging {
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
-    case outgoing: HttpRequest.Outgoing => HttpRequestActor.create(config, group) forward outgoing
+    case req: WsHandshakeRequest => config.url match {
+      case Some(url) => self forward (req to url)
+      case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
+    }
+
+    case outgoing: HttpRequest.Outgoing =>
+      context.actorOf(ClientRequestActor.props(config, group)) forward outgoing
+
+    case outgoing: WsHandshakeRequest.Outgoing =>
+      context.actorOf(ClientRequestActor.props(config, group)) forward outgoing
   }
-}
-
-object HttpClientActor {
-
-  def create(config: ClientConfig)(implicit factory: ActorRefFactory): ActorRef = {
-    factory.actorOf(props(config), config.name)
-  }
-
-  def props(config: ClientConfig): Props = Props(new HttpClientActor(config))
 }

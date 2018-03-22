@@ -15,8 +15,7 @@
  */
 package com.github.illfaku.korro.internal.server.actor
 
-import org.oxydev.korro.api.config.ServerConfig
-import org.oxydev.korro.internal.common.ChannelFutureExt
+import com.github.illfaku.korro.config.ServerConfig
 import com.github.illfaku.korro.internal.server.Keys
 import com.github.illfaku.korro.internal.server.handler.HttpChannelInitializer
 import com.github.illfaku.korro.internal.server.route.HttpRequestRouter
@@ -30,9 +29,9 @@ import io.netty.channel.{Channel, EventLoopGroup}
 
 import scala.util.{Failure, Success}
 
-class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
+class ServerActor(config: ServerConfig) extends FSM[ServerActor.State, ServerActor.Data] {
 
-  import HttpServerActor._
+  import ServerActor._
 
   startWith(Starting, NoData)
 
@@ -93,7 +92,7 @@ class HttpServerActor extends FSM[HttpServerActor.State, HttpServerActor.Data] {
   initialize()
 }
 
-object HttpServerActor {
+object ServerActor {
 
   sealed trait State
   case object Starting extends State
@@ -106,5 +105,5 @@ object HttpServerActor {
   case class ChannelData(config: ServerConfig, boss: EventLoopGroup, worker: EventLoopGroup, channel: Channel) extends Data
 
 
-  def create(name: String)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props[HttpServerActor], name)
+  def create(name: String)(implicit factory: ActorRefFactory): ActorRef = factory.actorOf(Props[ServerActor], name)
 }

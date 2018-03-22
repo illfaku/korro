@@ -15,10 +15,11 @@
  */
 package com.github.illfaku.korro.config
 
+import com.github.illfaku.korro.util.configOptions
+
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import com.github.illfaku.korro.util.configOptions
+import scala.concurrent.duration.FiniteDuration
 
 sealed trait HttpInstruction
 
@@ -28,13 +29,13 @@ object HttpInstruction {
 
   case class MaxContentLength(length: Long) extends HttpInstruction
 
-  case class ContentAsFile(enabled: Boolean) extends HttpInstruction
+//  case class ContentAsFile(enabled: Boolean) extends HttpInstruction
 
-  case class FileContentRemoveDelay(delay: Duration) extends HttpInstruction
+//  case class FileContentRemoveDelay(delay: Duration) extends HttpInstruction
 
-  case class Compression(enabled: Boolean) extends HttpInstruction
+//  case class Compression(enabled: Boolean) extends HttpInstruction
 
-  case class CompressionLevel(level: Int) extends HttpInstruction
+//  case class CompressionLevel(level: Int) extends HttpInstruction
 
   case class MaxWsFramePayloadLength(length: Int) extends HttpInstruction
 
@@ -47,10 +48,10 @@ object HttpInstruction {
     List(
       config.findFiniteDuration("request-timeout").map(HttpInstruction.RequestTimeout),
       config.findBytes("max-content-length").map(HttpInstruction.MaxContentLength),
-      config.findBoolean("content-as-file").map(HttpInstruction.ContentAsFile),
-      config.findDuration("file-content-remove-delay").map(HttpInstruction.FileContentRemoveDelay),
-      config.findBoolean("compression").map(HttpInstruction.Compression),
-      config.findInt("compression-level").map(HttpInstruction.CompressionLevel),
+//      config.findBoolean("content-as-file").map(HttpInstruction.ContentAsFile),
+//      config.findDuration("file-content-remove-delay").map(HttpInstruction.FileContentRemoveDelay),
+//      config.findBoolean("compression").map(HttpInstruction.Compression),
+//      config.findInt("compression-level").map(HttpInstruction.CompressionLevel),
       config.findInt("max-ws-frame-payload-length").map(HttpInstruction.MaxWsFramePayloadLength),
       config.findString("ws-logger").map(HttpInstruction.WsLogger),
       config.findBoolean("simple-ws-logging").map(HttpInstruction.SimpleWsLogging)

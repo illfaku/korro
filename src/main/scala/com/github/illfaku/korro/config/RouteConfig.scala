@@ -30,7 +30,7 @@ import com.typesafe.config.Config
  * @param instructions Set of instructions for request handling.
  */
 case class RouteConfig(
-  actorPath: String,
+  actorPath: RouteActor,
   predicate: RequestPredicate = RequestPredicate.True,
   instructions: List[HttpInstruction] = Nil
 )
@@ -39,7 +39,7 @@ object RouteConfig {
 
   def extract(config: Config): RouteConfig = {
     RouteConfig(
-      config.getString("actor"),
+      RouteActorPath(config.getString("actor")),
       config.findConfig("predicate").map(RequestPredicate.extract).getOrElse(RequestPredicate.True),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
     )

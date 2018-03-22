@@ -15,15 +15,55 @@
  */
 package com.github.illfaku.korro.dto.ws
 
+import com.github.illfaku.korro.config.HttpInstruction
 import com.github.illfaku.korro.dto.{HttpParams, HttpRequest}
 
 import akka.actor.ActorRef
 
+import java.net.{MalformedURLException, URL}
+
 /**
  * Request for a WebSocket handshake.
  *
- * @param uri URI of a handshake request.
  * @param actor Actor that will process handshake response and WebSocket frames.
+ * @param uri URI of handshake request.
  * @param headers HTTP headers of a handshake request.
  */
-case class WsHandshakeRequest(uri: HttpRequest.Uri, actor: ActorRef, headers: HttpParams = HttpParams.empty)
+case class WsHandshakeRequest(
+  actor: ActorRef,
+  uri: HttpRequest.Uri = HttpRequest.Uri(""),
+  headers: HttpParams = HttpParams.empty
+) {
+
+  /**
+   * Creates [[com.github.illfaku.korro.dto.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
+   * Concatenates path from it with uri from this request.
+   */
+  def to(url: URL, instructions: List[HttpInstruction] = Nil): WsHandshakeRequest.Outgoing = {
+    val req = copy(uri = uri.withPrefix(url.getPath))
+    new WsHandshakeRequest.Outgoing(req, url, instructions)
+  }
+
+  /**
+   * @see [[to(URL)]]
+   * @throws java.net.MalformedURLException If URL is malformed.
+   */
+  @throws(classOf[MalformedURLException])
+  def to(url: String, instructions: List[HttpInstruction] = Nil): WsHandshakeRequest.Outgoing = {
+    to(new URL(url), instructions)
+  }
+}
+
+object WsHandshakeRequest {
+
+  /**
+   * Command for HTTP client created by `WsHandshakeRequest#to` methods.
+   */
+  class Outgoing private[korro] (val req: WsHandshakeRequest, val url: URL, val instructions: List[HttpInstruction])
+
+  private[korro] object Outgoing {
+    def unapply(out: Outgoing): Option[(WsHandshakeRequest, URL, List[HttpInstruction])] = {
+      Some(out.req, out.url, out.instructions)
+    }
+  }
+}

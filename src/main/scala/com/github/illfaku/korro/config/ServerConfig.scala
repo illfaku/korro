@@ -21,6 +21,7 @@ import com.typesafe.config.Config
 
 case class ServerConfig(
   port: Int = ServerConfig.Defaults.port,
+  nrOfThreads: Int = ServerConfig.Defaults.nrOfThreads,
   logger: String = ServerConfig.Defaults.logger,
   instructions: List[HttpInstruction] = Nil,
   routes: List[RouteConfig] = Nil
@@ -30,12 +31,14 @@ object ServerConfig {
 
   object Defaults {
     val port: Int = 8080
+    val nrOfThreads: Int = 0
     val logger: String = "korro-server"
   }
 
   def extract(config: Config): ServerConfig = {
     ServerConfig(
       config.findInt("port").getOrElse(Defaults.port),
+      config.findInt("nr-of-threads").getOrElse(Defaults.nrOfThreads),
       config.findString("logger").getOrElse(Defaults.logger),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil),
       config.findConfigList("routes").filter(_.hasPath("actor")).map(RouteConfig.extract)

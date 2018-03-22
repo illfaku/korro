@@ -13,20 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.server.config
+package com.github.illfaku.korro.config
 
-import com.github.illfaku.korro.util.config.extended
+import akka.actor.ActorRef
 
-import com.typesafe.config.Config
+sealed trait RouteActor
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class ServerConfig(val name: String, config: Config) {
-  val port = config.findInt("port").getOrElse(8080)
-  val workerGroupSize = config.findInt("worker-group-size").getOrElse(1)
-  val http = config.findConfig("HTTP").map(new StandardHttpConfig(_)).getOrElse(DefaultHttpConfig)
-  val ws = config.findConfig("WebSocket").map(new StandardWsConfig(_)).getOrElse(DefaultWsConfig)
-}
+case class RouteActorPath(path: String) extends RouteActor
+
+case class RouteActorRef(ref: ActorRef) extends RouteActor
