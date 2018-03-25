@@ -15,7 +15,6 @@
  */
 package com.github.illfaku.korro.config
 
-import com.github.illfaku.korro.dto.HttpRequest
 import com.github.illfaku.korro.util.configOptions
 
 import com.typesafe.config.Config
@@ -67,7 +66,7 @@ object RequestPredicate {
   /**
    * Checks request method equality.
    */
-  case class MethodIs(method: HttpRequest.Method) extends RequestPredicate
+  case class MethodIs(method: String) extends RequestPredicate
 
   /**
    * Checks request path equality.
@@ -109,43 +108,37 @@ object RequestPredicate {
    */
   case class HasHeaderValue(name: String, value: String) extends RequestPredicate
 
-  /**
-   * Checks if request is a WebSocket handshake or not.
-   */
-  case class IsWsHandshake(value: Boolean) extends RequestPredicate
-
 
   def extract(config: Config): RequestPredicate = {
     List(
-      config.findString("method-is").map(HttpRequest.Method(_)).map(RequestPredicate.MethodIs),
-      config.findString("path-is").map(RequestPredicate.PathIs),
-      config.findString("path-starts-with").map(RequestPredicate.PathStartsWith),
-      config.findString("path-ends-with").map(RequestPredicate.PathEndsWith),
-      config.findString("path-match").map(RequestPredicate.PathMatch),
+      config.findString("method-is").map(MethodIs),
+      config.findString("path-is").map(PathIs),
+      config.findString("path-starts-with").map(PathStartsWith),
+      config.findString("path-ends-with").map(PathEndsWith),
+      config.findString("path-match").map(PathMatch),
       config.findString("has-query-param").map(extractQueryPredicate),
       config.findStringList("has-any-query-param").map(extractQueryPredicate).reduceOption(orReduce),
       config.findStringList("has-all-query-params").map(extractQueryPredicate).reduceOption(andReduce),
       config.findString("has-header").map(extractHeaderPredicate),
       config.findStringList("has-any-header").map(extractHeaderPredicate).reduceOption(orReduce),
-      config.findStringList("has-all-headers").map(extractHeaderPredicate).reduceOption(andReduce),
-      config.findBoolean("is-ws-handshake").map(RequestPredicate.IsWsHandshake)
-    ).flatten.reduceOption(andReduce) getOrElse RequestPredicate.True
+      config.findStringList("has-all-headers").map(extractHeaderPredicate).reduceOption(andReduce)
+    ).flatten.reduceOption(andReduce) getOrElse True
   }
 
   private def extractQueryPredicate(config: String): RequestPredicate = {
     val parts = config.split("=", 2)
     val name = parts.head.trim
     parts.drop(1).headOption.map(_.trim)
-      .map(RequestPredicate.HasQueryParamValue(name, _))
-      .getOrElse(RequestPredicate.HasQueryParam(name))
+      .map(HasQueryParamValue(name, _))
+      .getOrElse(HasQueryParam(name))
   }
 
   private def extractHeaderPredicate(config: String): RequestPredicate = {
     val parts = config.split(":", 2)
     val name = parts.head.trim
     parts.drop(1).headOption.map(_.trim)
-      .map(RequestPredicate.HasHeaderValue(name, _))
-      .getOrElse(RequestPredicate.HasHeader(name))
+      .map(HasHeaderValue(name, _))
+      .getOrElse(HasHeader(name))
   }
 
   private val orReduce: (RequestPredicate, RequestPredicate) => RequestPredicate = _ || _

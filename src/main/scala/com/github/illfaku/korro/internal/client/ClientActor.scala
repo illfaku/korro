@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.client.actor
+package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.config.ClientConfig
 import com.github.illfaku.korro.dto.HttpRequest
 import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
-
+import com.github.illfaku.korro.internal.common.ChannelFutureExt
 import akka.actor._
+import io.netty.bootstrap.Bootstrap
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.nio.NioSocketChannel
+
+import java.net.URL
 
 class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
@@ -32,12 +36,14 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
   private var group: EventLoopGroup = _
 
   override def preStart(): Unit = {
+    super.preStart()
     group = new NioEventLoopGroup(config.nettyThreads, executor)
     log.debug("Korro | Started client at path {}.", self.path.toStringWithoutAddress)
   }
 
   override def postStop(): Unit = {
-    if (group != null) group.shutdownGracefully()
+    group.shutdownGracefully()
+    super.postStop()
   }
 
   override def receive = {
@@ -52,10 +58,14 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
       case None => sender ! Status.Failure(new IllegalStateException("URL is not configured."))
     }
 
-    case outgoing: HttpRequest.Outgoing =>
-      context.actorOf(ClientRequestActor.props(config, group)) forward outgoing
+    case HttpRequest.Outgoing(req, url, instructions) =>
+      val reqConfig = config.copy(url = Some(url), instructions = config.instructions ::: instructions)
+      new Bootstrap()
+        .group(group)
+        .channel(classOf[NioSocketChannel])
+        .handler(new HttpChannelInitializer(reqConfig, req, sender))
+        .connect(url.getHost, getPort(url))
 
-    case outgoing: WsHandshakeRequest.Outgoing =>
-      context.actorOf(ClientRequestActor.props(config, group)) forward outgoing
+    case WsHandshakeRequest.Outgoing(req, url, instructions) => ???
   }
 }

@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.dto
+package com.github.illfaku.korro.internal
 
-object HttpVersion {
+import java.net.URL
 
-  /**
-   * HTTP/1.0
-   */
-  val Http10 = new HttpVersion("HTTP", 1, 0)
+package object client {
 
-  /**
-   * HTTP/1.1
-   */
-  val Http11 = new HttpVersion("HTTP", 1, 1)
-}
+  private[client] case object TimedOut
 
-class HttpVersion private[korro] (val protocol: String, val major: Int, val minor: Int) {
-  override val toString = s"$protocol/$major.$minor"
+  private[client] def getPort(url: URL): Int = {
+    if (url.getPort == -1) {
+      if (isSsl(url)) 443 else 80
+    } else {
+      url.getPort
+    }
+  }
+
+  private[client] def isSsl(url: URL): Boolean = {
+    url.getProtocol.equalsIgnoreCase("https") || url.getProtocol.equalsIgnoreCase("wss")
+  }
 }

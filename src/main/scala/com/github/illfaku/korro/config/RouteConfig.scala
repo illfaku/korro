@@ -22,26 +22,28 @@ import com.typesafe.config.Config
 /**
  * Configuration for router to set actor at specified actor path as handler of matched requests.<br>
  * It can be sent to server actor to add new route.<br>
- * To remove all routes of an actor from router your should send `RouteConfig` with needed actor path and
+ * To remove all routes of an actor from router your should send `RouteConfig` with needed actor ref/path and
  * `predicate = RequestPredicate.False`.
  *
- * @param actorPath Actor path.
+ * @param actor Destination actor.
  * @param predicate Predicate to test requests against.
  * @param instructions Set of instructions for request handling.
  */
 case class RouteConfig(
-  actorPath: RouteActor,
+  actor: RouteActor,
   predicate: RequestPredicate = RequestPredicate.True,
   instructions: List[HttpInstruction] = Nil
 )
 
 object RouteConfig {
 
-  def extract(config: Config): RouteConfig = {
-    RouteConfig(
-      RouteActorPath(config.getString("actor")),
-      config.findConfig("predicate").map(RequestPredicate.extract).getOrElse(RequestPredicate.True),
-      config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
-    )
+  def extract(config: Config): Option[RouteConfig] = {
+    config.findString("actor") map { actorPath =>
+      RouteConfig(
+        RouteActorPath(actorPath),
+        config.findConfig("predicate").map(RequestPredicate.extract).getOrElse(RequestPredicate.True),
+        config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
+      )
+    }
   }
 }

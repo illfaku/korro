@@ -20,6 +20,7 @@ import com.github.illfaku.korro.util.configOptions
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 
 sealed trait HttpInstruction
 
@@ -27,34 +28,32 @@ object HttpInstruction {
 
   case class RequestTimeout(timeout: FiniteDuration) extends HttpInstruction
 
-  case class MaxContentLength(length: Long) extends HttpInstruction
-
-//  case class ContentAsFile(enabled: Boolean) extends HttpInstruction
-
-//  case class FileContentRemoveDelay(delay: Duration) extends HttpInstruction
-
-//  case class Compression(enabled: Boolean) extends HttpInstruction
-
-//  case class CompressionLevel(level: Int) extends HttpInstruction
+  case class MaxContentLength(length: Int) extends HttpInstruction
 
   case class MaxWsFramePayloadLength(length: Int) extends HttpInstruction
 
-  case class WsLogger(name: String) extends HttpInstruction
+  case class HttpLogger(name: String) extends HttpInstruction
 
-  case class SimpleWsLogging(enabled: Boolean) extends HttpInstruction
+  case class HttpContentLogging(format: BytesLoggingFormat.Value) extends HttpInstruction
+
+
+  object BytesLoggingFormat extends Enumeration {
+
+    val Off = Value("off")
+    val Text = Value("text")
+    val Base64 = Value("base64")
+
+    def get(name: String): Option[Value] = Try(withName(name)).toOption
+  }
 
 
   def extract(config: Config): List[HttpInstruction] = {
     List(
-      config.findFiniteDuration("request-timeout").map(HttpInstruction.RequestTimeout),
-      config.findBytes("max-content-length").map(HttpInstruction.MaxContentLength),
-//      config.findBoolean("content-as-file").map(HttpInstruction.ContentAsFile),
-//      config.findDuration("file-content-remove-delay").map(HttpInstruction.FileContentRemoveDelay),
-//      config.findBoolean("compression").map(HttpInstruction.Compression),
-//      config.findInt("compression-level").map(HttpInstruction.CompressionLevel),
-      config.findInt("max-ws-frame-payload-length").map(HttpInstruction.MaxWsFramePayloadLength),
-      config.findString("ws-logger").map(HttpInstruction.WsLogger),
-      config.findBoolean("simple-ws-logging").map(HttpInstruction.SimpleWsLogging)
+      config.findFiniteDuration("request-timeout").map(RequestTimeout),
+      config.findInt("max-content-length").map(MaxContentLength),
+      config.findInt("max-ws-frame-payload-length").map(MaxWsFramePayloadLength),
+      config.findString("http-logger").map(HttpLogger),
+      config.findString("http-content-logging").flatMap(BytesLoggingFormat.get).map(HttpContentLogging)
     ).flatten
   }
 }

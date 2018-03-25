@@ -16,68 +16,22 @@
 package com.github.illfaku.korro.internal
 
 import io.netty.buffer.{ByteBuf, Unpooled}
-import io.netty.channel.{Channel, ChannelFuture, ChannelFutureListener}
+import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 
-import scala.util.{Failure, Success, Try}
-
-/**
- * Common utilities and channel handlers used in both server and client implementations.
- */
 package object common {
 
-  /**
-   * Additional methods for [[ChannelFuture]] which make work with it a bit easier and more pretty.
-   *
-   * @param future Original [[ChannelFuture]] object.
-   */
   implicit class ChannelFutureExt(future: ChannelFuture) {
 
-    /**
-     * Adds listener to this future to execute provided function when the future completes.
-     *
-     * @param op Function to execute.
-     */
-    def foreach(op: ChannelFuture => Unit): Unit = future.addListener(new ChannelFutureListener {
-      override def operationComplete(f: ChannelFuture): Unit = op(f)
-    })
+    def foreach(op: ChannelFuture => Unit): Unit = future.addListener(op(_))
 
-    /**
-     * Adds listener to this future to execute provided function when the future completes.
-     *
-     * @param op Function to execute.
-     */
-    def onComplete(op: Try[Channel] => Unit): Unit = foreach { f =>
-      val t = if (f.isSuccess) Success(f.channel) else Failure(f.cause)
-      op(t)
-    }
-
-    /**
-     * Adds listener to this future to execute provided function when the future successfully completes.
-     *
-     * @param op Function to execute.
-     */
     def onSuccess(op: ChannelFuture => Unit): Unit = foreach(f => if (f.isSuccess) op(f))
 
-    /**
-     * Adds listener to this future to execute provided function when the future unsuccessfully completes.
-     *
-     * @param op Function to execute.
-     */
     def onFailure(op: ChannelFuture => Unit): Unit = foreach(f => if (!f.isSuccess) op(f))
 
-    /**
-     * Closes channel associated with this future when the future completes.
-     */
     def closeChannel(): Unit = future.addListener(ChannelFutureListener.CLOSE)
   }
 
-  /**
-   * Extracts bytes from [[ByteBuf]] as byte array.
-   *
-   * @param buf ByteBuf to extract bytes from.
-   * @return Bytes extracted from ByteBuf.
-   */
-  implicit def toBytes(buf: ByteBuf): Array[Byte] = {
+  implicit def byteBuf2bytes(buf: ByteBuf): Array[Byte] = {
     if (buf.isReadable) {
       val bytes = new Array[Byte](buf.readableBytes)
       buf.getBytes(0, bytes)
@@ -87,11 +41,5 @@ package object common {
     }
   }
 
-  /**
-   * Wraps provided byte array with unpooled byte buf.
-   *
-   * @param bytes Byte array to wrap.
-   * @return Unpooled wrapped byte buf.
-   */
-  implicit def toByteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+  implicit def bytes2byteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
 }

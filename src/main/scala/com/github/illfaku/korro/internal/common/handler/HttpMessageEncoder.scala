@@ -48,8 +48,8 @@ object HttpMessageEncoder extends MessageToMessageEncoder[HttpMessage] {
 
     val content = msg.content match {
 
-      case c: BytesHttpContent if c.size > 0 =>
-        netty.HttpUtil.setContentLength(message, c.size)
+      case c: BytesHttpContent if c.contentLength > 0 =>
+        netty.HttpUtil.setContentLength(message, c.contentLength)
         setContentType(message, msg)
         Some(new netty.DefaultHttpContent(c.bytes))
 

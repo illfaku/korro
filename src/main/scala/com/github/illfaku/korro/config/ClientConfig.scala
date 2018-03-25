@@ -25,7 +25,7 @@ case class ClientConfig(
   url: Option[URL] = None,
   nettyDispatcher: Option[String] = None,
   nettyThreads: Int = ClientConfig.Defaults.nettyThreads,
-  logger: String = ClientConfig.Defaults.logger,
+  nettyLogger: String = ClientConfig.Defaults.nettyLogger,
   instructions: List[HttpInstruction] = Nil
 )
 
@@ -33,7 +33,7 @@ object ClientConfig {
 
   object Defaults {
     val nettyThreads: Int = 1
-    val logger: String = "korro-client"
+    val nettyLogger: String = "korro-client"
   }
 
   def extract(config: Config): ClientConfig = {
@@ -41,7 +41,7 @@ object ClientConfig {
       config.findURL("url"),
       config.findString("netty-dispatcher"),
       config.findInt("netty-threads").getOrElse(Defaults.nettyThreads),
-      config.findString("logger").getOrElse(Defaults.logger),
+      config.findString("netty-logger").getOrElse(Defaults.nettyLogger),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
     )
   }

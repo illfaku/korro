@@ -32,7 +32,7 @@ object ServerConfig {
   object Defaults {
     val port: Int = 8080
     val nrOfThreads: Int = 0
-    val logger: String = "korro-server"
+    val logger: String = "korro-netty"
   }
 
   def extract(config: Config): ServerConfig = {
@@ -41,7 +41,7 @@ object ServerConfig {
       config.findInt("nr-of-threads").getOrElse(Defaults.nrOfThreads),
       config.findString("logger").getOrElse(Defaults.logger),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil),
-      config.findConfigList("routes").filter(_.hasPath("actor")).map(RouteConfig.extract)
+      config.findConfigList("routes").flatMap(RouteConfig.extract)
     )
   }
 }

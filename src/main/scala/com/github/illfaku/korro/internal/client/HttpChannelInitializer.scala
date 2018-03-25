@@ -13,43 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.client.handler
+package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.config.ClientConfig
-import com.github.illfaku.korro.dto.{HttpRequest, HttpResponse}
-
-import org.oxydev.korro.api.HttpResponse
+import com.github.illfaku.korro.dto.HttpRequest
+import com.github.illfaku.korro.internal.common.{HttpInstructions, HttpLoggingHandler}
 import com.github.illfaku.korro.internal.common.handler.HttpMessageCodec
 
+import akka.actor.ActorRef
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.http.HttpClientCodec
+import io.netty.handler.codec.http.{HttpClientCodec, HttpObjectAggregator}
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 
-import java.net.URL
-
-import scala.concurrent.Promise
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class HttpChannelInitializer(config: ClientConfig, url: URL, req: HttpRequest, promise: Promise[HttpResponse])
+private[client] class HttpChannelInitializer(config: ClientConfig, req: HttpRequest, originator: ActorRef)
   extends ChannelInitializer[SocketChannel] {
 
   override def initChannel(ch: SocketChannel): Unit = {
 
-    if (url.getProtocol equalsIgnoreCase "https") {
+    val instructions = HttpInstructions().merge(config.instructions)
+
+    if (config.url.exists(isSsl)) {
       val sslCtx = SslContextBuilder.forClient.trustManager(InsecureTrustManagerFactory.INSTANCE).build
       ch.pipeline.addLast("ssl", sslCtx.newHandler(ch.alloc()))
     }
 
-    ch.pipeline.addLast("http-codec", new HttpClientCodec)
-    ch.pipeline.addLast("logging", new LoggingHandler(config.logger, LogLevel.TRACE))
-    ch.pipeline.addLast("korro-codec", new HttpMessageCodec(65536L))
-    ch.pipeline.addLast("http", new HttpChannelHandler(req, promise, config.requestTimeout))
+    ch.pipeline.addLast("netty-http-codec", new HttpClientCodec)
+    ch.pipeline.addLast("netty-logger", new LoggingHandler(config.nettyLogger, LogLevel.TRACE))
+    ch.pipeline.addLast("korro-logger", new HttpLoggingHandler(instructions))
+    ch.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(instructions.maxContentLength))
+    ch.pipeline.addLast("korro-response-decoder", HttpResponseDecoder)
+    ch.pipeline.addLast("korro-request-encoder", HttpRequestEncoder)
+    ch.pipeline.addLast("korro-handler", new HttpChannelHandler(req, originator, instructions))
   }
 }

@@ -30,6 +30,11 @@ sealed trait HttpContent {
    * Optional content type from/for HTTP message headers.
    */
   def contentType: Option[ContentType]
+
+  /**
+   * Content length for HTTP message headers.
+   */
+  def contentLength: Long
 }
 
 /**
@@ -43,7 +48,7 @@ case class BytesHttpContent(bytes: Array[Byte], contentType: Option[ContentType]
   /**
    * Length of this content.
    */
-  val size: Long = bytes.length
+  override val contentLength: Long = bytes.length
 
   /**
    * Converts binary data of this content to String using charset from content type or `UTF-8` if there is no one.
@@ -55,7 +60,7 @@ case class BytesHttpContent(bytes: Array[Byte], contentType: Option[ContentType]
    */
   def string(charset: Charset): String = new String(bytes, charset)
 
-  override val toString = s"Bytes(contentType=$contentType, size=$size)"
+  override val toString = s"Bytes(contentType=$contentType, size=$contentLength)"
 }
 
 /**
@@ -64,8 +69,8 @@ case class BytesHttpContent(bytes: Array[Byte], contentType: Option[ContentType]
  * @param path Path to file storing data of HTTP content.
  * @param contentType Optional content type from/for HTTP message headers.
  */
-case class FileHttpContent(path: String, size: Long, contentType: Option[ContentType]) extends HttpContent {
-  override val toString = s"File(contentType=$contentType, size=$size, path=$path)"
+case class FileHttpContent(path: String, contentLength: Long, contentType: Option[ContentType]) extends HttpContent {
+  override val toString = s"File(contentType=$contentType, size=$contentLength, path=$path)"
 }
 
 /**

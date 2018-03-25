@@ -34,10 +34,5 @@ object HttpHeaders {
     val WwwAuthenticate = "WWW-Authenticate"
   }
 
-  object Values {
-    val Upgrade = "Upgrade"
-    val WebSocket = "WebSocket"
-  }
-
   def unapply(msg: HttpMessage): Option[HttpParams] = Some(msg.headers)
 }

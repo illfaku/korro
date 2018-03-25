@@ -15,7 +15,7 @@
  */
 package com.github.illfaku.korro.internal.server.route
 
-import org.oxydev.korro.api.config.ServerConfig
+import com.github.illfaku.korro.config.ServerConfig
 
 import scala.concurrent.duration._
 

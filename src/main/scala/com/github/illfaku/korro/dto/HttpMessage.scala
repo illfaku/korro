@@ -16,7 +16,6 @@
 package com.github.illfaku.korro.dto
 
 import com.github.illfaku.korro.config.HttpInstruction
-import com.github.illfaku.korro.dto
 import com.github.illfaku.korro.dto.HttpHeaders.Names.{AcceptLanguage, Host}
 import com.github.illfaku.korro.util.{Locales, QueryStringCodec}
 
@@ -56,28 +55,40 @@ case class HttpRequest(
 ) extends HttpMessage {
 
   /**
-   * Locale parsed from `Accept-Language` header using [[Locales#parse Locales.parse]].
+   * Locale parsed from `Accept-Language` header using [[com.github.illfaku.korro.util.Locales#parse Locales.parse]].
    */
   implicit val locale: Locale = headers.get(AcceptLanguage).map(Locales.parse).getOrElse(Locale.getDefault)
 
 
   /**
    * Creates [[com.github.illfaku.korro.dto.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
-   * Adds `Host` header extracted from provided URL and concatenates path from it with uri from this request.
+   * Adds `Host` header extracted from provided URL (if not already present)
+   * and concatenates path from it with uri from this request.
+   * @param url Destination URL.
+   * @param instructions Additional instructions.
    */
   def to(url: URL, instructions: List[HttpInstruction] = Nil): HttpRequest.Outgoing = {
-    val host =
-      if (url.getPort == -1) url.getHost
-      else url.getHost + ":" + url.getPort
-    val req = copy(uri = uri.withPrefix(url.getPath), headers = headers + (Host -> host))
+    val newHeaders =
+      if (!headers.contains(Host)) {
+        val host =
+          if (url.getPort == -1) url.getHost
+          else url.getHost + ":" + url.getPort
+        headers + (Host -> host)
+      } else {
+        headers
+      }
+    val req = copy(uri = uri.withPrefix(url.getPath), headers = newHeaders)
     new HttpRequest.Outgoing(req, url, instructions)
   }
 
   /**
-   * @see [[to(URL)]]
-   * @throws java.net.MalformedURLException If URL is malformed.
+   * Creates [[com.github.illfaku.korro.dto.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
+   * Adds `Host` header extracted from provided URL (if not already present)
+   * and concatenates path from it with uri from this request.
+   * @param url Destination URL.
+   * @param instructions Additional instructions.
    */
-  @throws(classOf[MalformedURLException])
+  @throws[MalformedURLException]
   def to(url: String, instructions: List[HttpInstruction] = Nil): HttpRequest.Outgoing = to(new URL(url), instructions)
 }
 
@@ -164,9 +175,9 @@ object HttpRequest {
 
   /**
    * HTTP request URI representation.
-   * @param pathWithQuery path with URL-encoded query
+   * @param pathWithQuery Path with URL-encoded query
    */
-  class Uri(val pathWithQuery: String) {
+  class Uri(pathWithQuery: String) {
 
     lazy val (path: String, query: String) = {
       val pos = pathWithQuery.indexOf('?')
@@ -176,6 +187,17 @@ object HttpRequest {
     lazy val params = new HttpParams(QueryStringCodec decode query)
 
     def withPrefix(prefix: String): Uri = Uri(prefix + pathWithQuery)
+
+
+    override val toString = pathWithQuery
+
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Uri => pathWithQuery == that.pathWithQuery
+      case _ => false
+    }
+
+    override def hashCode: Int = pathWithQuery.hashCode
   }
 
   /**
@@ -251,7 +273,7 @@ case class HttpResponse(
 object HttpResponse {
 
   def Redirect(status: Status, uri: HttpRequest.Uri, headers: HttpParams = HttpParams.empty): HttpResponse = {
-    status(headers = headers + (HttpHeaders.Names.Location -> uri.pathWithQuery))
+    status(headers = headers + (HttpHeaders.Names.Location -> uri.toString))
   }
 
   object Status {

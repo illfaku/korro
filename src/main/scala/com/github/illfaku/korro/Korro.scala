@@ -18,7 +18,7 @@ package com.github.illfaku.korro
 import com.github.illfaku.korro.config._
 import com.github.illfaku.korro.dto._
 import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
-import com.github.illfaku.korro.internal.client.actor.ClientActor
+import com.github.illfaku.korro.internal.client.ClientActor
 import com.github.illfaku.korro.internal.server.actor.ServerActor
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
@@ -69,9 +69,7 @@ object Korro {
    * @param name Actor name.
    * @return Actor reference.
    */
-  def client(name: String)(implicit factory: ActorRefFactory): Client = {
-    new Client(factory.actorOf(clientProps, name))
-  }
+  def client(name: String)(implicit factory: ActorRefFactory): Client = client(name, ClientConfig())
 
   /**
    * Starts client actor by given name using your ActorRefFactory.
@@ -80,15 +78,12 @@ object Korro {
    * @return Actor reference.
    */
   def client(name: String, config: ClientConfig)(implicit factory: ActorRefFactory): Client = {
+    implicit val timeout: Timeout = config.instructions
+      .find(_.isInstanceOf[HttpInstruction.RequestTimeout])
+      .map(_.asInstanceOf[HttpInstruction.RequestTimeout].timeout.plus(1 second))
+      .getOrElse(6 seconds)
     new Client(factory.actorOf(clientProps(config), name))
   }
-
-  /**
-   * Creates props with which you can start client actor by your name using your ActorRefFactory with default
-   * configuration.
-   * @return Props for actor creation.
-   */
-  def clientProps: Props = clientProps(ClientConfig())
 
   /**
    * Creates props with which you can start client actor by your name using your ActorRefFactory.
@@ -103,19 +98,18 @@ object Korro {
    * and initiate WebSocket connections.
    * @param ref Client actor reference.
    */
-  class Client(val ref: ActorRef) {
+  class Client(val ref: ActorRef)(implicit timeout: Timeout) {
 
     /**
      * Sends GET request using HTTP/1.1.
      * @param path URI path.
      * @param params URI parameters.
      * @param headers HTTP headers.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
     def get(path: String = "", params: HttpParams = HttpParams.empty, headers: HttpParams = HttpParams.empty)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       send(HttpRequest.Method.Get(path, params, headers = headers))
     }
 
@@ -124,12 +118,11 @@ object Korro {
      * @param path URI path.
      * @param content Request body.
      * @param headers HTTP headers.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
     def post(path: String = "", content: HttpContent = HttpContent.empty, headers: HttpParams = HttpParams.empty)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       send(HttpRequest.Method.Post(path, content = content, headers = headers))
     }
 
@@ -138,12 +131,11 @@ object Korro {
      * @param path URI path.
      * @param content Request body.
      * @param headers HTTP headers.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
     def put(path: String = "", content: HttpContent = HttpContent.empty, headers: HttpParams = HttpParams.empty)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       send(HttpRequest.Method.Put(path, content = content, headers = headers))
     }
 
@@ -152,12 +144,11 @@ object Korro {
      * @param path URI path.
      * @param params URI parameters.
      * @param headers HTTP headers.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
     def delete(path: String = "", params: HttpParams = HttpParams.empty, headers: HttpParams = HttpParams.empty)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       send(HttpRequest.Method.Delete(path, params, headers = headers))
     }
 
@@ -165,12 +156,10 @@ object Korro {
     /**
      * Sends request using HTTP/1.1.
      * @param req HTTP request.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
-    def send(req: HttpRequest)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+    def send(req: HttpRequest)(implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       (ref ? req).mapTo[HttpResponse]
     }
 
@@ -179,25 +168,26 @@ object Korro {
      * @param req HTTP request.
      * @param url Destination URL.
      * @param instructions Additional instructions.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
     def send(req: HttpRequest, url: URL, instructions: List[HttpInstruction] = Nil)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
       send(req to (url, instructions))
     }
 
     /**
      * Sends request using HTTP/1.1.
      * @param req HTTP request with URL and additional instructions.
-     * @param timeout Ask timeout.
      * @param sender Message originator.
      * @return Future of HTTP response.
      */
-    def send(req: HttpRequest.Outgoing)
-      (implicit timeout: Timeout = 5 seconds, sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
-      (ref ? req).mapTo[HttpResponse]
+    def send(req: HttpRequest.Outgoing)(implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+      val timeoutOverride = req.instructions
+        .find(_.isInstanceOf[HttpInstruction.RequestTimeout])
+        .map(_.asInstanceOf[HttpInstruction.RequestTimeout].timeout.plus(1 second)).map(Timeout(_))
+        .getOrElse(timeout)
+      ref.?(req)(timeoutOverride, sender).mapTo[HttpResponse]
     }
 
 
