@@ -38,7 +38,7 @@ object Korro {
   /**
    * Starts server actor by given name using your ActorRefFactory.
    * @param name Actor name.
-   * @param handler Actor that will handle all requests.
+   * @param handler Actor that will handle requests not matched in route config.
    * @param config Configuration of HTTP server.
    * @return Actor reference.
    */

@@ -41,7 +41,9 @@ object RouteConfig {
     config.findString("actor") map { actorPath =>
       RouteConfig(
         RouteActorPath(actorPath),
-        config.findConfig("predicate").map(RequestPredicate.extract).getOrElse(RequestPredicate.True),
+        config.findConfig("predicate").map(RequestPredicate.extract)
+          .orElse(config.findString("predicate").map(RequestPredicate.parse))
+          .getOrElse(RequestPredicate.True),
         config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil)
       )
     }

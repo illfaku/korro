@@ -144,4 +144,23 @@ object RequestPredicate {
   private val orReduce: (RequestPredicate, RequestPredicate) => RequestPredicate = _ || _
 
   private val andReduce: (RequestPredicate, RequestPredicate) => RequestPredicate = _ && _
+
+
+  def parse(predicate: String): RequestPredicate = {
+    val parts = predicate.trim.split("\\s+")
+    if (parts.length >= 3) {
+      parts(0).split("\\|").map(MethodIs).reduce(orReduce) && parsePathPredicate(parts(1), parts(2))
+    } else {
+      False
+    }
+  }
+
+  private def parsePathPredicate(kind: String, path: String): RequestPredicate = kind match {
+    case "!" => PathIs(path)
+    case "^" => PathStartsWith(path)
+    case "$" => PathEndsWith(path)
+    case "*" => PathMatch(path)
+    case "#" => PathMatch(path.replace("#", "[^/]+"))
+    case _ => False
+  }
 }
