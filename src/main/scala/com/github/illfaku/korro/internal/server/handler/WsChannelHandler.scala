@@ -16,7 +16,7 @@
 package com.github.illfaku.korro.internal.server.handler
 
 import org.oxydev.korro.api.ws.WsFrame
-import com.github.illfaku.korro.internal.server.actor.{ServerActor, WsMessageActor}
+import com.github.illfaku.korro.internal.server.actor.ServerActor
 import com.github.illfaku.korro.util.logging.Logging
 import akka.actor.{ActorRef, PoisonPill}
 import akka.pattern.ask

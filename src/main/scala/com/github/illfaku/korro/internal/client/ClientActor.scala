@@ -18,16 +18,18 @@ package com.github.illfaku.korro.internal.client
 import com.github.illfaku.korro.config.ClientConfig
 import com.github.illfaku.korro.dto.HttpRequest
 import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
-import com.github.illfaku.korro.internal.common.ChannelFutureExt
+import com.github.illfaku.korro.internal.common.WsActorFactory
+
 import akka.actor._
 import io.netty.bootstrap.Bootstrap
-import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
+import io.netty.channel.{ChannelFuture, ChannelInitializer, EventLoopGroup}
 
-import java.net.URL
+import java.net.{URI, URL}
 
-class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
+class ClientActor(config: ClientConfig) extends Actor with ActorLogging with WsActorFactory {
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -38,7 +40,7 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
   override def preStart(): Unit = {
     super.preStart()
     group = new NioEventLoopGroup(config.nettyThreads, executor)
-    log.debug("Korro | Started client at path {}.", self.path.toStringWithoutAddress)
+    log.debug("Korro | Started client at {}.", self.path.toStringWithoutAddress)
   }
 
   override def postStop(): Unit = {
@@ -46,7 +48,7 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
     super.postStop()
   }
 
-  override def receive = {
+  override def receive = wsActorCreation orElse {
 
     case req: HttpRequest => config.url match {
       case Some(url) => self forward (req to url)
@@ -60,12 +62,19 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging {
 
     case HttpRequest.Outgoing(req, url, instructions) =>
       val reqConfig = config.copy(url = Some(url), instructions = config.instructions ::: instructions)
-      new Bootstrap()
-        .group(group)
-        .channel(classOf[NioSocketChannel])
-        .handler(new HttpChannelInitializer(reqConfig, req, sender))
-        .connect(url.getHost, getPort(url))
+      connect(url, new HttpChannelInitializer(reqConfig, req, sender))
 
-    case WsHandshakeRequest.Outgoing(req, url, instructions) => ???
+    case WsHandshakeRequest.Outgoing(WsHandshakeRequest(inActor, uri, headers), url, instructions) =>
+      val wsUri = new URI(url.getProtocol, null, url.getHost, url.getPort, uri.path, uri.query, null)
+      val reqConfig = config.copy(url = Some(url), instructions = config.instructions ::: instructions)
+      connect(url, new WsChannelInitializer(self, reqConfig, wsUri, headers, inActor))
+  }
+
+  private def connect(url: URL, initializer: ChannelInitializer[SocketChannel]): ChannelFuture = {
+    new Bootstrap()
+      .group(group)
+      .channel(classOf[NioSocketChannel])
+      .handler(initializer)
+      .connect(url.getHost, getPort(url))
   }
 }

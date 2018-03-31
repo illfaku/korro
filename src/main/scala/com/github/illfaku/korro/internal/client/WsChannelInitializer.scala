@@ -16,21 +16,35 @@
 package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.config.ClientConfig
-import com.github.illfaku.korro.dto.HttpRequest
-import com.github.illfaku.korro.internal.common.{HttpInstructions, HttpLoggingHandler}
+import com.github.illfaku.korro.dto.HttpParams
+import com.github.illfaku.korro.internal.common.{HttpInstructions, HttpLoggingHandler, WsMessageCodec}
 
 import akka.actor.ActorRef
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
-import io.netty.handler.codec.http.{HttpClientCodec, HttpObjectAggregator}
+import io.netty.handler.codec.http.websocketx.{WebSocketClientProtocolHandler, WebSocketFrameAggregator, WebSocketVersion}
+import io.netty.handler.codec.http.{DefaultHttpHeaders, HttpClientCodec, HttpObjectAggregator}
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 
-private[client] class HttpChannelInitializer(config: ClientConfig, req: HttpRequest, originator: ActorRef)
-  extends ChannelInitializer[SocketChannel] {
+import java.net.URI
+
+private[client] class WsChannelInitializer(
+  parent: ActorRef,
+  config: ClientConfig,
+  uri: URI,
+  headers: HttpParams,
+  inActor: ActorRef
+) extends ChannelInitializer[SocketChannel] {
 
   private val instructions = HttpInstructions().merge(config.instructions)
+
+  private val customHeaders = {
+    val nettyHeaders = new DefaultHttpHeaders()
+    headers.entries.foreach(h => nettyHeaders.add(h._1, h._2))
+    nettyHeaders
+  }
 
   override def initChannel(ch: SocketChannel): Unit = {
 
@@ -43,8 +57,11 @@ private[client] class HttpChannelInitializer(config: ClientConfig, req: HttpRequ
     ch.pipeline.addLast("netty-logger", new LoggingHandler(config.nettyLogger, LogLevel.TRACE))
     ch.pipeline.addLast("korro-logger", new HttpLoggingHandler(instructions))
     ch.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(instructions.maxContentLength))
-    ch.pipeline.addLast("korro-response-decoder", HttpResponseDecoder)
-    ch.pipeline.addLast("korro-request-encoder", HttpRequestEncoder)
-    ch.pipeline.addLast("korro-handler", new HttpChannelHandler(req, originator, instructions))
+    ch.pipeline.addLast("netty-ws-handler", new WebSocketClientProtocolHandler(
+      uri, WebSocketVersion.V13, null, true, customHeaders, instructions.maxWsFramePayloadLength, false
+    ))
+    ch.pipeline.addLast("netty-ws-aggregator", new WebSocketFrameAggregator(instructions.maxContentLength))
+    ch.pipeline.addLast("korro-ws-codec", WsMessageCodec)
+    ch.pipeline.addLast("korro-handler", new WsChannelHandler(parent, inActor))
   }
 }
