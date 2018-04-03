@@ -16,7 +16,7 @@
 package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.dto._
-import com.github.illfaku.korro.internal.common.{HttpHeadersCodec, byteBuf2bytes}
+import com.github.illfaku.korro.internal.common.{HttpContentCodec, HttpHeadersCodec}
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
@@ -35,7 +35,6 @@ private[client] object HttpResponseDecoder extends MessageToMessageDecoder[FullH
   }
 
   private def decodeResponse(msg: FullHttpResponse): HttpResponse = {
-    val headers = HttpHeadersCodec.decode(msg.headers)
     HttpResponse(
       new HttpVersion(
         msg.protocolVersion.protocolName,
@@ -43,8 +42,8 @@ private[client] object HttpResponseDecoder extends MessageToMessageDecoder[FullH
         msg.protocolVersion.minorVersion
       ),
       HttpResponse.Status(msg.status.code, msg.status.reasonPhrase),
-      headers,
-      HttpContent.Bytes(msg.content, headers.get(HttpHeaders.Names.ContentType).flatMap(ContentType.parse))
+      HttpHeadersCodec.decode(msg.headers),
+      HttpContentCodec.decode(msg.content, msg.headers)
     )
   }
 }

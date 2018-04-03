@@ -15,15 +15,13 @@
  */
 package com.github.illfaku.korro.internal.server
 
-import com.github.illfaku.korro.dto._
-import com.github.illfaku.korro.internal.common.{HttpHeadersCodec, bytes2byteBuf}
+import com.github.illfaku.korro.dto.HttpResponse
+import com.github.illfaku.korro.internal.common.{HttpContentCodec, HttpHeadersCodec}
 
 import io.netty.channel.ChannelHandler.Sharable
-import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}
-import io.netty.handler.codec.http.DefaultHttpResponse
-import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
-
-import java.io.File
+import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.MessageToMessageEncoder
+import io.netty.handler.codec.http.{DefaultHttpResponse, HttpResponseStatus, HttpVersion}
 
 @Sharable
 private[server] object HttpResponseEncoder extends MessageToMessageEncoder[HttpResponse] {
@@ -31,22 +29,11 @@ private[server] object HttpResponseEncoder extends MessageToMessageEncoder[HttpR
   override def encode(ctx: ChannelHandlerContext, msg: HttpResponse, out: java.util.List[AnyRef]): Unit = {
 
     out add new DefaultHttpResponse(
-      netty.HttpVersion.valueOf(msg.version.toString),
-      netty.HttpResponseStatus.valueOf(msg.status.code, msg.status.reason),
+      HttpVersion.valueOf(msg.version.toString),
+      HttpResponseStatus.valueOf(msg.status.code, msg.status.reason),
       HttpHeadersCodec.encode(msg.headers, msg.content)
     )
 
-    msg.content match {
-
-      case BytesHttpContent(bytes, _) if bytes.nonEmpty =>
-        out add new netty.DefaultLastHttpContent(bytes)
-
-      case FileHttpContent(path, size, _) if size > 0 =>
-        out add new DefaultFileRegion(new File(path), 0, size)
-        out add netty.LastHttpContent.EMPTY_LAST_CONTENT
-
-      case _ =>
-        out add netty.LastHttpContent.EMPTY_LAST_CONTENT
-    }
+    HttpContentCodec.encode(msg.content).foreach(out.add)
   }
 }
