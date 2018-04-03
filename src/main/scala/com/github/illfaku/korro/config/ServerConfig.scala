@@ -21,8 +21,9 @@ import com.typesafe.config.Config
 
 case class ServerConfig(
   port: Int = ServerConfig.Defaults.port,
-  nrOfThreads: Int = ServerConfig.Defaults.nrOfThreads,
-  logger: String = ServerConfig.Defaults.logger,
+  nettyDispatcher: Option[String] = None,
+  nettyThreads: Int = ServerConfig.Defaults.nettyThreads,
+  nettyLogger: String = ServerConfig.Defaults.nettyLogger,
   instructions: List[HttpInstruction] = Nil,
   routes: List[RouteConfig] = Nil
 )
@@ -31,15 +32,16 @@ object ServerConfig {
 
   object Defaults {
     val port: Int = 8080
-    val nrOfThreads: Int = 0
-    val logger: String = "korro-netty"
+    val nettyThreads: Int = 0
+    val nettyLogger: String = "korro-netty"
   }
 
   def extract(config: Config): ServerConfig = {
     ServerConfig(
       config.findInt("port").getOrElse(Defaults.port),
-      config.findInt("nr-of-threads").getOrElse(Defaults.nrOfThreads),
-      config.findString("logger").getOrElse(Defaults.logger),
+      config.findString("netty-dispatcher"),
+      config.findInt("netty-threads").getOrElse(Defaults.nettyThreads),
+      config.findString("netty-logger").getOrElse(Defaults.nettyLogger),
       config.findConfig("instructions").map(HttpInstruction.extract).getOrElse(Nil),
       config.findConfigList("routes").flatMap(RouteConfig.extract)
     )

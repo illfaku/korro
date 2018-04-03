@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.common.handler
+package com.github.illfaku.korro.internal.common
 
-import io.netty.channel.CombinedChannelDuplexHandler
+import akka.actor._
+import io.netty.channel.Channel
 
-/**
- * Combines [[HttpMessageDecoder]] and [[HttpMessageEncoder]].
- */
-class HttpMessageCodec(maxSize: Long) extends CombinedChannelDuplexHandler(new HttpMessageDecoder(maxSize), HttpMessageEncoder)
+private[internal] class HttpActor(channel: Channel) extends Actor {
+
+  override def receive = {
+    case msg => channel.writeAndFlush(msg, channel.voidPromise)
+  }
+}

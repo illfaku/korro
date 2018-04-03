@@ -23,7 +23,7 @@ import io.netty.handler.codec.MessageToMessageCodec
 import io.netty.handler.codec.http.websocketx._
 
 @Sharable
-object WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsFrame] {
+private[internal] object WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsFrame] {
 
   override def encode(ctx: ChannelHandlerContext, msg: WsFrame, out: java.util.List[AnyRef]): Unit = msg match {
     case CloseWsFrame(status, reason) => out add new CloseWebSocketFrame(status, reason)

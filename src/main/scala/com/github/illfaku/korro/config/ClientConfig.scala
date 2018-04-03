@@ -33,7 +33,7 @@ object ClientConfig {
 
   object Defaults {
     val nettyThreads: Int = 1
-    val nettyLogger: String = "korro-client"
+    val nettyLogger: String = "korro-netty"
   }
 
   def extract(config: Config): ClientConfig = {

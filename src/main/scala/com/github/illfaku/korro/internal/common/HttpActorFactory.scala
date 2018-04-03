@@ -13,10 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.server.route
+package com.github.illfaku.korro.internal.common
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, Props}
+import io.netty.channel.Channel
 
-sealed trait Route
-case class ActorRefRoute(ref: ActorRef) extends Route
-case class ActorPathRoute(path: String) extends Route
+private[internal] trait HttpActorFactory { this: Actor =>
+
+  import HttpActorFactory._
+
+  protected def httpActorCreation: Receive = {
+
+    case NewHttpActor(channel) => sender ! context.actorOf(httpActorProps(channel))
+  }
+}
+
+private[internal] object HttpActorFactory {
+
+  case class NewHttpActor(channel: Channel)
+
+  def httpActorProps(channel: Channel): Props = Props(new HttpActor(channel))
+}

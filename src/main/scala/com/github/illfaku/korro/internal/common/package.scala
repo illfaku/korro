@@ -20,7 +20,7 @@ import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 
 package object common {
 
-  implicit class ChannelFutureExt(future: ChannelFuture) {
+  private[internal] implicit class ChannelFutureExt(future: ChannelFuture) {
 
     def foreach(op: ChannelFuture => Unit): Unit = future.addListener(op(_))
 
@@ -31,7 +31,7 @@ package object common {
     def closeChannel(): Unit = future.addListener(ChannelFutureListener.CLOSE)
   }
 
-  implicit def byteBuf2bytes(buf: ByteBuf): Array[Byte] = {
+  private[internal] implicit def byteBuf2bytes(buf: ByteBuf): Array[Byte] = {
     if (buf.isReadable) {
       val bytes = new Array[Byte](buf.readableBytes)
       buf.getBytes(0, bytes)
@@ -41,5 +41,5 @@ package object common {
     }
   }
 
-  implicit def bytes2byteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
+  private[internal] implicit def bytes2byteBuf(bytes: Array[Byte]): ByteBuf = Unpooled.wrappedBuffer(bytes)
 }

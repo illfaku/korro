@@ -19,8 +19,6 @@ import java.net.URL
 
 package object client {
 
-  private[client] case object TimedOut
-
   private[client] def getPort(url: URL): Int = {
     if (url.getPort == -1) {
       if (isSsl(url)) 443 else 80

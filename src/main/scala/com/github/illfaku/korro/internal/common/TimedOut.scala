@@ -15,22 +15,4 @@
  */
 package com.github.illfaku.korro.internal.common
 
-import akka.actor.{Actor, Props}
-import io.netty.channel.Channel
-
-trait WsActorFactory { this: Actor =>
-
-  import WsActorFactory._
-
-  protected def wsActorCreation: Receive = {
-
-    case NewWsActor(channel) => sender ! context.actorOf(wsActorProps(channel))
-  }
-}
-
-object WsActorFactory {
-
-  case class NewWsActor(channel: Channel)
-
-  def wsActorProps(channel: Channel): Props = Props(new WsActor(channel))
-}
+private[internal] case object TimedOut

@@ -113,14 +113,17 @@ private[internal] class HttpLoggingHandler(instructions: HttpInstructions) exten
 
   private def logRequest(direction: Char, x: HttpRequest): Unit = {
     val builder = new StringBuilder
-    builder ++= "REQUEST: " ++= x.method.toString += ' ' ++= x.uri += ' ' ++= x.protocolVersion.toString
+    builder ++= "REQUEST: " ++=
+      String.valueOf(x.method) += ' ' ++=
+      String.valueOf(x.uri) += ' ' ++=
+      String.valueOf(x.protocolVersion)
     appendHeaders(builder, x.headers)
     debug(direction, builder.toString)
   }
 
   private def logResponse(direction: Char, x: HttpResponse): Unit = {
     val builder = new StringBuilder
-    builder ++= "RESPONSE: " ++= x.protocolVersion.toString += ' ' ++= x.status.toString
+    builder ++= "RESPONSE: " ++= String.valueOf(x.protocolVersion) += ' ' ++= String.valueOf(x.status)
     appendHeaders(builder, x.headers)
     debug(direction, builder.toString)
   }

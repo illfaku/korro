@@ -18,7 +18,7 @@ package com.github.illfaku.korro.internal.client
 import com.github.illfaku.korro.config.ClientConfig
 import com.github.illfaku.korro.dto.HttpRequest
 import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
-import com.github.illfaku.korro.internal.common.WsActorFactory
+import com.github.illfaku.korro.internal.common.HttpActorFactory
 
 import akka.actor._
 import io.netty.bootstrap.Bootstrap
@@ -29,9 +29,7 @@ import io.netty.channel.{ChannelFuture, ChannelInitializer, EventLoopGroup}
 
 import java.net.{URI, URL}
 
-class ClientActor(config: ClientConfig) extends Actor with ActorLogging with WsActorFactory {
-
-  override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
+class ClientActor(config: ClientConfig) extends Actor with ActorLogging with HttpActorFactory {
 
   private val executor = config.nettyDispatcher.map(context.system.dispatchers.lookup).getOrElse(context.dispatcher)
 
@@ -48,7 +46,7 @@ class ClientActor(config: ClientConfig) extends Actor with ActorLogging with WsA
     super.postStop()
   }
 
-  override def receive = wsActorCreation orElse {
+  override def receive = httpActorCreation orElse {
 
     case req: HttpRequest => config.url match {
       case Some(url) => self forward (req to url)

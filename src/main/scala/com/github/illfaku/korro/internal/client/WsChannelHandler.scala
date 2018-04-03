@@ -17,7 +17,7 @@ package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.dto.ws.{CloseWsFrame, WsFrame, WsHandshakeResponse}
 import com.github.illfaku.korro.internal.common.ChannelFutureExt
-import com.github.illfaku.korro.internal.common.WsActorFactory.NewWsActor
+import com.github.illfaku.korro.internal.common.HttpActorFactory.NewHttpActor
 
 import akka.actor.{ActorRef, PoisonPill, Status}
 import akka.pattern.ask
@@ -57,7 +57,7 @@ private[client] class WsChannelHandler(parent: ActorRef, inActor: ActorRef) exte
 
   override def userEventTriggered(ctx: ChannelHandlerContext, evt: Any): Unit = evt match {
     case ClientHandshakeStateEvent.HANDSHAKE_COMPLETE =>
-      outActor = Await.result((parent ? NewWsActor(ctx.channel)).mapTo[ActorRef], Duration.Inf)
+      outActor = Await.result((parent ? NewHttpActor(ctx.channel)).mapTo[ActorRef], Duration.Inf)
       inActor ! WsHandshakeResponse(outActor)
     case _ => super.userEventTriggered(ctx, evt)
   }

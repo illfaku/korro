@@ -19,7 +19,7 @@ import com.github.illfaku.korro.config._
 import com.github.illfaku.korro.dto._
 import com.github.illfaku.korro.dto.ws.WsHandshakeRequest
 import com.github.illfaku.korro.internal.client.ClientActor
-import com.github.illfaku.korro.internal.server.actor.ServerActor
+import com.github.illfaku.korro.internal.server.ServerActor
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import akka.pattern.ask

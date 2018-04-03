@@ -16,7 +16,7 @@
 package com.github.illfaku.korro.internal.client
 
 import com.github.illfaku.korro.dto.{HttpRequest, HttpResponse}
-import com.github.illfaku.korro.internal.common.HttpInstructions
+import com.github.illfaku.korro.internal.common.{HttpInstructions, TimedOut}
 
 import akka.actor.{ActorRef, Status}
 import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}

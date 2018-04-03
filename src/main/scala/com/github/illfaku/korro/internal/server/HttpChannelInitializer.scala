@@ -13,20 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.illfaku.korro.internal.server.handler
+package com.github.illfaku.korro.internal.server
 
-import org.oxydev.korro.api.config.ServerConfig
+import com.github.illfaku.korro.config.ServerConfig
+import com.github.illfaku.korro.internal.common.{HttpInstructions, HttpLoggingHandler}
 
+import akka.actor.ActorRef
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
 
-class HttpChannelInitializer(config: ServerConfig) extends ChannelInitializer[SocketChannel] {
+private[server] class HttpChannelInitializer(
+  parent: ActorRef,
+  config: ServerConfig,
+  instructions: HttpInstructions
+) extends ChannelInitializer[SocketChannel] {
 
   override def initChannel(ch: SocketChannel): Unit = {
-    ch.pipeline.addLast("netty-codec", new HttpServerCodec)
-    ch.pipeline.addLast("logging", new LoggingHandler(config.logger, LogLevel.TRACE))
-    ch.pipeline.addLast("http", HttpChannelHandler)
+    ch.pipeline.addLast("netty-http-codec", new HttpServerCodec)
+    ch.pipeline.addLast("netty-logger", new LoggingHandler(config.nettyLogger, LogLevel.TRACE))
+    ch.pipeline.addLast("korro-logger", new HttpLoggingHandler(instructions))
+    ch.pipeline.addLast("korro-http-handler", new HttpChannelHandler(parent))
   }
 }
