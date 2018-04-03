@@ -16,11 +16,11 @@
 package com.github.illfaku.korro.internal.server
 
 import com.github.illfaku.korro.dto._
-import com.github.illfaku.korro.internal.common.bytes2byteBuf
+import com.github.illfaku.korro.internal.common.{HttpHeadersCodec, bytes2byteBuf}
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{ChannelHandlerContext, DefaultFileRegion}
-import io.netty.handler.codec.http.{DefaultHttpHeaders, DefaultHttpResponse}
+import io.netty.handler.codec.http.DefaultHttpResponse
 import io.netty.handler.codec.{MessageToMessageEncoder, http => netty}
 
 import java.io.File
@@ -30,24 +30,10 @@ private[server] object HttpResponseEncoder extends MessageToMessageEncoder[HttpR
 
   override def encode(ctx: ChannelHandlerContext, msg: HttpResponse, out: java.util.List[AnyRef]): Unit = {
 
-    val headers = new DefaultHttpHeaders()
-    msg.headers.entries foreach { case (name, value) => headers.add(name, value) }
-
-    if (msg.content.contentLength > 0) {
-      if (!headers.contains(netty.HttpHeaderNames.CONTENT_LENGTH)) {
-        headers.set(netty.HttpHeaderNames.CONTENT_LENGTH, msg.content.contentLength)
-      }
-      msg.content.contentType foreach { t =>
-        if (!headers.contains(netty.HttpHeaderNames.CONTENT_TYPE)) {
-          headers.add(netty.HttpHeaderNames.CONTENT_TYPE, t.toString)
-        }
-      }
-    }
-
     out add new DefaultHttpResponse(
       netty.HttpVersion.valueOf(msg.version.toString),
       netty.HttpResponseStatus.valueOf(msg.status.code, msg.status.reason),
-      headers
+      HttpHeadersCodec.encode(msg.headers, msg.content)
     )
 
     msg.content match {

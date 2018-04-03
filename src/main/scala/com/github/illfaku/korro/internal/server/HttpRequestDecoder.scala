@@ -16,20 +16,19 @@
 package com.github.illfaku.korro.internal.server
 
 import com.github.illfaku.korro.dto._
-import com.github.illfaku.korro.internal.common.byteBuf2bytes
+import com.github.illfaku.korro.internal.common.{HttpHeadersCodec, byteBuf2bytes}
 
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.{MessageToMessageDecoder, http => netty}
-
-import scala.collection.JavaConverters._
+import io.netty.handler.codec.MessageToMessageDecoder
+import io.netty.handler.codec.http.FullHttpRequest
 
 @Sharable
-private[server] object HttpRequestDecoder extends MessageToMessageDecoder[netty.FullHttpRequest] {
+private[server] object HttpRequestDecoder extends MessageToMessageDecoder[FullHttpRequest] {
 
-  override def decode(ctx: ChannelHandlerContext, msg: netty.FullHttpRequest, out: java.util.List[AnyRef]): Unit = {
+  override def decode(ctx: ChannelHandlerContext, msg: FullHttpRequest, out: java.util.List[AnyRef]): Unit = {
 
-    val headers = new HttpParams(msg.headers.asScala.map(header => header.getKey -> header.getValue).toList)
+    val headers = HttpHeadersCodec.decode(msg.headers)
 
     out add HttpRequest(
       new HttpVersion(
