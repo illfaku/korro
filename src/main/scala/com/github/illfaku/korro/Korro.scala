@@ -78,11 +78,11 @@ object Korro {
    * @return Actor reference.
    */
   def client(name: String, config: ClientConfig)(implicit factory: ActorRefFactory): Client = {
-    implicit val timeout: Timeout = config.instructions
+    val timeout = config.instructions
       .find(_.isInstanceOf[HttpInstruction.RequestTimeout])
       .map(_.asInstanceOf[HttpInstruction.RequestTimeout].timeout.plus(1 second))
       .getOrElse(6 seconds)
-    new Client(factory.actorOf(clientProps(config), name))
+    new Client(factory.actorOf(clientProps(config), name))(timeout)
   }
 
   /**
@@ -102,6 +102,7 @@ object Korro {
 
     /**
      * Sends GET request using HTTP/1.1.
+     * <br>Will only work if `url` is configured in client.
      * @param path URI path.
      * @param params URI parameters.
      * @param headers HTTP headers.
@@ -115,6 +116,7 @@ object Korro {
 
     /**
      * Sends POST request using HTTP/1.1.
+     * <br>Will only work if `url` is configured in client.
      * @param path URI path.
      * @param content Request body.
      * @param headers HTTP headers.
@@ -128,6 +130,7 @@ object Korro {
 
     /**
      * Sends PUT request using HTTP/1.1.
+     * <br>Will only work if `url` is configured in client.
      * @param path URI path.
      * @param content Request body.
      * @param headers HTTP headers.
@@ -141,6 +144,7 @@ object Korro {
 
     /**
      * Sends DELETE request using HTTP/1.1.
+     * <br>Will only work if `url` is configured in client.
      * @param path URI path.
      * @param params URI parameters.
      * @param headers HTTP headers.
@@ -155,11 +159,11 @@ object Korro {
 
     /**
      * Sends request using HTTP/1.1.
+     * <br>Will only work if `url` is configured in client.
      * @param req HTTP request.
-     * @param sender Message originator.
      * @return Future of HTTP response.
      */
-    def send(req: HttpRequest)(implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+    def send(req: HttpRequest): Future[HttpResponse] = {
       (ref ? req).mapTo[HttpResponse]
     }
 
@@ -167,42 +171,39 @@ object Korro {
      * Sends request to specified URL using HTTP/1.1.
      * @param req HTTP request.
      * @param url Destination URL.
-     * @param instructions Additional instructions.
-     * @param sender Message originator.
      * @return Future of HTTP response.
      */
-    def send(req: HttpRequest, url: URL, instructions: List[HttpInstruction] = Nil)
-      (implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
-      send(req to (url, instructions))
+    def send(req: HttpRequest, url: URL): Future[HttpResponse] = {
+      send(req to url)
     }
 
     /**
      * Sends request using HTTP/1.1.
      * @param req HTTP request with URL and additional instructions.
-     * @param sender Message originator.
      * @return Future of HTTP response.
      */
-    def send(req: HttpRequest.Outgoing)(implicit sender: ActorRef = Actor.noSender): Future[HttpResponse] = {
+    def send(req: HttpRequest.Outgoing): Future[HttpResponse] = {
       val timeoutOverride = req.instructions
         .find(_.isInstanceOf[HttpInstruction.RequestTimeout])
         .map(_.asInstanceOf[HttpInstruction.RequestTimeout].timeout.plus(1 second)).map(Timeout(_))
         .getOrElse(timeout)
-      ref.?(req)(timeoutOverride, sender).mapTo[HttpResponse]
+      ref.?(req)(timeoutOverride).mapTo[HttpResponse]
     }
 
 
     /**
      * Initiates WebSocket connection.
+     * <br>Will only work if `url` is configured in client.
      * @param actor Actor that will process handshake response and WebSocket frames.
      * @param uri URI of handshake request.
-     * @param headers HTTP headers of handshake request.
      */
-    def ws(actor: ActorRef, uri: String = "", headers: HttpParams = HttpParams.empty): Unit = {
-      ws(WsHandshakeRequest(actor, HttpRequest.Uri(uri), headers))
+    def ws(actor: ActorRef, uri: String = ""): Unit = {
+      ws(WsHandshakeRequest(actor, HttpRequest.Uri(uri)))
     }
 
     /**
      * Initiates WebSocket connection.
+     * <br>Will only work if `url` is configured in client.
      * @param req Handshake request.
      */
     def ws(req: WsHandshakeRequest): Unit = ref ! req
@@ -211,16 +212,9 @@ object Korro {
      * Initiates WebSocket connection.
      * @param actor Actor that will process handshake response and WebSocket frames.
      * @param url Destination URL.
-     * @param headers HTTP headers of handshake request.
-     * @param instructions Additional instructions.
      */
-    def ws(
-      actor: ActorRef,
-      url: URL,
-      headers: HttpParams = HttpParams.empty,
-      instructions: List[HttpInstruction] = Nil
-    ): Unit = {
-      ws(WsHandshakeRequest(actor, HttpRequest.Uri(""), headers).to(url, instructions))
+    def ws(actor: ActorRef, url: URL): Unit = {
+      ws(WsHandshakeRequest(actor, HttpRequest.Uri("")).to(url))
     }
 
     /**

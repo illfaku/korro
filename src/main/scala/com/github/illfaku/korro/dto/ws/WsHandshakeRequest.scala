@@ -20,7 +20,7 @@ import com.github.illfaku.korro.dto.{HttpParams, HttpRequest}
 
 import akka.actor.ActorRef
 
-import java.net.{MalformedURLException, URL}
+import java.net.URL
 
 /**
  * Request for a WebSocket handshake.
@@ -42,15 +42,6 @@ case class WsHandshakeRequest(
   def to(url: URL, instructions: List[HttpInstruction] = Nil): WsHandshakeRequest.Outgoing = {
     val req = copy(uri = uri.withPrefix(url.getPath))
     new WsHandshakeRequest.Outgoing(req, url, instructions)
-  }
-
-  /**
-   * @see [[to(URL)]]
-   * @throws java.net.MalformedURLException If URL is malformed.
-   */
-  @throws(classOf[MalformedURLException])
-  def to(url: String, instructions: List[HttpInstruction] = Nil): WsHandshakeRequest.Outgoing = {
-    to(new URL(url), instructions)
   }
 }
 

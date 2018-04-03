@@ -51,9 +51,9 @@ private[server] class HttpChannelHandler(parent: ActorRef)
           ctx.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(route.instructions.maxContentLength))
           ctx.pipeline.addLast("korro-request-decoder", HttpRequestDecoder)
           ctx.pipeline.addLast("korro-response-encoder", HttpResponseEncoder)
-          ctx.pipeline.addLast("korro-request-handler", new HttpRequestHandler(route) {
+          ctx.pipeline.addLast("korro-request-handler", new HttpRequestHandler(route)(
             Await.result((parent ? NewHttpActor(ctx.channel)).mapTo[ActorRef], Duration.Inf)
-          })
+          ))
           ctx.fireChannelRead(msg)
 
         case NoRoute =>

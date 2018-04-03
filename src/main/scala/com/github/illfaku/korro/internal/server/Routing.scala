@@ -58,9 +58,9 @@ private[server] trait Routing { this: Actor =>
       case RequestPredicate.PathEndsWith(suffix) => uri.path endsWith suffix
       case RequestPredicate.PathMatch(regexp) => uri.path matches regexp
       case RequestPredicate.HasQueryParam(name) => uri.params.contains(name)
-      case RequestPredicate.HasQueryParamValue(name, value) => uri.params.contains(name, value)
+      case RequestPredicate.HasQueryParamValue(name, value) => uri.params.contains(name, value, ignoreCase = true)
       case RequestPredicate.HasHeader(name) => req.headers.contains(name)
-      case RequestPredicate.HasHeaderValue(name, value) => req.headers.contains(name, value, false)
+      case RequestPredicate.HasHeaderValue(name, value) => req.headers.contains(name, value, true)
     }
   }
 }

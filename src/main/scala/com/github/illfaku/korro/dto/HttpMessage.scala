@@ -19,7 +19,7 @@ import com.github.illfaku.korro.config.HttpInstruction
 import com.github.illfaku.korro.dto.HttpHeaders.Names.{AcceptLanguage, Host}
 import com.github.illfaku.korro.util.{Locales, QueryStringCodec}
 
-import java.net.{MalformedURLException, URL}
+import java.net.URL
 import java.util.Locale
 
 /**
@@ -80,16 +80,6 @@ case class HttpRequest(
     val req = copy(uri = uri.withPrefix(url.getPath), headers = newHeaders)
     new HttpRequest.Outgoing(req, url, instructions)
   }
-
-  /**
-   * Creates [[com.github.illfaku.korro.dto.HttpRequest.Outgoing HttpRequest.Outgoing]] command for HTTP client.
-   * Adds `Host` header extracted from provided URL (if not already present)
-   * and concatenates path from it with uri from this request.
-   * @param url Destination URL.
-   * @param instructions Additional instructions.
-   */
-  @throws[MalformedURLException]
-  def to(url: String, instructions: List[HttpInstruction] = Nil): HttpRequest.Outgoing = to(new URL(url), instructions)
 }
 
 object HttpRequest {
@@ -193,7 +183,7 @@ object HttpRequest {
 
 
     override def equals(other: Any): Boolean = other match {
-      case that: Uri => pathWithQuery == that.pathWithQuery
+      case that: Uri => toString == that.toString
       case _ => false
     }
 

@@ -28,7 +28,7 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def -(entry: (String, Any), ignoreCase: Boolean = false): HttpParams = this - (entry._1, entry._2, ignoreCase)
 
-  def -(name: String, value: Any, ignoreCase: Boolean = false): HttpParams = {
+  def -(name: String, value: Any, ignoreCase: Boolean): HttpParams = {
     new HttpParams(entries filterNot { e =>
       e._1.equalsIgnoreCase(name) && (if (ignoreCase) e._2.equalsIgnoreCase(value.toString) else e._2 == value.toString)
     })
@@ -39,7 +39,7 @@ class HttpParams(val entries: List[(String, String)]) {
 
   def contains(entry: (String, Any), ignoreCase: Boolean = false): Boolean = contains(entry._1, entry._2, ignoreCase)
 
-  def contains(name: String, value: Any, ignoreCase: Boolean = false): Boolean = entries exists { e =>
+  def contains(name: String, value: Any, ignoreCase: Boolean): Boolean = entries exists { e =>
     e._1.equalsIgnoreCase(name) && (if (ignoreCase) e._2.equalsIgnoreCase(value.toString) else e._2 == value.toString)
   }
 
