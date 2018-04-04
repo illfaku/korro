@@ -28,32 +28,16 @@ import java.util.Base64
 
 import scala.collection.JavaConverters._
 
-private[internal] class HttpLoggingHandler(instructions: HttpInstructions) extends ChannelDuplexHandler {
+private[internal] class HttpLoggingHandler(instructions: HttpInstructions, template: String)
+  extends ChannelDuplexHandler {
 
   private val base64Encoder = Base64.getEncoder
 
-  private val logger = Logger(instructions.httpLogger)
+  val logger = Logger(instructions.httpLogger)
 
-  private var logTemplate: String = _
+  private def debug(direction: Char, message: String): Unit = logger.debug(template, direction, message)
 
-  override def handlerAdded(ctx: ChannelHandlerContext) = {
-    if (ctx.channel.isActive) logTemplate = prepareLogTemplate(ctx)
-    super.handlerAdded(ctx)
-  }
-
-  override def channelActive(ctx: ChannelHandlerContext) = {
-    if (logTemplate == null) logTemplate = prepareLogTemplate(ctx)
-    super.channelActive(ctx)
-  }
-
-  private def prepareLogTemplate(ctx: ChannelHandlerContext): String = {
-    "[0x" + ctx.channel.id.asShortText + ", L:" + String.valueOf(ctx.channel.localAddress) + " {} " +
-      "R:" + String.valueOf(ctx.channel.remoteAddress) + "] {}"
-  }
-
-  private def debug(direction: Char, message: String): Unit = logger.debug(logTemplate, direction, message)
-
-  private def trace(direction: Char, message: String): Unit = logger.trace(logTemplate, direction, message)
+  private def trace(direction: Char, message: String): Unit = logger.trace(template, direction, message)
 
   override def channelRead(ctx: ChannelHandlerContext, msg: Any): Unit = {
     if (logger.isDebugEnabled) log('<', msg)
@@ -64,6 +48,10 @@ private[internal] class HttpLoggingHandler(instructions: HttpInstructions) exten
     if (logger.isDebugEnabled) log('>', msg)
     super.write(ctx, msg, promise)
   }
+
+  def logRead(msg: Any): Unit = if (logger.isDebugEnabled) log('<', msg)
+
+  def logWrite(msg: Any): Unit = if (logger.isDebugEnabled) log('>', msg)
 
   private def log(direction: Char, msg: Any): Unit = msg match {
 
@@ -155,5 +143,14 @@ private[internal] class HttpLoggingHandler(instructions: HttpInstructions) exten
 
   private def logBinaryWs(direction: Char, kind: String, data: ByteBuf): Unit = {
     trace(direction, kind + " (" + data.readableBytes + "B): " + base64Encoder.encodeToString(data))
+  }
+}
+
+private[internal] object HttpLoggingHandler {
+
+  def apply(instructions: HttpInstructions, channel: Channel): HttpLoggingHandler = {
+    val template = "[0x" + channel.id.asShortText + ", L:" + String.valueOf(channel.localAddress) + " {} " +
+      "R:" + String.valueOf(channel.remoteAddress) + "] {}"
+    new HttpLoggingHandler(instructions, template)
   }
 }

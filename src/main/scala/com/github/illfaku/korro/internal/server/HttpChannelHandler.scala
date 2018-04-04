@@ -16,20 +16,20 @@
 package com.github.illfaku.korro.internal.server
 
 import com.github.illfaku.korro.internal.common.HttpActorFactory.NewHttpActor
-import com.github.illfaku.korro.internal.common.{ChannelFutureExt, HttpLoggingHandler}
+import com.github.illfaku.korro.internal.common.{ChannelFutureExt, HttpInstructions, HttpLoggingHandler}
 import com.github.illfaku.korro.internal.server.Routing.{DstRoute, FindRoute, NoRoute, Route}
 import com.github.illfaku.korro.util.logging.Logging
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import io.netty.channel.{ChannelHandlerContext, SimpleChannelInboundHandler}
+import io.netty.channel.{Channel, ChannelHandlerContext, SimpleChannelInboundHandler}
 import io.netty.handler.codec.http._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-private[server] class HttpChannelHandler(parent: ActorRef)
+private[server] class HttpChannelHandler(parent: ActorRef, defaultInstructions: HttpInstructions)
   extends SimpleChannelInboundHandler[HttpRequest] with Logging {
 
   private implicit val timeout = Timeout(5 seconds)
@@ -41,13 +41,13 @@ private[server] class HttpChannelHandler(parent: ActorRef)
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
     if (msg.decoderResult.isFailure) {
       log.debug("Korro | Failure in request decoding: {}", msg.decoderResult.cause)
+      addLogging(ctx, msg)
       ctx.writeAndFlush(BadRequest.retainedDuplicate).closeChannel()
     } else {
       Await.result((parent ? FindRoute(msg)).mapTo[Route], Duration.Inf) match {
 
         case route: DstRoute =>
-          ctx.pipeline.remove(classOf[HttpLoggingHandler])
-          ctx.pipeline.addLast("korro-logger", new HttpLoggingHandler(route.instructions))
+          ctx.pipeline.addLast("korro-logger", HttpLoggingHandler(route.instructions, ctx.channel))
           ctx.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(route.instructions.maxContentLength))
           ctx.pipeline.addLast("korro-request-decoder", HttpRequestDecoder)
           ctx.pipeline.addLast("korro-response-encoder", HttpResponseEncoder)
@@ -57,9 +57,16 @@ private[server] class HttpChannelHandler(parent: ActorRef)
           ctx.fireChannelRead(msg)
 
         case NoRoute =>
+          addLogging(ctx, msg)
           ctx.writeAndFlush(NotFound.retainedDuplicate).closeChannel()
       }
     }
+  }
+
+  private def addLogging(ctx: ChannelHandlerContext, msg: HttpRequest): Unit = {
+    val handler = HttpLoggingHandler(defaultInstructions, ctx.channel)
+    handler.logRead(msg)
+    ctx.pipeline.addBefore(ctx.name, "korro-logger", handler)
   }
 
   private def isHandshake(msg: HttpRequest): Boolean = {

@@ -41,7 +41,7 @@ private[client] class HttpChannelInitializer(config: ClientConfig, req: HttpRequ
 
     ch.pipeline.addLast("netty-http-codec", new HttpClientCodec)
     ch.pipeline.addLast("netty-logger", new LoggingHandler(config.nettyLogger, LogLevel.TRACE))
-    ch.pipeline.addLast("korro-logger", new HttpLoggingHandler(instructions))
+    ch.pipeline.addLast("korro-logger-init", new HttpLoggingInitializer(instructions))
     ch.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(instructions.maxContentLength))
     ch.pipeline.addLast("korro-response-decoder", HttpResponseDecoder)
     ch.pipeline.addLast("korro-request-encoder", HttpRequestEncoder)

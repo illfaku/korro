@@ -33,7 +33,6 @@ private[server] class HttpChannelInitializer(
   override def initChannel(ch: SocketChannel): Unit = {
     ch.pipeline.addLast("netty-http-codec", new HttpServerCodec)
     ch.pipeline.addLast("netty-logger", new LoggingHandler(config.nettyLogger, LogLevel.TRACE))
-    ch.pipeline.addLast("korro-logger", new HttpLoggingHandler(instructions))
-    ch.pipeline.addLast("korro-http-handler", new HttpChannelHandler(parent))
+    ch.pipeline.addLast("korro-http-handler", new HttpChannelHandler(parent, instructions))
   }
 }
