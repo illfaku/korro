@@ -16,7 +16,7 @@ scalacOptions in (Compile,doc) ++= Seq(
   "-groups", "-implicits",
   "-skip-packages",  "com.github.illfaku.korro.internal"
 )
-apiURL := Some(url("https://illfaku.github.io/korro/api/"))
+apiURL := Some(url("http://illfaku.github.io/korro/api/"))
 
 resolvers += Resolver.sbtPluginRepo("releases")
 
