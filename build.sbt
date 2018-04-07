@@ -12,6 +12,12 @@ scalacOptions ++= Seq(
   "-language:implicitConversions", "-language:postfixOps", "-target:jvm-1.8"
 )
 
+scalacOptions in (Compile,doc) ++= Seq(
+  "-groups", "-implicits",
+  "-skip-packages",  "com.github.illfaku.korro.internal"
+)
+apiURL := Some(url("https://illfaku.github.io/korro/api/"))
+
 resolvers += Resolver.sbtPluginRepo("releases")
 
 libraryDependencies ++= Seq(
