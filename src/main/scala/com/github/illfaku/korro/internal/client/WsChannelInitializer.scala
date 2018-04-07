@@ -58,7 +58,7 @@ private[client] class WsChannelInitializer(
     ch.pipeline.addLast("korro-logger-init", new HttpLoggingInitializer(instructions))
     ch.pipeline.addLast("netty-http-aggregator", new HttpObjectAggregator(instructions.maxContentLength))
     ch.pipeline.addLast("netty-ws-handler", new WebSocketClientProtocolHandler(
-      uri, WebSocketVersion.V13, null, true, customHeaders, instructions.maxWsFramePayloadLength, false
+      uri, WebSocketVersion.V13, null, false, customHeaders, instructions.maxWsFramePayloadLength, false
     ))
     ch.pipeline.addLast("netty-ws-aggregator", new WebSocketFrameAggregator(instructions.maxContentLength))
     ch.pipeline.addLast("korro-ws-codec", WsMessageCodec)

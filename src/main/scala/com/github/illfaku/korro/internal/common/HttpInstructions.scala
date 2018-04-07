@@ -25,7 +25,7 @@ private[internal] case class HttpInstructions(
   maxContentLength: Int = Int.MaxValue,
   maxWsFramePayloadLength: Int = Int.MaxValue,
   httpLogger: String = "korro-http",
-  httpContentLogging: BytesLoggingFormat.Value = BytesLoggingFormat.Off
+  httpContentLogging: BytesLoggingFormat.Value = BytesLoggingFormat.Text
 ) {
 
   def merge(instructions: List[HttpInstruction]): HttpInstructions = instructions match {

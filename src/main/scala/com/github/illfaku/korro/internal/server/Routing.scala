@@ -18,9 +18,12 @@ package com.github.illfaku.korro.internal.server
 import com.github.illfaku.korro.config.{RequestPredicate, RouteActorPath, RouteActorRef, RouteConfig}
 import com.github.illfaku.korro.dto.HttpRequest.Uri
 import com.github.illfaku.korro.internal.common.HttpInstructions
-
+import akka.pattern.ask
 import akka.actor.{Actor, ActorRef, ActorSelection}
+import akka.util.Timeout
 import io.netty.handler.codec.http.HttpRequest
+
+import scala.concurrent.Future
 
 private[server] trait Routing { this: Actor =>
 
@@ -74,17 +77,18 @@ private[server] object Routing {
   case object NoRoute extends Route
 
   sealed trait DstRoute extends Route {
-
     val instructions: HttpInstructions
-
-    def !(msg: Any)(implicit sender: ActorRef)
+    def !(msg: Any)(implicit sender: ActorRef): Unit
+    def ?(msg: Any)(implicit timeout: Timeout): Future[Any]
   }
 
   case class ActorRefRoute(ref: ActorRef, instructions: HttpInstructions) extends DstRoute {
-    override def !(msg: Any)(implicit sender: ActorRef) = ref ! msg
+    override def !(msg: Any)(implicit sender: ActorRef): Unit = ref ! msg
+    override def ?(msg: Any)(implicit timeout: Timeout): Future[Any] = ref ? msg
   }
 
   case class ActorSelectionRoute(sel: ActorSelection, instructions: HttpInstructions) extends DstRoute {
-    override def !(msg: Any)(implicit sender: ActorRef) = sel ! msg
+    override def !(msg: Any)(implicit sender: ActorRef): Unit = sel ! msg
+    override def ?(msg: Any)(implicit timeout: Timeout): Future[Any] = sel ? msg
   }
 }
