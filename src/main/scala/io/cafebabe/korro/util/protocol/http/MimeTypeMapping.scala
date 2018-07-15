@@ -37,7 +37,7 @@ object MimeTypeMapping extends Logging {
       }
     } catch {
       case e: Throwable =>
-        log.error(e, "Failed to load mime types.")
+        log.debug("Failed to load mime types: {}", e)
         Map.empty
     }
   }
