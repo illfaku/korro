@@ -16,14 +16,9 @@
  */
 package io.cafebabe.korro.api.ws
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 sealed trait WsMessage
 
-case class ConnectWsMessage(host: String) extends WsMessage
+case class ConnectWsMessage(uri: String, host: String) extends WsMessage
 case object DisconnectWsMessage extends WsMessage
 case object PingWsMessage extends WsMessage
 case object PongWsMessage extends WsMessage

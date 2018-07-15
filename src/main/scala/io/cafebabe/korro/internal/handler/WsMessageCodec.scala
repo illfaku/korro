@@ -37,7 +37,7 @@ import java.util
 class WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
 
   override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: util.List[AnyRef]): Unit = msg match {
-    case ConnectWsMessage(_) =>
+    case _: ConnectWsMessage =>
       log.warning("Unable to convert ConnectWsMessage to any WebSocketFrame.")
       out add Unpooled.EMPTY_BUFFER
     case DisconnectWsMessage => out add new CloseWebSocketFrame
@@ -48,9 +48,9 @@ class WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] wi
   }
 
   override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
-    case frame: CloseWebSocketFrame => out add DisconnectWsMessage
-    case frame: PingWebSocketFrame => out add PingWsMessage
-    case frame: PongWebSocketFrame => out add PongWsMessage
+    case _: CloseWebSocketFrame => out add DisconnectWsMessage
+    case _: PingWebSocketFrame => out add PingWsMessage
+    case _: PongWebSocketFrame => out add PongWsMessage
     case frame: BinaryWebSocketFrame => out add BinaryWsMessage(frame.content)
     case frame: TextWebSocketFrame => out add TextWsMessage(frame.text)
     case frame => log.warning("Unknown frame: {}.", frame)

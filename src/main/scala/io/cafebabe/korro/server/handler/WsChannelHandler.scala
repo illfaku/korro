@@ -24,23 +24,19 @@ import io.cafebabe.korro.util.log.Logging
 import akka.actor.{ActorContext, ActorRef}
 import io.netty.channel._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
-class WsChannelHandler(host: String, route: String)(implicit context: ActorContext)
+class WsChannelHandler(uri: String, host: String, route: String)(implicit context: ActorContext)
   extends SimpleChannelInboundHandler[WsMessage] with Logging {
 
-  private var sender: ActorRef = null
+  private var sender: ActorRef = _
 
   override def handlerAdded(ctx: ChannelHandlerContext): Unit = {
     sender = WsMessageSender.create(ctx)
-    context.actorSelection(route).tell(ConnectWsMessage(host), sender)
+    context.actorSelection(route).tell(ConnectWsMessage(uri, host), sender)
   }
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: WsMessage): Unit = msg match {
     case PingWsMessage => ctx.writeAndFlush(PongWsMessage)
+    case PongWsMessage => ()
     case _ => sender ! Inbound(msg)
   }
 

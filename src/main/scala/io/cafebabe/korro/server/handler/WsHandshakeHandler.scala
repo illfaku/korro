@@ -38,7 +38,7 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
   }
 
   private def newHandshaker(req: HttpRequest): Option[WebSocketServerHandshaker] = {
-    val location = s"ws://${req.headers.get(HttpHeaderNames.HOST)}/${new URI(req.uri).getPath}"
+    val location = s"ws://${req.headers.get(HttpHeaderNames.HOST)}/${req.uri}"
     val factory = new WebSocketServerHandshakerFactory(location, null, true, config.maxFramePayloadLength)
     Option(factory.newHandshaker(req))
   }
@@ -52,7 +52,7 @@ class WsHandshakeHandler(config: WsConfig, route: String)(implicit context: Acto
         if (config.compression) pipeline.addBefore("logging", "ws-compression", new WsCompressionEncoder)
         pipeline.addBefore("logging", "ws-decompression", new WsCompressionDecoder)
         pipeline.addAfter("logging", "ws-codec", new WsMessageCodec)
-        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(extractHost(channel, req), route))
+        pipeline.addAfter("ws-codec", "ws", new WsChannelHandler(req.uri, extractHost(channel, req), route))
       } else {
         log.error(future.cause, "Error during handshake.")
         channel.close()

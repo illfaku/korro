@@ -24,11 +24,6 @@ import io.netty.channel.{ChannelFuture, ChannelHandlerContext}
 
 import scala.concurrent.duration._
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 object WsMessageSender {
 
   def create(ctx: ChannelHandlerContext)(implicit factory: ActorRefFactory): ActorRef = {
@@ -38,45 +33,52 @@ object WsMessageSender {
   case class Inbound[T <: WsMessage](msg: T)
 }
 
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with ActorLogging {
 
   import context.dispatcher
 
-  var setRecipientTimeout: Cancellable = null
-
-  override def preStart(): Unit = {
-    setRecipientTimeout = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
-    super.preStart()
-  }
-
   import WsMessageSender.Inbound
 
-  override def receive = {
+  private var timeoutTask = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
+
+  override def receive: Receive = {
 
     case ReceiveTimeout =>
-      log.error("Command SetRecipient was not received in 5 seconds. Closing connection...")
+      log.warning("Command SetRecipient was not received in 5 seconds. Closing connection...")
       context.stop(self)
+
+    case DisconnectWsMessage => context.stop(self)
 
     case Inbound(_) => stash()
 
     case SetRecipient(ref) =>
-      setRecipientTimeout.cancel()
+      schedulePingTimeout()
       unstashAll()
-      context become {
-        case Inbound(DisconnectWsMessage) => self ! PoisonPill
-        case DisconnectWsMessage => self ! PoisonPill
-        case Inbound(msg) => ref ! msg
-        case msg: WsMessage => send(msg)
-      }
+      context become initialized(ref)
+  }
+
+  private def initialized(ref: ActorRef): Receive = {
+
+    case Inbound(DisconnectWsMessage) => self ! PoisonPill
+
+    case DisconnectWsMessage => self ! PoisonPill
+
+    case Inbound(msg) =>
+      ref ! msg
+      schedulePingTimeout()
+
+    case msg: WsMessage =>
+      send(msg)
+      schedulePingTimeout()
+  }
+
+  private def schedulePingTimeout(): Unit = {
+    timeoutTask.cancel()
+    timeoutTask = context.system.scheduler.scheduleOnce(30 seconds, self, PingWsMessage)
   }
 
   override def postStop(): Unit = {
-    setRecipientTimeout.cancel()
+    timeoutTask.cancel()
     send(DisconnectWsMessage).closeChannel()
     super.postStop()
   }
