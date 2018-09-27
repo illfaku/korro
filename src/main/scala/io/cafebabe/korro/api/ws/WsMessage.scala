@@ -19,7 +19,7 @@ package io.cafebabe.korro.api.ws
 sealed trait WsMessage
 
 case class ConnectWsMessage(uri: String, host: String) extends WsMessage
-case object DisconnectWsMessage extends WsMessage
+case class DisconnectWsMessage(code: Int = 1001, reason: Option[String] = None) extends WsMessage
 case object PingWsMessage extends WsMessage
 case object PongWsMessage extends WsMessage
 case class TextWsMessage(text: String) extends WsMessage

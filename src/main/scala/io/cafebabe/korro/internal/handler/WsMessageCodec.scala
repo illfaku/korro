@@ -26,28 +26,21 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToMessageCodec
 import io.netty.handler.codec.http.websocketx._
 
-import java.util
-
-/**
- * TODO: Add description.
- *
- * @author Vladimir Konstantinov
- */
 @Sharable
 class WsMessageCodec extends MessageToMessageCodec[WebSocketFrame, WsMessage] with Logging {
 
-  override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: util.List[AnyRef]): Unit = msg match {
+  override def encode(ctx: ChannelHandlerContext, msg: WsMessage, out: java.util.List[AnyRef]): Unit = msg match {
     case _: ConnectWsMessage =>
       log.warning("Unable to convert ConnectWsMessage to any WebSocketFrame.")
       out add Unpooled.EMPTY_BUFFER
-    case DisconnectWsMessage => out add new CloseWebSocketFrame
+    case DisconnectWsMessage(code, reason) => out add new CloseWebSocketFrame(code, reason.orNull)
     case PingWsMessage => out add new PingWebSocketFrame
     case PongWsMessage => out add new PongWebSocketFrame
     case TextWsMessage(text) => out add new TextWebSocketFrame(text)
     case BinaryWsMessage(bytes) => out add new BinaryWebSocketFrame(bytes)
   }
 
-  override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: util.List[AnyRef]): Unit = msg match {
+  override def decode(ctx: ChannelHandlerContext, msg: WebSocketFrame, out: java.util.List[AnyRef]): Unit = msg match {
     case _: CloseWebSocketFrame => out add DisconnectWsMessage
     case _: PingWebSocketFrame => out add PingWsMessage
     case _: PongWebSocketFrame => out add PongWsMessage

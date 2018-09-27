@@ -17,10 +17,9 @@
 package io.cafebabe.korro.server.actor
 
 import io.cafebabe.korro.api.ws._
-import io.cafebabe.korro.internal.ChannelFutureExt
 
 import akka.actor._
-import io.netty.channel.{ChannelFuture, ChannelHandlerContext}
+import io.netty.channel.ChannelHandlerContext
 
 import scala.concurrent.duration._
 
@@ -35,19 +34,22 @@ object WsMessageSender {
 
 class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with ActorLogging {
 
-  import context.dispatcher
-
   import WsMessageSender.Inbound
+
+  import context.dispatcher
 
   private var timeoutTask = context.system.scheduler.scheduleOnce(5 seconds, self, ReceiveTimeout)
 
   override def receive: Receive = {
 
     case ReceiveTimeout =>
-      log.warning("Command SetRecipient was not received in 5 seconds. Closing connection...")
-      context.stop(self)
+      log.debug("Command SetRecipient was not received in 5 seconds. Closing connection...")
+      send(DisconnectWsMessage(5000, Some("System is not ready.")))
+      context stop self
 
-    case DisconnectWsMessage => context.stop(self)
+    case cmd: DisconnectWsMessage =>
+      send(cmd)
+      context stop self
 
     case Inbound(_) => stash()
 
@@ -59,9 +61,13 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
 
   private def initialized(ref: ActorRef): Receive = {
 
-    case Inbound(DisconnectWsMessage) => self ! PoisonPill
+    case Inbound(cmd: DisconnectWsMessage) =>
+      send(cmd)
+      self ! PoisonPill
 
-    case DisconnectWsMessage => self ! PoisonPill
+    case cmd: DisconnectWsMessage =>
+      send(cmd)
+      self ! PoisonPill
 
     case Inbound(msg) =>
       ref ! msg
@@ -72,6 +78,8 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
       schedulePingTimeout()
   }
 
+  private def send(msg: Any): Unit = ctx.writeAndFlush(ctx.voidPromise)
+
   private def schedulePingTimeout(): Unit = {
     timeoutTask.cancel()
     timeoutTask = context.system.scheduler.scheduleOnce(30 seconds, self, PingWsMessage)
@@ -79,9 +87,7 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
 
   override def postStop(): Unit = {
     timeoutTask.cancel()
-    send(DisconnectWsMessage).closeChannel()
+    ctx.close()
     super.postStop()
   }
-
-  private def send(msg: Any): ChannelFuture = ctx.writeAndFlush(msg)
 }

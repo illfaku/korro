@@ -21,7 +21,7 @@ import io.cafebabe.korro.server.actor.WsMessageSender
 import io.cafebabe.korro.server.actor.WsMessageSender.Inbound
 import io.cafebabe.korro.util.log.Logging
 
-import akka.actor.{ActorContext, ActorRef}
+import akka.actor.{ActorContext, ActorRef, PoisonPill}
 import io.netty.channel._
 
 class WsChannelHandler(uri: String, host: String, route: String)(implicit context: ActorContext)
@@ -40,5 +40,5 @@ class WsChannelHandler(uri: String, host: String, route: String)(implicit contex
     case _ => sender ! Inbound(msg)
   }
 
-  override def channelInactive(ctx: ChannelHandlerContext): Unit = sender ! Inbound(DisconnectWsMessage)
+  override def channelInactive(ctx: ChannelHandlerContext): Unit = sender ! PoisonPill
 }
