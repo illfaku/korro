@@ -78,7 +78,7 @@ class WsMessageSender(ctx: ChannelHandlerContext) extends Actor with Stash with 
       schedulePingTimeout()
   }
 
-  private def send(msg: Any): Unit = ctx.writeAndFlush(ctx.voidPromise)
+  private def send(msg: Any): Unit = ctx.writeAndFlush(msg, ctx.voidPromise)
 
   private def schedulePingTimeout(): Unit = {
     timeoutTask.cancel()
